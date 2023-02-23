@@ -1,0 +1,11 @@
+{
+    "name": "SolMate",
+    "description": "It does something cool!",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "action": {
+      "default_title": "SolMate app",
+      "default_popup": "index.html"
+    }
+    
+  }
