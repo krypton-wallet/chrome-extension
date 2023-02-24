@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export",
+    "build": "next build && next export && mv ./out/_next ./out/next && cd ./out && grep -rli '_next' * | xargs -I@ sed -i '' 's|/_next|/next|g' @",
     "start": "next start",
     "lint": "next lint",
     "dev:static": "serve ./out"
@@ -35,6 +35,7 @@
   "devDependencies": {
     "@craco/craco": "^7.0.0",
     "@types/bs58": "^4.0.1",
+    "@types/chrome": "^0.0.217",
     "@types/react": "17.0.24",
     "eslint": "7.32.0",
     "eslint-config-next": "11.1.2",

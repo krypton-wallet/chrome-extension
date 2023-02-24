@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 // Import Bip39 to generate a phrase and convert it to a seed:
 import * as Bip39 from "bip39";
 import {
+  clusterApiUrl,
   Connection,
   Keypair,
   PublicKey,
@@ -20,6 +21,7 @@ import {
 import GuardianBox from "../components/GuardianBox";
 import { createGlobalStyle } from "styled-components";
 import form from "antd/lib/form";
+import base58 from "bs58";
 // Import the Keypair class from Solana's web3.js library:
 
 const BN = require("bn.js");
@@ -55,11 +57,43 @@ const feePayer_sk = new Uint8Array([
 const Guardian: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const { setGuardians, guardians, programId, pda, account } = useGlobalState();
+  const { setGuardians, guardians, programId, pda, account, setPDA } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
   const defaultpk = PublicKey.default;
+
+  useEffect(() => {
+    // Fetching all guardians from PDA
+    const getGuardians = async () => {
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      console.log("account: ", account?.publicKey.toBase58())
+      const profile_pda = PublicKey.findProgramAddressSync(
+        [Buffer.from("profile", "utf-8"), account?.publicKey.toBuffer() ?? new Buffer("")],
+        programId ?? PublicKey.default
+      );
+      setPDA(profile_pda[0]);
+      console.log("PDA: ", profile_pda[0].toBase58())
+      const pda_account = await connection.getAccountInfo(
+        profile_pda[0] ?? PublicKey.default
+      );
+      const pda_data = pda_account?.data ?? new Buffer("");
+      console.log("PDA Data: ", pda_data);
+      const guardian_len = new BN(pda_data.subarray(33, 37), "le").toNumber();
+      console.log("guardian length: ", guardian_len);
+      console.log("All Guardians:");
+      let guardians_tmp = [];
+      for (var i = 0; i < guardian_len; i++) {
+        let guard = new PublicKey(
+          base58.encode(pda_data.subarray(37 + 32 * i, 37 + 32 * (i + 1)))
+        );
+        console.log(`guard ${i + 1}: `, guard.toBase58());
+        guardians_tmp.push(guard);
+      }
+      setGuardians(guardians_tmp)
+    };
+    getGuardians();
+  }, []);
 
   const router = useRouter();
 
@@ -78,11 +112,13 @@ const Guardian: NextPage = () => {
     setLoading(true);
 
     // Instr Add
+    console.log("Adding guardian for account " + account?.publicKey + "...");
     const connection = new Connection("https://api.devnet.solana.com/");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
     );
+    const latestBlockhash = await connection.getLatestBlockhash();
 
     const addToRecoveryListIx = new TransactionInstruction({
       keys: [
@@ -106,7 +142,7 @@ const Guardian: NextPage = () => {
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
-    const tx = new Transaction();
+    const tx = new Transaction({ ...latestBlockhash });
     tx.add(addToRecoveryListIx);
 
     const txid = await sendAndConfirmTransaction(

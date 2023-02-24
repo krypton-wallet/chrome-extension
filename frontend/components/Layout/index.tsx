@@ -50,7 +50,6 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     setAccount(null);
     setNetwork("devnet");
     setBalance(0);
-    setMnemonic("");
     router.push("/");
   };
 

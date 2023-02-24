@@ -11,21 +11,45 @@ import {
   Airdrop,
   Question,
 } from "../styles/StyledComponents.styles";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
+import bs58 from "bs58";
 
 const { Paragraph } = Typography;
 
 const Wallet: NextPage = () => {
-  const { network, account, balance, setBalance } = useGlobalState();
+  const { network, balance, setBalance, account, setAccount } =
+    useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
+  //const [account, setAccount] = useState<Keypair>(new Keypair());
   const [airdropLoading, setAirdropLoading] = useState<boolean>(false);
 
   const router = useRouter();
 
   useEffect(() => {
-    if (!account) {
-      router.push("/");
-      return;
-    }
+    console.log("Balance at start: ", balance);
+    chrome.storage.sync.get(["sk"]).then(async (result) => {
+      if (result.sk == undefined) {
+        router.push("/");
+        return;
+      }
+      console.log("Value currently is " + result.sk);
+      const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
+      setAccount(currKeypair);
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const balance1 = await connection.getBalance(currKeypair.publicKey);
+      setBalance(balance1 / LAMPORTS_PER_SOL);
+      //await new Promise((resolve) => setTimeout(resolve, 5000));
+    });
+
+    // if (!account) {
+    //   router.push("/");
+    //   return;
+    // }
     refreshBalance(network, account)
       .then((updatedBalance) => {
         setBalance(updatedBalance);
@@ -33,7 +57,7 @@ const Wallet: NextPage = () => {
       .catch((err) => {
         console.log(err);
       });
-  }, [account, router, network]);
+  }, [balance, router, network]);
 
   const airdrop = async () => {
     setAirdropLoading(true);

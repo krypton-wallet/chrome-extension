@@ -33,7 +33,7 @@ export const GlobalContext = createContext<GlobalContextType>({
   setGuardians: () => null,
   pda: null,
   setPDA: () => null,
-  programId: null,
+  programId: new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"),
   setProgramId: () => null,
   recoverPk: null,
   setRecoverPk: () => null,

@@ -55,13 +55,11 @@ export const Dashboard = styled.div`
 `;
 
 export const Airdrop = styled(Button)`
-  position: absolute !important;
-  top: 63%;
-  left: 89%;
+  position: relative;
 `;
 
 export const Question = styled.p`
-  position: absolute !important;
+  position: relative;
   top: 66%;
   left: 108%;
   border: 0.5px solid #ccc;

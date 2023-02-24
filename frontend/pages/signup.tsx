@@ -33,6 +33,8 @@ import {
   getAssociatedTokenAddress,
   getAccount,
 } from "@solana/spl-token";
+import base58 from "bs58";
+import { refreshBalance } from "../utils";
 
 const BN = require("bn.js");
 
@@ -85,30 +87,29 @@ const program_id = new PublicKey(
 const Signup: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const { setAccount, account, setPDA, pda, programId, setProgramId } =
-    useGlobalState();
+  const {
+    setAccount,
+    account,
+    setPDA,
+    pda,
+    programId,
+    setProgramId,
+    network,
+    setBalance,
+  } = useGlobalState();
 
   const router = useRouter();
   const [form] = Form.useForm();
 
   const mintAuthority = Keypair.fromSecretKey(mintAuthority_sk);
+  console.log("Minting Authority: ", mintAuthority.publicKey.toBase58());
 
   useEffect(() => {
     // const guard1 = Keypair.fromSecretKey(guard1_sk);
     // const guard2 = Keypair.fromSecretKey(guard2_sk);
     // const guard3 = Keypair.fromSecretKey(guard3_sk);
     // const feePayer = Keypair.fromSecretKey(feePayer_sk);
-
-    const feePayer = new Keypair();
-    //const feePayer = Keypair.fromSecretKey(feePayer_sk);
-    const profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), feePayer.publicKey.toBuffer()],
-      program_id ?? new Keypair().publicKey
-    );
-
     setProgramId(program_id);
-    setAccount(feePayer);
-    setPDA(profile_pda[0]);
   }, []);
 
   const showPopconfirm = () => {
@@ -126,17 +127,30 @@ const Signup: NextPage = () => {
   };
 
   const handleOk = async () => {
+    const feePayer = new Keypair();
+    //const feePayer = Keypair.fromSecretKey(feePayer_sk);
+    const profile_pda = PublicKey.findProgramAddressSync(
+      [Buffer.from("profile", "utf-8"), feePayer.publicKey.toBuffer()],
+      program_id
+    );
+    setAccount(feePayer);
+    setPDA(profile_pda[0]);
+
     setLoading(true);
     const connection = new Connection("https://api.devnet.solana.com/");
 
-    console.log("pk: ", account?.publicKey.toBase58());
+    chrome.storage.sync
+      .set({ sk: base58.encode(feePayer.secretKey) })
+      .then(() => {
+        console.log("Value is set to " + base58.encode(feePayer.secretKey));
+      });
+
+    console.log("pk: ", feePayer.publicKey.toBase58());
+    console.log("PDA: ", profile_pda[0].toBase58());
     console.log("program id: ", programId?.toBase58());
 
     console.log("Requesting Airdrop of 1 SOL...");
-    const signature = await connection.requestAirdrop(
-      account?.publicKey ?? new Keypair().publicKey,
-      1e9
-    );
+    const signature = await connection.requestAirdrop(feePayer.publicKey, 1e9);
     await connection.confirmTransaction(signature, "finalized");
     console.log("Airdrop received");
 
@@ -150,12 +164,12 @@ const Signup: NextPage = () => {
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: pda ?? new Keypair().publicKey,
+          pubkey: profile_pda[0],
           isSigner: false,
           isWritable: true,
         },
         {
-          pubkey: account?.publicKey ?? new Keypair().publicKey,
+          pubkey: feePayer.publicKey,
           isSigner: true,
           isWritable: true,
         },
@@ -173,34 +187,20 @@ const Signup: NextPage = () => {
     let tx = new Transaction();
     tx.add(initializeSocialWalletIx);
 
-    let txid = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [account ?? new Keypair()],
-      {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        commitment: "confirmed",
-      }
-    );
+    let txid = await sendAndConfirmTransaction(connection, tx, [feePayer], {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      commitment: "confirmed",
+    });
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
-    // get pda
-    const profile_pda = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("profile", "utf-8"),
-        account?.publicKey.toBuffer() ?? new Buffer(""),
-      ],
-      program_id
-    );
-    console.log("PDA: ", profile_pda[0].toBase58());
 
     // Create Token Account for custom mint
     // console.log("Creating token account for mint...");
     // const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
     //   connection,
-    //   account ?? new Keypair(),
+    //   feePayer,
     //   customMint,
     //   profile_pda[0],
     //   true
@@ -213,28 +213,33 @@ const Signup: NextPage = () => {
     const associatedToken = await getAssociatedTokenAddress(
       customMint,
       profile_pda[0],
-      true
+      true,
+      TOKEN_PROGRAM_ID
     );
 
     console.log("Creating token account for mint...");
     const createTA_tx = new Transaction().add(
       createAssociatedTokenAccountInstruction(
-        account?.publicKey ?? new Keypair().publicKey,
+        feePayer.publicKey,
         associatedToken,
         profile_pda[0],
-        customMint
+        customMint,
+        TOKEN_PROGRAM_ID
       )
     );
 
-    await sendAndConfirmTransaction(connection, createTA_tx, [
-      account ?? new Keypair(),
-    ]);
+    await sendAndConfirmTransaction(connection, createTA_tx, [feePayer], {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      commitment: "confirmed",
+    });
 
     console.log("Getting sender token account...");
     const senderTokenAccount = await getAccount(
       connection,
       associatedToken,
-      "confirmed"
+      "confirmed",
+      TOKEN_PROGRAM_ID
     );
 
     console.log(
@@ -244,7 +249,7 @@ const Signup: NextPage = () => {
     // console.log("Creating token account for native SOL...");
     // const senderSOLTokenAccount = await getOrCreateAssociatedTokenAccount(
     //   connection,
-    //   account ?? new Keypair(),
+    //   feePayer,
     //   sol_pk,
     //   profile_pda[0],
     //   true
@@ -257,7 +262,7 @@ const Signup: NextPage = () => {
 
     // // transfer SOL to sender token account (MINTING)
     // const transferSOLtoSender = SystemProgram.transfer({
-    //   fromPubkey: account?.publicKey ?? new Keypair().publicKey,
+    //   fromPubkey: feePayer.publicKey,
     //   toPubkey: senderSOLTokenAccount.address,
     //   lamports: 1e8,
     // });
@@ -270,7 +275,7 @@ const Signup: NextPage = () => {
     // let getSOL_txid = await sendAndConfirmTransaction(
     //   connection,
     //   tx,
-    //   [account ?? new Keypair()],
+    //   [feePayer],
     //   {
     //     skipPreflight: true,
     //     preflightCommitment: "confirmed",
@@ -291,24 +296,39 @@ const Signup: NextPage = () => {
     console.log("Minting to token account...");
     console.log(customMint.toBase58());
     console.log(senderTokenAccount.address.toBase58());
+    console.log(associatedToken.toBase58());
     await mintTo(
       connection,
-      account ?? new Keypair(),
+      feePayer,
       customMint,
-      senderTokenAccount.address,
+      associatedToken,
       mintAuthority,
-      6e9
-      //[],
-      //{skipPreflight: true},
+      6e9,
+      [],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      },
+      TOKEN_PROGRAM_ID,
     );
     console.log("Minted!\n");
 
-    const senderTokenAccountBalance = await connection.getTokenAccountBalance(
-      senderTokenAccount.address
-    );
-    console.log(
-      `Sender Token Account Balance: ${senderTokenAccountBalance.value.amount}\n`
-    );
+    // const senderTokenAccountBalance = await connection.getTokenAccountBalance(
+    //   associatedToken
+    // );
+    // console.log(
+    //   `Sender Token Account Balance: ${senderTokenAccountBalance.value.amount}\n`
+    // );
+
+    refreshBalance(network, feePayer)
+      .then((updatedBalance) => {
+        console.log("updated balance: ", updatedBalance);
+        setBalance(updatedBalance);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
 
     router.push("/wallet");
   };
