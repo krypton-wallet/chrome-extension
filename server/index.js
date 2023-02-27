@@ -37,17 +37,13 @@ app.get("/api/getFromPk/:pk", (req, res) => {
 // Route for creating the post
 app.post("/api/create", (req, res) => {
   const pk = req.body.pk;
-  const newpk = req.body.newpk;
-  const thres = req.body.thres;
-  const signed_cnt = req.body.signed_cnt;
+  const new_pk = req.body.new_pk;
+  const sig_remain = req.body.sig_remain;
   const transaction = req.body.transaction;
-  const executor = req.body.executor;
-
-  //console.log(pk, newpk, thres, signed_cnt, transaction);
 
   db.query(
-    "INSERT INTO transactions (pk, newpk, thres, signed_cnt, transaction, executor) VALUES (?,?,?,?,?,?)",
-    [pk, newpk, thres, signed_cnt, transaction, executor],
+    "INSERT INTO transactions (pk, new_pk, sig_remain, transaction) VALUES (?,?,?,?)",
+    [pk, new_pk, sig_remain, transaction],
     (err, result) => {
       if (err) {
         console.log(err);
@@ -64,7 +60,7 @@ app.post("/api/update", (req, res) => {
     const new_transaction = req.body.new_transaction;
 
     db.query(
-      "UPDATE transactions SET signed_cnt = signed_cnt + 1, transaction = ? WHERE pk = ?",
+      "UPDATE transactions SET sig_remain = sig_remain - 1, transaction = ? WHERE pk = ?",
       [new_transaction, pk],
       (err, result) => {
         if (err) {
@@ -86,39 +82,6 @@ app.delete("/api/delete/:pk", (req, res) => {
     }
   });
 });
-
-/*
-// Route for creating a pk to nonce pair
-app.post("/api/createNonce", (req, res) => {
-  const pk = req.body.pk;
-  const nonce_pk = req.body.nonce_pk;
-
-  //console.log(pk, newpk, thres, signed_cnt, transaction);
-
-  db.query(
-    "INSERT INTO nonces (pk, nonce_pk) VALUES (?,?)",
-    [pk, nonce_pk],
-    (err, result) => {
-      if (err) {
-        console.log(err);
-      }
-      console.log(result);
-      res.send(result);
-    }
-  );
-});
-
-// Route to get nonce
-app.get("/api/nonce/getFromPk/:pk", (req, res) => {
-  const pk = req.params.pk;
-  db.query("SELECT * FROM nonces WHERE pk = ?", pk, (err, result) => {
-    if (err) {
-      console.log(err);
-    }
-    res.send(result);
-  });
-});
-*/
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);

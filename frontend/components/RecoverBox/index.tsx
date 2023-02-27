@@ -24,6 +24,7 @@ const BN = require("bn.js");
 const { Paragraph } = Typography;
 
 const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
+    const { account } = useGlobalState()
   const [loading, setLoading] = useState<boolean>(false);
   const [done, setDone] = useState<boolean>(false);
   const connection = new Connection("https://api.devnet.solana.com/");
@@ -33,6 +34,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
 
   const onRecover = async () => {
     console.log("RECOVER BUTTON CLICKED!")
+    console.log("Signer: ", account?.publicKey.toBase58())
     setLoading(true)
     const res = await Axios.get(
       "http://localhost:5000/api/getFromPk/" + old_pk
@@ -41,8 +43,6 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     if (res_data == undefined) {
       throw new Error("Invalid signing request!");
     }
-
-    const executor = Keypair.fromSecretKey(base58.decode(res_data.executor));
 
     let transactionBased64 = res_data.transaction;
     let transaction = Transaction.from(
@@ -78,7 +78,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     const new_profile_pda = PublicKey.findProgramAddressSync(
       [
         Buffer.from("profile", "utf-8"),
-        new PublicKey(res_data.newpk).toBuffer(),
+        new PublicKey(res_data.new_pk).toBuffer(),
       ],
       programId
     );
@@ -87,10 +87,6 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     });
 
     let transferCloseTx = new Transaction();
-    console.log("Requesting Airdrop of 1 SOL to executor...");
-    const signature1 = await connection.requestAirdrop(executor.publicKey, 1e9);
-    await connection.confirmTransaction(signature1, "finalized");
-    console.log("Airdrop received");
 
     allTA_res.value.forEach(async (e) => {
       const oldTokenAccount = e.pubkey;
@@ -107,7 +103,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
 
       const newTokenAccount = await getOrCreateAssociatedTokenAccount(
         connection,
-        executor,
+        account ?? new Keypair(),
         mint,
         new_profile_pda[0],
         true
@@ -132,6 +128,11 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
             isWritable: true,
           },
           {
+            pubkey: account?.publicKey ?? PublicKey.default,
+            isSigner: true,
+            isWritable: true,
+          },
+          {
             pubkey: oldTokenAccount,
             isSigner: false,
             isWritable: true,
@@ -145,11 +146,6 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
             pubkey: TOKEN_PROGRAM_ID,
             isSigner: false,
             isWritable: false,
-          },
-          {
-            pubkey: executor.publicKey,
-            isSigner: true,
-            isWritable: true,
           },
         ],
         programId,
@@ -177,7 +173,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     let transfer_txid = await sendAndConfirmTransaction(
       connection,
       transferCloseTx,
-      [executor],
+      [account ?? new Keypair()],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -191,7 +187,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     setLoading(false)
     setDone(true)
     await Axios.delete("http://localhost:5000/api/delete/" + old_pk);
-    
+
     console.log("RECOVERY COMPLETED! LET'S GOOOOO!");
   };
 

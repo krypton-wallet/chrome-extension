@@ -25,13 +25,6 @@ import BN from "bn.js";
 import base58 from "bs58";
 import RecoverBox from "../components/RecoverBox";
 
-const executor_sk = new Uint8Array([
-  213, 232, 40, 111, 241, 184, 226, 226, 140, 20, 21, 24, 109, 22, 99, 150, 135,
-  70, 81, 93, 51, 11, 229, 255, 142, 32, 124, 39, 164, 83, 1, 242, 133, 233,
-  209, 254, 108, 33, 240, 70, 39, 51, 103, 167, 195, 205, 112, 102, 121, 93,
-  187, 139, 89, 188, 119, 231, 112, 210, 22, 170, 44, 115, 231, 193,
-]);
-
 const newFeePayer_sk = new Uint8Array([
   191, 38, 93, 45, 73, 213, 241, 159, 67, 49, 58, 219, 132, 182, 21, 198, 48,
   204, 192, 238, 111, 80, 47, 255, 254, 127, 191, 11, 226, 137, 91, 174, 211,
@@ -58,14 +51,14 @@ const GenerateRecover: NextPage = () => {
       return;
     }
 
-    if (res_data.thres == res_data.signed_cnt) {
+    if (res_data.sig_remain == 0) {
       setAllSigned(true);
     }
   }, 2000);
 
   /*
     When "Generate" is clicked
-      - Enter recovery mode, initalize new keypair, executor and nonceAccount
+      - Enter recovery mode, initalize new keypair and nonceAccount
       - Initialize recoveryWallet transaction and store it in DB
   */
   const handleGenerate = async (values: any) => {
@@ -75,7 +68,6 @@ const GenerateRecover: NextPage = () => {
 
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
     const newFeePayer = account ?? new Keypair();
-    const executor = new Keypair();
     const nonceAccount = new Keypair();
     const default_pk = new Keypair().publicKey;
     const programId = new PublicKey(
@@ -109,13 +101,13 @@ const GenerateRecover: NextPage = () => {
     const pda_account = await connection.getAccountInfo(profile_pda[0]);
     const pda_data = pda_account?.data ?? new Buffer("");
     console.log("PDA Data: ", pda_data);
-    const guardian_len = new BN(pda_data.subarray(33, 37), "le").toNumber();
+    const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
     console.log("guardian length: ", guardian_len);
     console.log("All Guardians:");
     let guardians = [];
     for (var i = 0; i < guardian_len; i++) {
       let guard = new PublicKey(
-        base58.encode(pda_data.subarray(37 + 32 * i, 37 + 32 * (i + 1)))
+        base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
       );
       console.log(`guard ${i + 1}: `, guard.toBase58());
       guardians.push(guard);
@@ -192,31 +184,11 @@ const GenerateRecover: NextPage = () => {
           isSigner: true,
           isWritable: true,
         },
-        {
-          pubkey: SystemProgram.programId,
-          isSigner: false,
-          isWritable: false,
-        },
-        {
-          pubkey: executor.publicKey,
-          isSigner: false,
-          isWritable: false,
-        },
         ...guard_keys,
       ],
       programId: programId ?? default_pk,
       data: Buffer.concat([idx1, new_acct_len]),
     });
-
-    /*
-    const getNonceRes = await Axios.get(
-      "http://localhost:5000/api/nonce/getFromPk/" + pk
-    );
-    const noncePk = new PublicKey(getNonceRes.data[0].nonce_pk);
-    console.log("nonce pk: ", noncePk.toBase58());
-    let nonceAccountData = await connection.getNonce(noncePk, "confirmed");
-    console.log("nonceAccountData: ", nonceAccountData);
-      */
 
     let nonceAccountData = await connection.getNonce(
       nonceAccount.publicKey,
@@ -267,11 +239,9 @@ const GenerateRecover: NextPage = () => {
     console.log("Creating transaction entry in DB...");
     await Axios.post("http://localhost:5000/api/create", {
       pk: pk,
-      newpk: newFeePayer.publicKey,
-      thres: 2,
-      signed_cnt: 0,
+      new_pk: newFeePayer.publicKey,
+      sig_remain: 2,
       transaction: txBased64,
-      executor: bs58.encode(executor.secretKey),
     }).then((res) => {
       console.log(res);
     });

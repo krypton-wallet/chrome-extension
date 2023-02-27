@@ -79,13 +79,13 @@ const Guardian: NextPage = () => {
       );
       const pda_data = pda_account?.data ?? new Buffer("");
       console.log("PDA Data: ", pda_data);
-      const guardian_len = new BN(pda_data.subarray(33, 37), "le").toNumber();
+      const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
       let guardians_tmp = [];
       for (var i = 0; i < guardian_len; i++) {
         let guard = new PublicKey(
-          base58.encode(pda_data.subarray(37 + 32 * i, 37 + 32 * (i + 1)))
+          base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
         console.log(`guard ${i + 1}: `, guard.toBase58());
         guardians_tmp.push(guard);
