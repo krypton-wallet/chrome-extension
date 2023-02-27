@@ -21,6 +21,7 @@
     "@solana/wallet-adapter-wallets": "^0.19.11",
     "@solana/web3.js": "^1.29.0",
     "@types/styled-components": "^5.1.14",
+    "@use-it/interval": "^1.0.0",
     "antd": "^4.16.13",
     "bip39": "^3.0.4",
     "bs58": "^5.0.0",

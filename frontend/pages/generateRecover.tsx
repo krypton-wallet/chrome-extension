@@ -6,9 +6,8 @@ import { useGlobalState } from "../context";
 import { LoadingOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import Axios from "axios";
+import useInterval from "@use-it/interval";
 
-// Import Bip39 to convert a phrase to a seed:
-import * as Bip39 from "bip39";
 import {
   clusterApiUrl,
   Connection,
@@ -24,6 +23,7 @@ import UrlBox from "../components/UrlBox";
 import bs58 from "bs58";
 import BN from "bn.js";
 import base58 from "bs58";
+import RecoverBox from "../components/RecoverBox";
 
 const executor_sk = new Uint8Array([
   213, 232, 40, 111, 241, 184, 226, 226, 140, 20, 21, 24, 109, 22, 99, 150, 135,
@@ -42,11 +42,26 @@ const newFeePayer_sk = new Uint8Array([
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [generated, setGenerated] = useState<boolean>(false);
+  const [allSigned, setAllSigned] = useState<boolean>(false);
   const { recoverPk, setRecoverPk } = useGlobalState();
   const [form] = Form.useForm();
   const router = useRouter();
 
   const { account, setAccount, programId } = useGlobalState();
+
+  useInterval(async () => {
+    const res = await Axios.get(
+      "http://localhost:5000/api/getFromPk/" + recoverPk
+    );
+    const res_data = res.data[0];
+    if (res_data == undefined) {
+      return;
+    }
+
+    if (res_data.thres == res_data.signed_cnt) {
+      setAllSigned(true);
+    }
+  }, 2000);
 
   /*
     When "Generate" is clicked
@@ -59,7 +74,7 @@ const GenerateRecover: NextPage = () => {
     setRecoverPk(pk);
 
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-    const newFeePayer = new Keypair();
+    const newFeePayer = account ?? new Keypair();
     const executor = new Keypair();
     const nonceAccount = new Keypair();
     const default_pk = new Keypair().publicKey;
@@ -67,16 +82,16 @@ const GenerateRecover: NextPage = () => {
       "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
     );
 
-    console.log("new pk: ", newFeePayer.publicKey.toBase58());
+    console.log("curr new pk: ", newFeePayer.publicKey.toBase58());
     console.log("nonce pk: ", nonceAccount.publicKey.toBase58());
 
-    console.log("Requesting Airdrop of 1 SOL to newFeePayer...");
-    const signature = await connection.requestAirdrop(
-      newFeePayer.publicKey,
-      1e9
-    );
-    await connection.confirmTransaction(signature, "finalized");
-    console.log("Airdrop received");
+    // console.log("Requesting Airdrop of 1 SOL to newFeePayer...");
+    // const signature = await connection.requestAirdrop(
+    //   newFeePayer.publicKey,
+    //   1e9
+    // );
+    // await connection.confirmTransaction(signature, "finalized");
+    // console.log("Airdrop received");
 
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), pk.toBuffer()],
@@ -93,15 +108,17 @@ const GenerateRecover: NextPage = () => {
     // Fetching all guardians from PDA
     const pda_account = await connection.getAccountInfo(profile_pda[0]);
     const pda_data = pda_account?.data ?? new Buffer("");
-    console.log("PDA Data: ", pda_data)
+    console.log("PDA Data: ", pda_data);
     const guardian_len = new BN(pda_data.subarray(33, 37), "le").toNumber();
-    console.log("guardian length: ", guardian_len)
-    console.log("All Guardians:")
-    let guardians = []
-    for(var i = 0; i < guardian_len; i++) {
-        let guard = new PublicKey(base58.encode(pda_data.subarray(37+32*i, 37+32*(i+1))))
-        console.log(`guard ${i+1}: `, guard.toBase58())
-        guardians.push(guard)
+    console.log("guardian length: ", guardian_len);
+    console.log("All Guardians:");
+    let guardians = [];
+    for (var i = 0; i < guardian_len; i++) {
+      let guard = new PublicKey(
+        base58.encode(pda_data.subarray(37 + 32 * i, 37 + 32 * (i + 1)))
+      );
+      console.log(`guard ${i + 1}: `, guard.toBase58());
+      guardians.push(guard);
     }
 
     // Transaction 1: setup nonce
@@ -137,18 +154,6 @@ const GenerateRecover: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
-    /*
-    // create nonce entry in DB
-    console.log("creating nonce entry in DB...");
-    await Axios.post("http://localhost:5000/api/createNonce", {
-      pk: newFeePayer.publicKey,
-      nonce_pk: nonceAccount.publicKey,
-    }).then((res) => {
-      console.log(res);
-    });
-    console.log("nonce entry in DB created");
-    */
-
     // Transaction 2: recover wallet
     const idx1 = Buffer.from(new Uint8Array([5]));
     const new_acct_len = Buffer.from(
@@ -156,13 +161,13 @@ const GenerateRecover: NextPage = () => {
     );
 
     // populate guardian keys and populate them into the transaction
-    let guard_keys = []
+    let guard_keys = [];
     for (var i = 0; i < guardian_len; i++) {
       guard_keys.push({
         pubkey: guardians[i],
         isSigner: true,
-        isWritable: false
-      })
+        isWritable: false,
+      });
     }
 
     const recoverWalletIx = new TransactionInstruction({
@@ -197,7 +202,7 @@ const GenerateRecover: NextPage = () => {
           isSigner: false,
           isWritable: false,
         },
-        ...guard_keys
+        ...guard_keys,
       ],
       programId: programId ?? default_pk,
       data: Buffer.concat([idx1, new_acct_len]),
@@ -219,12 +224,12 @@ const GenerateRecover: NextPage = () => {
     );
 
     // initialize guardian signature
-    let guard_sigs = []
+    let guard_sigs = [];
     for (var i = 0; i < guardian_len; i++) {
       guard_sigs.push({
         publicKey: guardians[i],
-        signature: null
-      })
+        signature: null,
+      });
     }
 
     console.log("Creating recoverWallet transaction...");
@@ -271,33 +276,28 @@ const GenerateRecover: NextPage = () => {
       console.log(res);
     });
     console.log("DB entry created for transaction entry");
-    
+
     setGenerated(true);
     setLoading(false);
-
   };
 
-  useEffect(() => {
-    if (account) {
-      router.push("/wallet");
-    }
-  }, [account, router]);
+  useEffect(() => {}, []);
 
   return (
     <>
       <h1 className={"title"}>Recover Wallet with Guardians</h1>
 
       {!generated && (
-        <p>Enter your wallet public key to get a unique recovery link</p>
+        <p>Enter your old public key to get a unique recovery link</p>
       )}
-      {generated && (
+      {generated && !allSigned && (
         <p>
           Copy the link and send it to your guardians for them to sign the
           recovery
         </p>
       )}
 
-      {!generated && (
+      {!generated && !allSigned && (
         <StyledForm
           form={form}
           layout="vertical"
@@ -327,7 +327,7 @@ const GenerateRecover: NextPage = () => {
                 },
               ]}
             >
-              <Input placeholder="" style={{ minWidth: "500px" }} />
+              <Input placeholder="" style={{ minWidth: "300px" }} />
             </Form.Item>
           </div>
 
@@ -352,9 +352,17 @@ const GenerateRecover: NextPage = () => {
         </StyledForm>
       )}
 
-      {generated && (
+      {generated && !allSigned && (
         <UrlBox url={`http://localhost:3000/recover/${recoverPk}`}></UrlBox>
       )}
+
+      {allSigned && (
+        <p>
+          Click &quot;Recover&quot; to complete tranfering and closing your old lost
+          account
+        </p>
+      )}
+      {allSigned && recoverPk && <RecoverBox old_pk={recoverPk} />}
     </>
   );
 };

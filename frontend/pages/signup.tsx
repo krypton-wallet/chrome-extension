@@ -102,7 +102,6 @@ const Signup: NextPage = () => {
   const [form] = Form.useForm();
 
   const mintAuthority = Keypair.fromSecretKey(mintAuthority_sk);
-  console.log("Minting Authority: ", mintAuthority.publicKey.toBase58());
 
   useEffect(() => {
     // const guard1 = Keypair.fromSecretKey(guard1_sk);
@@ -294,9 +293,6 @@ const Signup: NextPage = () => {
 
     // Mint to token account (MINTING)
     console.log("Minting to token account...");
-    console.log(customMint.toBase58());
-    console.log(senderTokenAccount.address.toBase58());
-    console.log(associatedToken.toBase58());
     await mintTo(
       connection,
       feePayer,
