@@ -126,6 +126,7 @@ const Signup: NextPage = () => {
   };
 
   const handleOk = async () => {
+    console.log("=====STARTING SIGNING UP======")
     const feePayer = new Keypair();
     //const feePayer = Keypair.fromSecretKey(feePayer_sk);
     const profile_pda = PublicKey.findProgramAddressSync(
@@ -148,8 +149,8 @@ const Signup: NextPage = () => {
     console.log("PDA: ", profile_pda[0].toBase58());
     console.log("program id: ", programId?.toBase58());
 
-    console.log("Requesting Airdrop of 1 SOL...");
-    const signature = await connection.requestAirdrop(feePayer.publicKey, 1e9);
+    console.log("Requesting Airdrop of 0.2 SOL...");
+    const signature = await connection.requestAirdrop(feePayer.publicKey, 2e8);
     await connection.confirmTransaction(signature, "finalized");
     console.log("Airdrop received");
 
@@ -194,6 +195,10 @@ const Signup: NextPage = () => {
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
+    // console.log("Requesting Airdrop of 1 SOL to PDA...");
+    // const signature1 = await connection.requestAirdrop(profile_pda[0], 1e9);
+    // await connection.confirmTransaction(signature1, "finalized");
+    // console.log("Airdrop received");
 
     // Create Token Account for custom mint
     // console.log("Creating token account for mint...");

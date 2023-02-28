@@ -24,7 +24,7 @@ const BN = require("bn.js");
 const { Paragraph } = Typography;
 
 const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
-    const { account } = useGlobalState()
+  const { account } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [done, setDone] = useState<boolean>(false);
   const connection = new Connection("https://api.devnet.solana.com/");
@@ -33,9 +33,9 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
   );
 
   const onRecover = async () => {
-    console.log("RECOVER BUTTON CLICKED!")
-    console.log("Signer: ", account?.publicKey.toBase58())
-    setLoading(true)
+    console.log("\n=====RECOVERING======")
+    console.log("Signer: ", account?.publicKey.toBase58());
+    setLoading(true);
     const res = await Axios.get(
       "http://localhost:5000/api/getFromPk/" + old_pk
     );
@@ -166,9 +166,54 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     // Wait for it to finish
     await connection.confirmTransaction(signature, "confirmed");
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 7000));
 
-    // transfer and close
+    /* TRANSACTION: Transfer Native SOL */
+    const idx3 = Buffer.from(new Uint8Array([7]));
+    const amountBuf1 = Buffer.from(
+      new Uint8Array(new BN(Number(1)).toArray("le", 8))
+    );
+    const recoveryModeBuf1 = Buffer.from(new Uint8Array([1]));
+    const transferSOLTx = new Transaction().add(
+      new TransactionInstruction({
+        keys: [
+          {
+            pubkey: profile_pda[0],
+            isSigner: false,
+            isWritable: true,
+          },
+          {
+            pubkey: new_profile_pda[0],
+            isSigner: false,
+            isWritable: true,
+          },
+          {
+            pubkey: account?.publicKey ?? PublicKey.default,
+            isSigner: true,
+            isWritable: true,
+          },
+        ],
+        programId,
+        data: Buffer.concat([idx3, amountBuf1, recoveryModeBuf1]),
+      })
+    );
+
+    console.log("Transfering native SOL...")
+    let transfer_sol_txid = await sendAndConfirmTransaction(
+      connection,
+      transferSOLTx,
+      [account ?? new Keypair()],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      }
+    );
+    console.log(
+      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+    );
+
+    /* TRANSACTION: Transfer and close all token accounts */
     console.log("Transfering and closing...");
     let transfer_txid = await sendAndConfirmTransaction(
       connection,
@@ -184,23 +229,23 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       `https://explorer.solana.com/tx/${transfer_txid}?cluster=devnet\n`
     );
 
-    setLoading(false)
-    setDone(true)
+    setLoading(false);
+    setDone(true);
     await Axios.delete("http://localhost:5000/api/delete/" + old_pk);
 
     console.log("RECOVERY COMPLETED! LET'S GOOOOO!");
   };
-
-  //   useEffect(() => {
-  //     console.log("rerendered cuz guardians changed: ", guardians)
-  //   }, [guardians])
 
   return (
     <Box>
       <Paragraph>{old_pk.toBase58()}</Paragraph>
       {!loading && !done && <Button onClick={onRecover}>Recover</Button>}
       {loading && !done && <LoadingOutlined style={{ fontSize: 24 }} spin />}
-      {done && <Paragraph style={{ color: "green" }}>BRO UR RECOVERY IS FUCKING DONE!</Paragraph>}
+      {done && (
+        <Paragraph style={{ color: "green" }}>
+          BRO UR RECOVERY IS FUCKING DONE!
+        </Paragraph>
+      )}
     </Box>
   );
 };

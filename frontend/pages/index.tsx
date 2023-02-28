@@ -31,10 +31,10 @@ const Home: NextPage = () => {
         router.push("/");
         return;
       }
-      console.log("Value currently is " + result.sk);
+      //console.log("Value currently is " + result.sk);
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
       setAccount(currKeypair);
-      console.log("account: ", account?.publicKey.toBase58());
+      //console.log("account: ", account?.publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
@@ -43,7 +43,7 @@ const Home: NextPage = () => {
         programId ?? PublicKey.default
       );
       setPDA(profile_pda[0]);
-      console.log("PDA: ", profile_pda[0].toBase58());
+      //console.log("PDA: ", profile_pda[0].toBase58());
     });
   }, []);
 

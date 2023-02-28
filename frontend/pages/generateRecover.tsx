@@ -62,6 +62,7 @@ const GenerateRecover: NextPage = () => {
       - Initialize recoveryWallet transaction and store it in DB
   */
   const handleGenerate = async (values: any) => {
+    console.log("=====GENERATING======")
     setLoading(true);
     const pk = new PublicKey(values.pk);
     setRecoverPk(pk);

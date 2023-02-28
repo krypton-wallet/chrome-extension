@@ -108,8 +108,10 @@ const Guardian: NextPage = () => {
   };
 
   const onFinish = async (values: any) => {
+    console.log("=====ADDING GUARDIAN======")
     console.log("Values received:", values);
     setLoading(true);
+    form.resetFields()
 
     // Instr Add
     console.log("Adding guardian for account " + account?.publicKey + "...");

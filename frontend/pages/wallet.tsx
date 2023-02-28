@@ -16,10 +16,14 @@ import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
+  PublicKey,
 } from "@solana/web3.js";
 import bs58 from "bs58";
 
 const { Paragraph } = Typography;
+const programId = new PublicKey(
+  "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
+);
 
 const Wallet: NextPage = () => {
   const { network, balance, setBalance, account, setAccount } =
@@ -40,8 +44,12 @@ const Wallet: NextPage = () => {
       console.log("Value currently is " + result.sk);
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
       setAccount(currKeypair);
+      const profile_pda = PublicKey.findProgramAddressSync(
+        [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
+        programId
+      );
       const connection = new Connection(clusterApiUrl(network), "confirmed");
-      const balance1 = await connection.getBalance(currKeypair.publicKey);
+      const balance1 = await connection.getBalance(profile_pda[0]);
       setBalance(balance1 / LAMPORTS_PER_SOL);
       //await new Promise((resolve) => setTimeout(resolve, 5000));
     });
