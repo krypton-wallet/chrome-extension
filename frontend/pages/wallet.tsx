@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Button, Tooltip, Drawer, Typography } from "antd";
+import { Button, Tooltip, Drawer, Typography, List, Avatar } from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
 import TransactionLayout from "../components/TransactionLayout";
@@ -21,9 +21,7 @@ import {
 import bs58 from "bs58";
 
 const { Paragraph } = Typography;
-const programId = new PublicKey(
-  "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
-);
+const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
 const Wallet: NextPage = () => {
   const { network, balance, setBalance, account, setAccount, pda, setPDA } =
@@ -91,56 +89,65 @@ const Wallet: NextPage = () => {
     <>
       {account && (
         <Dashboard>
-          <h1>Dashboard</h1>
+          <h1 style={{ marginBottom: 0 }}>Dashboard</h1>
 
           <Paragraph
             copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
+            style={{ margin: 0 }}
           >
-            {`Account: ${displayAddress(pda?.toBase58() ?? "")}`}
+            {`${displayAddress(pda?.toBase58() ?? "")}`}
           </Paragraph>
 
-          <p>
-            Connected to{" "}
-            {network &&
-              (network === "mainnet-beta"
-                ? network.charAt(0).toUpperCase() + network.slice(1, 7)
-                : network.charAt(0).toUpperCase() + network.slice(1))}
-          </p>
-          {airdropLoading ? (
-            <h2>
-              <LoadingOutlined spin />
-            </h2>
-          ) : (
-            <h2>
-              {balance} <span>SOL</span>
-            </h2>
-          )}
-
-          {network === "devnet" && account && (
-            <>
-              <Airdrop onClick={airdrop}>Airdrop</Airdrop>
-              <Tooltip
-                title="Click to receive 1 devnet SOL into your account"
-                placement={"right"}
-              >
-                <Question>?</Question>
-              </Tooltip>
-            </>
-          )}
-
-          {/* <Button type="primary" onClick={showModal}>
-            Send <ArrowRightOutlined />
-          </Button>
-
-          <Drawer
-            title="Send Funds"
-            placement="bottom"
-            onClose={handleClose}
-            visible={visible}
-            height={"55vh"}
+          <div
+            style={{
+              display: "flex",
+              columnGap: "10px",
+              justifyContent: "space-between",
+              marginTop: "15px",
+              marginBottom: "10px",
+            }}
           >
-            <TransactionLayout />
-          </Drawer> */}
+            {network === "devnet" && account && (
+              <>
+                <Button
+                  type="primary"
+                  shape="default"
+                  onClick={airdrop}
+                  style={{ width: "140px", height: '40px', fontSize: '17px' }}
+                  loading={airdropLoading}
+                >
+                  Airdrop
+                </Button>
+                <Tooltip
+                  title="Click to receive 1 devnet SOL into your account"
+                  placement="right"
+                ></Tooltip>
+              </>
+            )}
+            <Button type="primary" shape="default" style={{ width: "140px", height: '40px', fontSize: '17px' }}>
+              Send
+            </Button>
+          </div>
+
+          <div
+            style={{
+              marginLeft: "3rem",
+              marginRight: "auto",
+              width: "100%",
+              padding: "0.2rem 0.7rem",
+            }}
+          >
+            <List>
+              <List.Item key="sol">
+                <List.Item.Meta
+                  avatar={<Avatar src={"/solana.png"} />}
+                  title="Solana"
+                  description={`${balance} SOL`}
+                />
+              </List.Item>
+            </List>
+          </div>
+
         </Dashboard>
       )}
     </>

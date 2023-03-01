@@ -63,7 +63,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
       target: '/token',
     },
     {
-      key: 'transfer',
+      key: 'swap',
       icon: <SwapOutlined style={{ fontSize: '23px'}}/>,
       target: '/',
     }, 
@@ -121,7 +121,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                 className="ant-dropdown-link"
                 onClick={(e) => e.preventDefault()}
               >
-                Network <DownOutlined />
+                {network == 'devnet' ? 'Devnet' : 'Devnet'} <DownOutlined />
               </a>
             </Dropdown>
 
