@@ -9,8 +9,9 @@ import {
   WalletOutlined,
   TeamOutlined,
   AppstoreOutlined,
-  SendOutlined,
+  SwapOutlined,
   MedicineBoxOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import styles from "./index.module.css";
@@ -63,7 +64,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     },
     {
       key: 'transfer',
-      icon: <SendOutlined style={{ fontSize: '23px'}}/>,
+      icon: <SwapOutlined style={{ fontSize: '23px'}}/>,
       target: '/',
     }, 
     {
@@ -92,20 +93,12 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     router.push("/");
   };
 
-  const profile = (
+  const settingMenu = (
     <Menu>
-      <Menu.Item key="/guardian" icon={<TeamOutlined />}>
-        <Link href="/guardian" passHref>
-          Guardian
+      <Menu.Item key="/account" icon={<UserOutlined />}>
+        <Link href="/account" passHref>
+          Account
         </Link>
-      </Menu.Item>
-      <Menu.Item key="/wallet" icon={<CreditCardOutlined />}>
-        <Link href="/wallet" passHref>
-          Wallet
-        </Link>
-      </Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        Logout
       </Menu.Item>
     </Menu>
   );
@@ -135,14 +128,15 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
             {account && (
               <Dropdown
                 className={styles.top}
-                overlay={profile}
+                overlay={settingMenu}
                 disabled={!account}
+                placement="bottomRight"
               >
                 <a
                   className="ant-dropdown-link"
                   onClick={(e) => e.preventDefault()}
                 >
-                  <UserOutlined />
+                  <SettingOutlined />
                 </a>
               </Dropdown>
             )}

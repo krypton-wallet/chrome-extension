@@ -26,7 +26,7 @@ const programId = new PublicKey(
 );
 
 const Wallet: NextPage = () => {
-  const { network, balance, setBalance, account, setAccount } =
+  const { network, balance, setBalance, account, setAccount, pda, setPDA } =
     useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
   //const [account, setAccount] = useState<Keypair>(new Keypair());
@@ -41,13 +41,13 @@ const Wallet: NextPage = () => {
         router.push("/");
         return;
       }
-      console.log("Value currently is " + result.sk);
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
       setAccount(currKeypair);
       const profile_pda = PublicKey.findProgramAddressSync(
         [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
         programId
       );
+      setPDA(profile_pda[0]);
       const connection = new Connection(clusterApiUrl(network), "confirmed");
       const balance1 = await connection.getBalance(profile_pda[0]);
       setBalance(balance1 / LAMPORTS_PER_SOL);
@@ -94,9 +94,9 @@ const Wallet: NextPage = () => {
           <h1>Dashboard</h1>
 
           <Paragraph
-            copyable={{ text: account.publicKey.toString(), tooltips: `Copy` }}
+            copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
           >
-            {`Account: ${displayAddress(account.publicKey.toString())}`}
+            {`Account: ${displayAddress(pda?.toBase58() ?? "")}`}
           </Paragraph>
 
           <p>
