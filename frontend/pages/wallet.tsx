@@ -89,11 +89,11 @@ const Wallet: NextPage = () => {
     <>
       {account && (
         <Dashboard>
-          <h1 style={{ marginBottom: 0 }}>Dashboard</h1>
+          <h1 style={{ marginBottom: 0, color: '#fff' }}>Dashboard</h1>
 
           <Paragraph
             copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
-            style={{ margin: 0 }}
+            style={{ margin: 0, color: '#fff' }}
           >
             {`${displayAddress(pda?.toBase58() ?? "")}`}
           </Paragraph>
@@ -131,10 +131,12 @@ const Wallet: NextPage = () => {
 
           <div
             style={{
-              marginLeft: "3rem",
-              marginRight: "auto",
-              width: "100%",
+              marginLeft: "30px",
+              marginRight: "30px",
+              marginTop: '30px',
+              width: '80%',
               padding: "0.2rem 0.7rem",
+              backgroundColor: "rgb(42, 42, 42)"
             }}
           >
             <List>

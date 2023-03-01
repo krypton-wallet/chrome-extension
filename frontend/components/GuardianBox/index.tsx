@@ -91,7 +91,7 @@ const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
   return (
     <Box>
       <Paragraph>{guardian.toBase58()}</Paragraph>
-      {!loading && <Button onClick={onDelete} danger>
+      {!loading && <Button type="primary" onClick={onDelete} danger>
         Delete
       </Button>}
       {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />}

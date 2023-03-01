@@ -18,8 +18,15 @@ import bs58 from "bs58";
 
 const Home: NextPage = () => {
   const router = useRouter();
-  const { network, balance, setBalance, account, setAccount, setPDA, setProgramId } =
-    useGlobalState();
+  const {
+    network,
+    balance,
+    setBalance,
+    account,
+    setAccount,
+    setPDA,
+    setProgramId,
+  } = useGlobalState();
   const programId = new PublicKey(
     "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
   );
@@ -60,8 +67,14 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <HomeTitle>
-        a <a href="https://solana.com/">Solana</a> smart contract wallet with
-        multisig social recovery
+        a{" "}
+        <a
+          href="https://solana.com/"
+          className="gradient-text"
+        >
+          Solana
+        </a>{" "}
+        smart contract wallet with multisig social recovery
       </HomeTitle>
 
       <HomeGrid>
@@ -80,9 +93,9 @@ const HomeTitle = styled.h1`
   font-size: 1.45rem;
   font-weight: normal;
   text-align: center;
-
+  color: #fff;
   & > a {
-    color: #0070f3;
+    color: #fff;
     text-decoration: none;
 
     &:hover,

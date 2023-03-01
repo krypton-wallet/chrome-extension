@@ -2,13 +2,13 @@ import styled from "styled-components";
 import { Button, Input } from "antd";
 
 export const Card = styled.div`
-  margin: 1rem 1.5rem;
+  margin: 1rem 1rem;
   padding: 1.3rem;
   width: 16rem;
-  height: 21rem;
+  height: 19rem;
   text-align: left;
-  color: inherit;
-  background-color: #fafafa;
+  color: #fff;
+  background-color: rgb(34, 34, 34);
   text-decoration: none;
   border: 1px solid #efefef;
   border-radius: 5px;
@@ -19,12 +19,13 @@ export const Card = styled.div`
   &:focus,
   &:active {
     border-color: #ddd;
-    background-color: #f7f7f7;
+    background-color: rgb(34, 34, 34);
   }
 
   & > h2 {
     margin: 0 0 1rem 0;
     font-size: 1.5rem;
+    color: #fff;
   }
 
   & > p {
@@ -56,6 +57,7 @@ export const Dashboard = styled.div`
 
 export const Airdrop = styled(Button)`
   position: relative;
+  color: #5273e0;
 `;
 
 export const Question = styled.p`
@@ -77,10 +79,10 @@ export const Box = styled.div`
   width: 100%;
   padding-top: 0.7rem;
   padding: 10px;
-  color: #333;
+  color: #fff;
   font-weight: 600;
   border: 1px solid #ddd;
-  background-color: #fbfbfb;
+  background-color: rgb(34, 34, 34);
   border-radius: 4px;
   transition: color 0.15s ease, border-color 0.15s ease,
     background-color 0.15s ease;

@@ -47,15 +47,19 @@ const Account: NextPage = () => {
     <>
       {account && (
         <Dashboard>
-          <h1>Account Public Keys</h1>
+          <h1 className="title">Account Public Keys</h1>
 
           <Paragraph
             copyable={{ text: account.publicKey.toBase58(), tooltips: `Copy` }}
+            className="title"
           >
             {`Keypair: ${displayAddress(account.publicKey.toBase58())}`}
           </Paragraph>
 
-          <Paragraph copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}>
+          <Paragraph
+            copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
+            className="title"
+          >
             {`Wallet (PDA): ${displayAddress(pda?.toBase58() ?? "")}`}
           </Paragraph>
           <Link href="/wallet" passHref>

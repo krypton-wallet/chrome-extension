@@ -157,11 +157,11 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
         <footer className={styles.footerHome}>
           <Menu
-            theme="light"
+            theme="dark"
             mode="horizontal"
             items={footerItems}
             onClick={handleMenuClick}
-            style={{alignItems: 'center', height: '60px'}}
+            style={{backgroundColor: "rgb(34, 34, 34)", alignItems: 'center', height: '60px'}}
             selectable={false}
           />
         </footer>

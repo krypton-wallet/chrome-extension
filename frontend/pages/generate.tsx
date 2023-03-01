@@ -19,7 +19,7 @@ const Phrase: NextPage = () => {
 
       {!loading && (
         <Link href={`/signup`} passHref>
-          <Button type="default" onClick={handleLoading}>
+          <Button type="primary" onClick={handleLoading}>
             Generate
           </Button>
         </Link>

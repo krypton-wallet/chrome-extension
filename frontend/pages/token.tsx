@@ -56,7 +56,7 @@ const Token: NextPage = () => {
   return (
     <>
       <h1 className={"title"}>Tokens</h1>
-      <div style={{ marginLeft: "1rem", marginRight: "1rem", width: "100%", padding: "0.2rem 0.7rem" }}>
+      <div className={'tokenlist'}>
         <List
           dataSource={tokens}
           renderItem={(item) => (

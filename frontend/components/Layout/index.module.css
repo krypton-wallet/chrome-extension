@@ -3,6 +3,8 @@
   padding: 0 1.5rem;
   height: 80vh;
   width: 70vh;
+  background-color: rgb(34, 34, 34);
+  color: #fff;
 }
 
 .main {
@@ -13,18 +15,22 @@
   justify-content: baseline;
   align-items: center;
   height: 80vh;
+  background-color: rgb(34, 34, 34);
+  color: #fff;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   width: 100%;
+  background-color: rgb(34, 34, 34);
+  color: #fff;
 }
 
 .top {
   margin: auto 0;
   padding: 0 1rem;
-  color: black;
+  color: #fff;
 }
 
 .logo {
@@ -57,6 +63,7 @@ a.back:active {
   align-items: center;
   position: fixed;
   bottom: 0;
+  background-color: rgb(34, 34, 34);
 }
 
 .footerLink {

@@ -62,7 +62,7 @@ const GenerateRecover: NextPage = () => {
       - Initialize recoveryWallet transaction and store it in DB
   */
   const handleGenerate = async (values: any) => {
-    console.log("=====GENERATING======")
+    console.log("=====GENERATING======");
     setLoading(true);
     const pk = new PublicKey(values.pk);
     setRecoverPk(pk);
@@ -279,7 +279,6 @@ const GenerateRecover: NextPage = () => {
           <div style={{ overflow: "hidden" }}>
             <Form.Item
               name="pk"
-              label="Public Key"
               rules={[
                 {
                   required: true,
@@ -298,7 +297,15 @@ const GenerateRecover: NextPage = () => {
                 },
               ]}
             >
-              <Input placeholder="" style={{ minWidth: "300px" }} />
+              <Input
+                placeholder="Public Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: '1px solid #d3d3d3'
+                }}
+              />
             </Form.Item>
           </div>
 
@@ -307,6 +314,7 @@ const GenerateRecover: NextPage = () => {
               {() => (
                 <Button
                   htmlType="submit"
+                  type="primary"
                   disabled={
                     !form.isFieldsTouched(true) ||
                     form.getFieldsError().filter(({ errors }) => errors.length)
@@ -329,8 +337,8 @@ const GenerateRecover: NextPage = () => {
 
       {allSigned && (
         <p>
-          Click &quot;Recover&quot; to complete tranfering and closing your old lost
-          account
+          Click &quot;Recover&quot; to complete tranfering and closing your old
+          lost account
         </p>
       )}
       {allSigned && recoverPk && <RecoverBox old_pk={recoverPk} />}
