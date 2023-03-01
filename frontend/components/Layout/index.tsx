@@ -1,4 +1,4 @@
-import { Badge, Dropdown, Menu, Divider } from "antd";
+import { Badge, Dropdown, Menu, Divider, MenuProps } from "antd";
 import React, { BaseSyntheticEvent, ReactElement } from "react";
 import {
   DownOutlined,
@@ -6,7 +6,11 @@ import {
   ArrowLeftOutlined,
   LogoutOutlined,
   CreditCardOutlined,
+  WalletOutlined,
   TeamOutlined,
+  AppstoreOutlined,
+  SendOutlined,
+  MedicineBoxOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import styles from "./index.module.css";
@@ -46,6 +50,41 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     </Menu>
   );
 
+  const footerItems = [
+    {
+      key: 'wallet',
+      icon: <WalletOutlined style={{ fontSize: '23px'}}/>,
+      target: '/wallet',
+    },
+    {
+      key: 'token',
+      icon: <AppstoreOutlined style={{ fontSize: '23px'}}/>,
+      target: '/token',
+    },
+    {
+      key: 'transfer',
+      icon: <SendOutlined style={{ fontSize: '23px'}}/>,
+      target: '/',
+    }, 
+    {
+      key: 'guardian',
+      icon: <TeamOutlined style={{ fontSize: '23px'}}/>,
+      target: '/guardian',
+    },
+    {
+      key: 'recovery',
+      icon: <MedicineBoxOutlined style={{ fontSize: '23px'}}/>,
+      target: '/generateRecover',
+    }
+  ]
+
+  const handleMenuClick = ({ key }: { key: string }) => {
+    const { target } = footerItems.find(item => item.key === key) || {};
+    if(target) {
+      router.push(target)
+    }
+  }
+
   const handleLogout = () => {
     setAccount(null);
     setNetwork("devnet");
@@ -78,14 +117,12 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
           <Link href={`/`} passHref>
             <div className={`${styles.top} ${styles.logo}`}>SolMate</div>
           </Link>
-          <link href="/dist/output.css" rel="stylesheet"></link>
 
           <Menu
             mode="horizontal"
             className={styles.nav}
             selectedKeys={[router.pathname]}
           >
-
             <Dropdown className={styles.top} overlay={menu} disabled={!account}>
               <a
                 className="ant-dropdown-link"
@@ -114,24 +151,26 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
         {children}
 
-        {router.pathname !== "/" && (
+        {/* {router.pathname !== "/" && (
           <Link href="/" passHref>
             <a className={styles.back}>
               <ArrowLeftOutlined /> Back Home
             </a>
           </Link>
-        )}
+        )} */}
 
-        <Divider style={{ marginTop: "3rem" }} />
+        {/* <Divider style={{ marginTop: "3rem" }} /> */}
 
-        {/* <footer className={styles.footerHome}>
-          <p>
-            MyWallet tutorial created by{" "}
-            <a className={styles.footerLink} href="https://learn.figment.io/">
-              Figment Learn
-            </a>
-          </p>
-        </footer> */}
+        <footer className={styles.footerHome}>
+          <Menu
+            theme="light"
+            mode="horizontal"
+            items={footerItems}
+            onClick={handleMenuClick}
+            style={{alignItems: 'center', height: '60px'}}
+            selectable={false}
+          />
+        </footer>
       </main>
     </div>
   );

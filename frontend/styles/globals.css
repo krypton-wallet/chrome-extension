@@ -1,15 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 html,
 body {
   padding: 0;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  width: 500px;
-  min-height: 500px;
+  width: 70vh;
+  min-height: 80vh;
 }
 
 a {
@@ -41,6 +37,7 @@ a {
 
 .ant-menu-horizontal {
   border-bottom: none;
+  align-items: center;
 }
 
 .ant-menu-item-selected {
@@ -48,7 +45,7 @@ a {
   background-color: transparent !important;
 }
 .ant-menu-item-selected::after {
-  border-bottom: 2px solid #0070f3 !important;
+  border-top: 10px solid #0070f3 !important;
 }
 
 .ant-menu-item-selected > span > a {

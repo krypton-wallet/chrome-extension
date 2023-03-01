@@ -18,7 +18,7 @@ const CreateAccount = (): ReactElement => {
   return (
     <Card>
       <BankOutlined
-        style={{ fontSize: "3rem", margin: "2rem 0", display: "block" }}
+        style={{ fontSize: "2rem", margin: "0.5rem 0", display: "block" }}
       />
       <h2>New to SolMate?</h2>
       <p>

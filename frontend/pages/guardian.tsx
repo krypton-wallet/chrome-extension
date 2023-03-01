@@ -78,7 +78,6 @@ const Guardian: NextPage = () => {
         profile_pda[0] ?? PublicKey.default
       );
       const pda_data = pda_account?.data ?? new Buffer("");
-      console.log("PDA Data: ", pda_data);
       const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");

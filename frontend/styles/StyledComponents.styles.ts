@@ -3,9 +3,9 @@ import { Button, Input } from "antd";
 
 export const Card = styled.div`
   margin: 1rem 1.5rem;
-  padding: 1.5rem;
-  width: 18rem;
-  height: 24rem;
+  padding: 1.3rem;
+  width: 16rem;
+  height: 21rem;
   text-align: left;
   color: inherit;
   background-color: #fafafa;

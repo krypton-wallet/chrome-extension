@@ -66,8 +66,8 @@ const Home: NextPage = () => {
 
       <HomeGrid>
         <CreateAccount />
-        <LoginAccount />
-        <RestoreAccount />
+        {/* <LoginAccount />
+        <RestoreAccount /> */}
       </HomeGrid>
     </>
   );
@@ -75,9 +75,9 @@ const Home: NextPage = () => {
 
 const HomeTitle = styled.h1`
   padding: 0 3rem;
-  margin: 3rem 1rem;
+  margin: 1.5rem 1rem;
   line-height: 1.25;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: normal;
   text-align: center;
 
