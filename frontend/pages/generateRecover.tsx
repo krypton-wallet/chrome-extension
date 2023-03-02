@@ -329,12 +329,12 @@ const GenerateRecover: NextPage = () => {
         <UrlBox url={`http://localhost:3000/recover/${recoverPk}`}></UrlBox>
       )}
 
-      {allSigned && (
+      {/* {allSigned && (
         <p>
           Click &quot;Recover&quot; to complete tranfering and closing your old
           lost account
         </p>
-      )}
+      )} */}
       {allSigned && recoverPk && <RecoverBox old_pk={recoverPk} />}
     </>
   );

@@ -192,3 +192,20 @@ p {
 .ant-select-item-option-active:hover {
   background-color: #415bf5;
 }
+
+/* result */
+.ant-result-title {
+  color: #fff;
+}
+
+.ant-result-subtitle {
+  color: #fff;
+}
+
+.ant-result-content {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-result {
+  padding: 15px 32px;
+}
