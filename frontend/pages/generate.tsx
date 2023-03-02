@@ -25,7 +25,7 @@ const Phrase: NextPage = () => {
         </Link>
       )}
 
-      {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />}
+      {loading && <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />}
     </>
   );
 };

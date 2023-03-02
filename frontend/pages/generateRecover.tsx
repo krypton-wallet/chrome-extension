@@ -43,7 +43,7 @@ const GenerateRecover: NextPage = () => {
     if (res_data == undefined) {
       return;
     }
-    setRecoverPk(new PublicKey(res_data.pk))
+    setRecoverPk(new PublicKey(res_data.pk));
     if (res_data.sig_remain == 0) {
       setAllSigned(true);
     }
@@ -252,89 +252,90 @@ const GenerateRecover: NextPage = () => {
     <>
       <h1 className={"title"}>Recover Wallet with Guardians</h1>
 
-      {!generated && !allSigned && (
-        <p>Enter your old public key to get a unique recovery link</p>
-      )}
-      {generated && !allSigned && (
-        <p>
-          Copy the link and send it to your guardians for them to sign the
-          recovery
-        </p>
-      )}
-
-      {!generated && !allSigned && (
-        <StyledForm
-          form={form}
-          layout="vertical"
-          autoComplete="off"
-          requiredMark={false}
-          onFinish={handleGenerate}
-        >
-          <div style={{ overflow: "hidden" }}>
-            <Form.Item
-              name="pk"
-              rules={[
-                {
-                  required: true,
-                  message: "Please enter your public key",
-                },
-                {
-                  validator(_, value) {
-                    // if (value.length === 44) {
-                    //   return Promise.resolve();
-                    // }
-                    if (true) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error("Invalid public key"));
-                  },
-                },
-              ]}
-            >
-              <Input
-                placeholder="Public Key"
-                style={{
-                  minWidth: "300px",
-                  backgroundColor: "rgb(34, 34, 34)",
-                  color: "#d3d3d3",
-                  border: '1px solid #d3d3d3'
-                }}
-              />
-            </Form.Item>
-          </div>
-
-          {!loading && (
-            <Form.Item shouldUpdate className="submit">
-              {() => (
-                <Button
-                  htmlType="submit"
-                  type="primary"
-                  disabled={
-                    !form.isFieldsTouched(true) ||
-                    form.getFieldsError().filter(({ errors }) => errors.length)
-                      .length > 0
-                  }
-                >
-                  Generate
-                </Button>
-              )}
-            </Form.Item>
+      {!allSigned && (
+        <>
+          {!generated && (
+            <p>Enter your old public key to get a unique recovery link</p>
+          )}
+          {generated && (
+            <p style={{textAlign: 'center'}}>
+              Copy the following link and send it to your guardians for them to sign the
+              recovery
+            </p>
           )}
 
-          {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />}
-        </StyledForm>
+          {!generated && (
+            <StyledForm
+              form={form}
+              layout="vertical"
+              autoComplete="off"
+              requiredMark={false}
+              onFinish={handleGenerate}
+            >
+              <div style={{ overflow: "hidden" }}>
+                <Form.Item
+                  name="pk"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter your public key",
+                    },
+                    {
+                      validator(_, value) {
+                        // if (value.length === 44) {
+                        //   return Promise.resolve();
+                        // }
+                        if (true) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Invalid public key"));
+                      },
+                    },
+                  ]}
+                >
+                  <Input
+                    placeholder="Public Key"
+                    style={{
+                      minWidth: "300px",
+                      backgroundColor: "rgb(34, 34, 34)",
+                      color: "#d3d3d3",
+                      border: "1px solid #d3d3d3",
+                    }}
+                  />
+                </Form.Item>
+              </div>
+
+              {!loading && (
+                <Form.Item shouldUpdate className="submit">
+                  {() => (
+                    <Button
+                      htmlType="submit"
+                      type="primary"
+                      disabled={
+                        !form.isFieldsTouched(true) ||
+                        form
+                          .getFieldsError()
+                          .filter(({ errors }) => errors.length).length > 0
+                      }
+                    >
+                      Generate
+                    </Button>
+                  )}
+                </Form.Item>
+              )}
+
+              {loading && (
+                <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
+              )}
+            </StyledForm>
+          )}
+
+          {generated && (
+            <UrlBox url={`http://localhost:3000/recover/${recoverPk}`}></UrlBox>
+          )}
+        </>
       )}
 
-      {generated && !allSigned && (
-        <UrlBox url={`http://localhost:3000/recover/${recoverPk}`}></UrlBox>
-      )}
-
-      {/* {allSigned && (
-        <p>
-          Click &quot;Recover&quot; to complete tranfering and closing your old
-          lost account
-        </p>
-      )} */}
       {allSigned && recoverPk && <RecoverBox old_pk={recoverPk} />}
     </>
   );

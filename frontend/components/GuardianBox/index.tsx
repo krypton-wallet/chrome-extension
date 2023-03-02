@@ -94,7 +94,7 @@ const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
       {!loading && <Button type="primary" onClick={onDelete} danger>
         Delete
       </Button>}
-      {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />}
+      {loading && <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />}
     </Box>
   );
 };

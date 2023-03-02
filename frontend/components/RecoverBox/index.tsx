@@ -255,13 +255,14 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     <Box>
       {!finished && (
         <>
-          <Paragraph style={{textAlign: 'center'}}>Click &quot;Recover&quot; to complete recovering {old_pk.toBase58()}</Paragraph>
+          <Paragraph style={{textAlign: 'center', fontSize: '16px', marginBottom: '0'}}>Click <b>Recover</b> to complete recovering</Paragraph>
+          <Paragraph style={{textAlign: 'center', fontSize: '12px'}}>{old_pk.toBase58()}</Paragraph>
           {!loading && (
             <Button type="primary" onClick={onRecover}>
               Recover
             </Button>
           )}
-          {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />}
+          {loading && <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />}
         </>
       )}
       {finished && (

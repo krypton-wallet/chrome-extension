@@ -64,7 +64,7 @@ const LoginAccount = (): ReactElement => {
         )}
         {loading && (
           <Button className={"disabledButton"} disabled>
-            <LoadingOutlined spin />
+            <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
           </Button>
         )}
       </div>
