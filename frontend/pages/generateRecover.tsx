@@ -24,6 +24,7 @@ import bs58 from "bs58";
 import BN from "bn.js";
 import base58 from "bs58";
 import RecoverBox from "../components/RecoverBox";
+import { StyledForm } from "../styles/StyledComponents.styles";
 
 const newFeePayer_sk = new Uint8Array([
   191, 38, 93, 45, 73, 213, 241, 159, 67, 49, 58, 219, 132, 182, 21, 198, 48,
@@ -98,10 +99,11 @@ const GenerateRecover: NextPage = () => {
     // "BvxqrkebkExVvDRfJHogQGcKfvKWuL2P5ErjDVxjdS9N"
     // "EmrYqBHvhmvRpy6ZVwVe212rdxZAZZacVTVFG5QbD9UN"
 
-    // Fetching all guardians from PDA
+    // Fetching all guardians & recovery threshold from PDA
     const pda_account = await connection.getAccountInfo(profile_pda[0]);
     const pda_data = pda_account?.data ?? new Buffer("");
     console.log("PDA Data: ", pda_data);
+    const thres = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
     console.log("guardian length: ", guardian_len);
     console.log("All Guardians:");
@@ -241,7 +243,7 @@ const GenerateRecover: NextPage = () => {
     await Axios.post("http://localhost:5000/api/create", {
       pk: pk,
       new_pk: newFeePayer.publicKey,
-      sig_remain: 2,
+      sig_remain: thres,
       transaction: txBased64,
     }).then((res) => {
       console.log(res);
@@ -345,11 +347,5 @@ const GenerateRecover: NextPage = () => {
     </>
   );
 };
-
-const StyledForm = styled(Form)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
 
 export default GenerateRecover;

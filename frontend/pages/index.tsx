@@ -79,8 +79,6 @@ const Home: NextPage = () => {
 
       <HomeGrid>
         <CreateAccount />
-        {/* <LoginAccount />
-        <RestoreAccount /> */}
       </HomeGrid>
     </>
   );

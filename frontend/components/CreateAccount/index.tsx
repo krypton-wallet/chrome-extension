@@ -27,7 +27,7 @@ const CreateAccount = (): ReactElement => {
 
       <div className={"buttons"}>
         {!loading && (
-          <Link href={`/generate`} passHref>
+          <Link href={`/signup`} passHref>
             <Button type="primary" onClick={handleGenerate}>
               Create New Wallet
             </Button>

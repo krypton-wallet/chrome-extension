@@ -239,7 +239,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
   return (
     <Box>
       <Paragraph>{old_pk.toBase58()}</Paragraph>
-      {!loading && !done && <Button onClick={onRecover}>Recover</Button>}
+      {!loading && !done && <Button type="primary" onClick={onRecover}>Recover</Button>}
       {loading && !done && <LoadingOutlined style={{ fontSize: 24 }} spin />}
       {done && (
         <Paragraph style={{ color: "green" }}>

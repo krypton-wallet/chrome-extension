@@ -163,3 +163,32 @@ p {
   background-color: #415bf5;
   border-color: #415bf5;
 }
+
+/* select */
+.ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-select-arrow {
+  color: #fff;
+}
+
+.ant-select-dropdown {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-select-item-option-content {
+  color: #fff;
+}
+
+.ant-select-selection-item {
+  color: #fff;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: #415bf5;
+}
+
+.ant-select-item-option-active:hover {
+  background-color: #415bf5;
+}

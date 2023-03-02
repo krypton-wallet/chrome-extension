@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { Button, Input } from "antd";
+import { Button, Form, Input } from "antd";
 
 export const Card = styled.div`
   margin: 1rem 1rem;
@@ -154,4 +154,10 @@ export const RatioText = styled.p`
   position: absolute;
   top: 71%;
   left: 11%;
+`;
+
+export const StyledForm = styled(Form)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
