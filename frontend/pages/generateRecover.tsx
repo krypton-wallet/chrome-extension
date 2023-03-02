@@ -20,18 +20,10 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import UrlBox from "../components/UrlBox";
-import bs58 from "bs58";
 import BN from "bn.js";
 import base58 from "bs58";
 import RecoverBox from "../components/RecoverBox";
 import { StyledForm } from "../styles/StyledComponents.styles";
-
-const newFeePayer_sk = new Uint8Array([
-  191, 38, 93, 45, 73, 213, 241, 159, 67, 49, 58, 219, 132, 182, 21, 198, 48,
-  204, 192, 238, 111, 80, 47, 255, 254, 127, 191, 11, 226, 137, 91, 174, 211,
-  115, 44, 26, 220, 41, 19, 221, 16, 251, 226, 133, 54, 204, 193, 213, 152, 234,
-  128, 173, 218, 186, 113, 129, 9, 33, 209, 240, 178, 233, 214, 240,
-]);
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -45,13 +37,13 @@ const GenerateRecover: NextPage = () => {
 
   useInterval(async () => {
     const res = await Axios.get(
-      "http://localhost:5000/api/getFromPk/" + recoverPk
+      "http://localhost:5000/api/getFromNewPk/" + account?.publicKey
     );
     const res_data = res.data[0];
     if (res_data == undefined) {
       return;
     }
-
+    setRecoverPk(new PublicKey(res_data.pk))
     if (res_data.sig_remain == 0) {
       setAllSigned(true);
     }
@@ -260,7 +252,7 @@ const GenerateRecover: NextPage = () => {
     <>
       <h1 className={"title"}>Recover Wallet with Guardians</h1>
 
-      {!generated && (
+      {!generated && !allSigned && (
         <p>Enter your old public key to get a unique recovery link</p>
       )}
       {generated && !allSigned && (
