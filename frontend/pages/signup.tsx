@@ -28,6 +28,7 @@ import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddress,
   getAccount,
+  createMint,
 } from "@solana/spl-token";
 import base58 from "bs58";
 import { refreshBalance } from "../utils";
@@ -41,9 +42,10 @@ const mintAuthority_sk = new Uint8Array([
   157, 38, 80, 90, 173, 131, 130, 132, 188, 250, 138, 16, 12, 217, 109, 213,
 ]);
 
-const customMint = new PublicKey(
-  "9mMtr7Rx8ajjpRbHmUzb5gjgBLqNtPABdkNiUBAkTrmR"
-);
+// const customMint = new PublicKey(
+//   "9mMtr7Rx8ajjpRbHmUzb5gjgBLqNtPABdkNiUBAkTrmR"
+// );
+const customMint = new Keypair().publicKey;
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const sol_pk = new PublicKey(SOL_MINT);
@@ -70,7 +72,8 @@ const Signup: NextPage = () => {
   const [form] = Form.useForm();
   form.setFieldsValue({ thres: "2" });
 
-  const mintAuthority = Keypair.fromSecretKey(mintAuthority_sk);
+  const mintAuthority = new Keypair();
+  const freezeAuthority = new Keypair();
 
   useEffect(() => {
     setProgramId(program_id);
@@ -156,10 +159,10 @@ const Signup: NextPage = () => {
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
-    // console.log("Requesting Airdrop of 1 SOL to PDA...");
-    // const signature1 = await connection.requestAirdrop(profile_pda[0], 1e9);
-    // await connection.confirmTransaction(signature1, "finalized");
-    // console.log("Airdrop received");
+
+    console.log("Creating mint account...")
+    const customMint = await createMint(connection, feePayer, mintAuthority.publicKey, freezeAuthority.publicKey, 9)
+    console.log("Mint created: ", customMint.toBase58())
 
     // Create Token Account for custom mint
     // console.log("Creating token account for mint...");
