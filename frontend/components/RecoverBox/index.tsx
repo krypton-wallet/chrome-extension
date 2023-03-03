@@ -14,6 +14,9 @@ import {
   getOrCreateAssociatedTokenAccount,
   AccountLayout,
   TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  getAccount,
 } from "@solana/spl-token";
 import { useGlobalState } from "../../context";
 import Axios from "axios";
@@ -107,12 +110,49 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         console.log(`amount: ${amount}`);
         console.log(`recovery mode: ${recoveryMode}\n`);
 
-        const newTokenAccount = await getOrCreateAssociatedTokenAccount(
-          connection,
-          account ?? new Keypair(),
+        console.log("Getting associated token address...");
+        const associatedToken = await getAssociatedTokenAddress(
           mint,
           new_profile_pda[0],
-          true
+          true,
+          TOKEN_PROGRAM_ID
+        );
+
+        console.log("Creating token account for mint...");
+        const createTA_tx = new Transaction().add(
+          createAssociatedTokenAccountInstruction(
+            account?.publicKey ?? PublicKey.default,
+            associatedToken,
+            new_profile_pda[0],
+            mint,
+            TOKEN_PROGRAM_ID
+          )
+        );
+
+        await sendAndConfirmTransaction(
+          connection,
+          createTA_tx,
+          [account ?? new Keypair()],
+          {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+            commitment: "confirmed",
+          }
+        );
+
+        // const newTokenAccount = await getOrCreateAssociatedTokenAccount(
+        //   connection,
+        //   account ?? new Keypair(),
+        //   mint,
+        //   new_profile_pda[0],
+        //   true
+        // );
+        console.log("Getting sender token account...");
+        const newTokenAccount = await getAccount(
+          connection,
+          associatedToken,
+          "confirmed",
+          TOKEN_PROGRAM_ID
         );
         console.log(`New Token Account: ${newTokenAccount.address.toBase58()}`);
 
@@ -255,14 +295,22 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
     <Box>
       {!finished && (
         <>
-          <Paragraph style={{textAlign: 'center', fontSize: '16px', marginBottom: '0'}}>Click <b>Recover</b> to complete recovering</Paragraph>
-          <Paragraph style={{textAlign: 'center', fontSize: '12px'}}>{old_pk.toBase58()}</Paragraph>
+          <Paragraph
+            style={{ textAlign: "center", fontSize: "16px", marginBottom: "0" }}
+          >
+            Click <b>Recover</b> to complete recovering
+          </Paragraph>
+          <Paragraph style={{ textAlign: "center", fontSize: "12px" }}>
+            {old_pk.toBase58()}
+          </Paragraph>
           {!loading && (
             <Button type="primary" onClick={onRecover}>
               Recover
             </Button>
           )}
-          {loading && <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />}
+          {loading && (
+            <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
+          )}
         </>
       )}
       {finished && (
