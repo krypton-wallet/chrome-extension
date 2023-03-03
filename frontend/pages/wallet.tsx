@@ -74,6 +74,10 @@ const Wallet: NextPage = () => {
     setAirdropLoading(false);
   };
 
+  const handleSend = () => {
+    router.push("/transfer");
+  };
+
   const showModal = () => {
     setVisible(true);
   };
@@ -89,11 +93,11 @@ const Wallet: NextPage = () => {
     <>
       {account && (
         <Dashboard>
-          <h1 style={{ marginBottom: 0, color: '#fff' }}>Dashboard</h1>
+          <h1 style={{ marginBottom: 0, color: "#fff" }}>Dashboard</h1>
 
           <Paragraph
             copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
-            style={{ margin: 0, color: '#fff' }}
+            style={{ margin: 0, color: "#fff" }}
           >
             {`${displayAddress(pda?.toBase58() ?? "")}`}
           </Paragraph>
@@ -113,7 +117,7 @@ const Wallet: NextPage = () => {
                   type="primary"
                   shape="default"
                   onClick={airdrop}
-                  style={{ width: "140px", height: '40px', fontSize: '17px' }}
+                  style={{ width: "140px", height: "40px", fontSize: "17px" }}
                   loading={airdropLoading}
                 >
                   Airdrop
@@ -124,7 +128,12 @@ const Wallet: NextPage = () => {
                 ></Tooltip>
               </>
             )}
-            <Button type="primary" shape="default" style={{ width: "140px", height: '40px', fontSize: '17px' }}>
+            <Button
+              type="primary"
+              shape="default"
+              style={{ width: "140px", height: "40px", fontSize: "17px" }}
+              onClick={handleSend}
+            >
               Send
             </Button>
           </div>
@@ -133,10 +142,10 @@ const Wallet: NextPage = () => {
             style={{
               marginLeft: "30px",
               marginRight: "30px",
-              marginTop: '30px',
-              width: '80%',
+              marginTop: "30px",
+              width: "80%",
               padding: "0.2rem 0.7rem",
-              backgroundColor: "rgb(42, 42, 42)"
+              backgroundColor: "rgb(42, 42, 42)",
             }}
           >
             <List>
@@ -149,7 +158,6 @@ const Wallet: NextPage = () => {
               </List.Item>
             </List>
           </div>
-
         </Dashboard>
       )}
     </>

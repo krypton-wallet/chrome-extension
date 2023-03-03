@@ -68,10 +68,7 @@ const Home: NextPage = () => {
       </Head>
       <HomeTitle>
         a{" "}
-        <a
-          href="https://solana.com/"
-          className="gradient-text"
-        >
+        <a href="https://solana.com/" className="gradient-text">
           Solana
         </a>{" "}
         smart contract wallet with multisig social recovery

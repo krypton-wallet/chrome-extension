@@ -44,6 +44,12 @@ p {
   min-width: 800px;
 }
 
+/* button */
+.ant-btn {
+  color: #fff;
+  background-color: rgb(42, 42, 42);
+}
+
 /* dropdown */
 .ant-dropdown-menu {
   background-color: rgb(42, 42, 42);
@@ -126,6 +132,10 @@ p {
   color: #fff;
 }
 
+.ant-empty-description {
+  color: #fff;
+}
+
 /* antd modal */
 .ant-modal-header { background-color: rgb(34, 34, 34) } 
 .ant-modal-body { background-color:rgb(34, 34, 34) } 
@@ -136,10 +146,18 @@ p {
 }
 
 .ant-input {
-  min-width: 300px;
+  min-width: 246px;
   background-color: rgb(34, 34, 34);
   color: #d3d3d3;
   border: 1px solid #d3d3d3
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px rgb(42, 42, 42) inset !important;
+    -webkit-text-fill-color: white !important;
 }
 
 .ant-form-item-label>label {
