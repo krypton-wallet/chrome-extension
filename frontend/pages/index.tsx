@@ -64,7 +64,7 @@ const Home: NextPage = () => {
           name="description"
           content="Web3 tutorial for Solana crypto wallet."
         />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/solmate_logo.ico" />
       </Head>
       <HomeTitle>
         a{" "}

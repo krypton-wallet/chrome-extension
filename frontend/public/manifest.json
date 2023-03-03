@@ -1,6 +1,6 @@
 {
     "name": "SolMate",
-    "description": "It does something cool!",
+    "description": "Next generation smart contract wallet",
     "version": "0.0.1",
     "manifest_version": 3,
     "permissions": [
@@ -9,6 +9,10 @@
     "action": {
       "default_title": "SolMate app",
       "default_popup": "index.html"
+    },
+    "icons": {
+      "48": "solmate_logo.png",
+      "128": "solmate_logo.png"
     }
     
   }
