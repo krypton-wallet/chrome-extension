@@ -31,23 +31,26 @@ const Token: NextPage = () => {
       setPDA(profile_pda[0]);
       console.log("PDA: ", profile_pda[0].toBase58());
 
-      let tokens_tmp: Array<[PublicKey, bigint]> = [];
+      let tokens_tmp: Array<[PublicKey, bigint, number]> = [];
       let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      allTA_res.value.forEach(async (e) => {
+      for (const e of allTA_res.value) {
         const oldTokenAccount = e.pubkey;
         const accountInfo = AccountLayout.decode(e.account.data);
 
         const mint = new PublicKey(accountInfo.mint);
         const amount = accountInfo.amount;
+        const mintData = await connection.getTokenSupply(mint);
+        const decimals = mintData.value.decimals;
 
         console.log(`Token Account: ${oldTokenAccount.toBase58()}`);
         console.log(`mint: ${mint}`);
         console.log(`amount: ${amount}`);
-        tokens_tmp.push([mint, amount]);
-      });
+        console.log(`decimals: ${decimals}`);
+        tokens_tmp.push([mint, amount, decimals]);
+      }
       setTokens(tokens_tmp);
     };
     getTokens();
@@ -56,7 +59,7 @@ const Token: NextPage = () => {
   return (
     <>
       <h1 className={"title"}>Tokens</h1>
-      <div className={'tokenlist'}>
+      <div className={"tokenlist"}>
         <List
           dataSource={tokens}
           renderItem={(item) => (
@@ -66,7 +69,7 @@ const Token: NextPage = () => {
                 title="Unknown Token"
                 description={displayAddress(item[0].toBase58())}
               />
-              <p>{(Number(item[1]) / LAMPORTS_PER_SOL).toString()}</p>
+              <p>{(Number(item[1]) / Math.pow(10, item[2])).toString()}</p>
             </List.Item>
           )}
         />

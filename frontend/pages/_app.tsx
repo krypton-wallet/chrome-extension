@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL")
   );
   const [recoverPk, setRecoverPk] = useState<PublicKey | null>(null);
-  const [tokens, setTokens] = useState<Array<[PublicKey, bigint]>>([]);
+  const [tokens, setTokens] = useState<Array<[PublicKey, bigint, number]>>([]);
 
   return (
     <GlobalContext.Provider

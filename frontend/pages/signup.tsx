@@ -29,6 +29,9 @@ import {
   getAssociatedTokenAddress,
   getAccount,
   createMint,
+  createSetAuthorityInstruction,
+  AuthorityType,
+  setAuthority,
 } from "@solana/spl-token";
 import base58 from "bs58";
 import { refreshBalance } from "../utils";
@@ -160,9 +163,15 @@ const Signup: NextPage = () => {
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
 
-    console.log("Creating mint account...")
-    const customMint = await createMint(connection, feePayer, mintAuthority.publicKey, freezeAuthority.publicKey, 9)
-    console.log("Mint created: ", customMint.toBase58())
+    console.log("Creating mint account...");
+    const customMint = await createMint(
+      connection,
+      feePayer,
+      feePayer.publicKey,
+      null,
+      9
+    );
+    console.log("Mint created: ", customMint.toBase58());
 
     // Create Token Account for custom mint
     // console.log("Creating token account for mint...");
@@ -214,6 +223,106 @@ const Signup: NextPage = () => {
       "token account created: " + senderTokenAccount.address.toBase58() + "\n"
     );
 
+    // Mint to token account (MINTING)
+    console.log("Minting to token account...");
+    await mintTo(
+      connection,
+      feePayer,
+      customMint,
+      associatedToken,
+      feePayer,
+      6e9,
+      [],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      },
+      TOKEN_PROGRAM_ID
+    );
+    console.log("Minted!\n");
+
+    // CREATING NFT
+
+    console.log("Creating nft mint account...");
+    const nftMint = await createMint(
+      connection,
+      feePayer,
+      feePayer.publicKey,
+      null,
+      0
+    );
+    console.log("NFT created: ", nftMint.toBase58());
+
+    console.log("Getting associated token address...");
+    const associatedNFTToken = await getAssociatedTokenAddress(
+      nftMint,
+      profile_pda[0],
+      true,
+      TOKEN_PROGRAM_ID
+    );
+
+    console.log("Creating token account for NFT...");
+    const createNFT_TA_tx = new Transaction().add(
+      createAssociatedTokenAccountInstruction(
+        feePayer.publicKey,
+        associatedNFTToken,
+        profile_pda[0],
+        nftMint,
+        TOKEN_PROGRAM_ID
+      )
+    );
+
+    await sendAndConfirmTransaction(connection, createNFT_TA_tx, [feePayer], {
+      skipPreflight: true,
+      preflightCommitment: "confirmed",
+      commitment: "confirmed",
+    });
+
+    console.log("Getting sender token account...");
+    const senderNFTTokenAccount = await getAccount(
+      connection,
+      associatedNFTToken,
+      "confirmed",
+      TOKEN_PROGRAM_ID
+    );
+
+    console.log(
+      "NFT token account created: " +
+        senderNFTTokenAccount.address.toBase58() +
+        "\n"
+    );
+
+    // Mint to NFT token account (MINTING)
+    console.log("Minting to NFT token account...");
+    await mintTo(
+      connection,
+      feePayer,
+      nftMint,
+      associatedNFTToken,
+      feePayer,
+      1,
+      [],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      },
+      TOKEN_PROGRAM_ID
+    );
+    console.log("Minted!\n");
+
+    console.log("Disabling future minting...")
+    await setAuthority(
+      connection,
+      feePayer,
+      nftMint,
+      feePayer,
+      0,
+      null
+    )
+    console.log("Disabled!")
+
     // console.log("Creating token account for native SOL...");
     // const senderSOLTokenAccount = await getOrCreateAssociatedTokenAccount(
     //   connection,
@@ -259,25 +368,6 @@ const Signup: NextPage = () => {
     // console.log(
     //   `Sender SOL Token Account Balance: ${senderSOLTokenAccountBalance.value.amount}\n`
     // );
-
-    // Mint to token account (MINTING)
-    console.log("Minting to token account...");
-    await mintTo(
-      connection,
-      feePayer,
-      customMint,
-      associatedToken,
-      mintAuthority,
-      6e9,
-      [],
-      {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        commitment: "confirmed",
-      },
-      TOKEN_PROGRAM_ID
-    );
-    console.log("Minted!\n");
 
     // const senderTokenAccountBalance = await connection.getTokenAccountBalance(
     //   associatedToken

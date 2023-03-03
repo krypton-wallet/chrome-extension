@@ -18,8 +18,8 @@ export type GlobalContextType = {
   setProgramId: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   recoverPk: PublicKey | null;
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
-  tokens: Array<[PublicKey, bigint]>;
-  setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint]>>>;
+  tokens: Array<[PublicKey, bigint, number]>;
+  setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint, number]>>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
