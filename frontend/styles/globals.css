@@ -128,6 +128,10 @@ p {
   color: #fff;
 }
 
+.ant-list-split .ant-list-item {
+  border-bottom: 0;
+}
+
 .ant-typography {
   color: #fff;
 }

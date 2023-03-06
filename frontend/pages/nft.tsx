@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { List, Avatar } from "antd";
 import { useGlobalState } from "../context";
@@ -13,8 +13,10 @@ import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 const displayAddress = (address: string) =>
   `${address.slice(0, 4)}...${address.slice(-4)}`;
 
-const Token: NextPage = () => {
+const NFT: NextPage = () => {
   const { tokens, setTokens, programId, account, setPDA } = useGlobalState();
+  const [nfts, setNfts] = useState<Array<[PublicKey, bigint, number]>>([]);
+  const [spinning, setSpinning] = useState<boolean>(true);
 
   useEffect(() => {
     // Fetching all tokens from PDA
@@ -32,6 +34,7 @@ const Token: NextPage = () => {
       console.log("PDA: ", profile_pda[0].toBase58());
 
       let tokens_tmp: Array<[PublicKey, bigint, number]> = [];
+      let nfts_tmp: Array<[PublicKey, bigint, number]> = [];
       let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
         programId: TOKEN_PROGRAM_ID,
       });
@@ -50,18 +53,24 @@ const Token: NextPage = () => {
         console.log(`amount: ${amount}`);
         console.log(`decimals: ${decimals}`);
         tokens_tmp.push([mint, amount, decimals]);
+        if(decimals == 0){
+          nfts_tmp.push([mint, amount, decimals])
+        }
       }
       setTokens(tokens_tmp);
+      setNfts(nfts_tmp);
+      setSpinning(false);
     };
     getTokens();
   }, []);
 
   return (
     <>
-      <h1 className={"title"}>Tokens</h1>
+      <h1 className={"title"}>NFT Collection</h1>
       <div className={"tokenlist"}>
         <List
-          dataSource={tokens}
+          dataSource={nfts}
+          loading={spinning}
           renderItem={(item) => (
             <List.Item key={item[0].toBase58()}>
               <List.Item.Meta
@@ -69,7 +78,6 @@ const Token: NextPage = () => {
                 title="Unknown Token"
                 description={displayAddress(item[0].toBase58())}
               />
-              <p>{(Number(item[1]) / Math.pow(10, item[2])).toString()}</p>
             </List.Item>
           )}
         />
@@ -78,4 +86,4 @@ const Token: NextPage = () => {
   );
 };
 
-export default Token;
+export default NFT;

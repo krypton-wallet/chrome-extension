@@ -18,15 +18,28 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from "@solana/web3.js";
+import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
 
 const { Paragraph } = Typography;
 const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
 const Wallet: NextPage = () => {
-  const { network, balance, setBalance, account, setAccount, pda, setPDA } =
-    useGlobalState();
-  const [visible, setVisible] = useState<boolean>(false);
+  const {
+    network,
+    balance,
+    setBalance,
+    account,
+    setAccount,
+    pda,
+    setPDA,
+    tokens,
+    setTokens,
+  } = useGlobalState();
+  const [spinning, setSpinning] = useState<boolean>(true);
+  const [fungibleTokens, setFungibleTokens] = useState<
+    Array<[PublicKey, bigint, number]>
+  >([]);
   //const [account, setAccount] = useState<Keypair>(new Keypair());
   const [airdropLoading, setAirdropLoading] = useState<boolean>(false);
 
@@ -63,6 +76,52 @@ const Wallet: NextPage = () => {
       .catch((err) => {
         console.log(err);
       });
+
+    // Fetching all tokens from PDA and filter out fungible tokens
+    const getTokens = async () => {
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      console.log("account: ", account?.publicKey.toBase58());
+      const profile_pda = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("profile", "utf-8"),
+          account?.publicKey.toBuffer() ?? new Buffer(""),
+        ],
+        programId ?? PublicKey.default
+      );
+      setPDA(profile_pda[0]);
+      console.log("PDA: ", profile_pda[0].toBase58());
+
+      let tokens_tmp: Array<[PublicKey, bigint, number]> = [];
+      let fungible_tokens_tmp: Array<[PublicKey, bigint, number]> = [
+        [PublicKey.default, BigInt(0), 0],
+      ];
+      let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
+        programId: TOKEN_PROGRAM_ID,
+      });
+
+      for (const e of allTA_res.value) {
+        const oldTokenAccount = e.pubkey;
+        const accountInfo = AccountLayout.decode(e.account.data);
+
+        const mint = new PublicKey(accountInfo.mint);
+        const amount = accountInfo.amount;
+        const mintData = await connection.getTokenSupply(mint);
+        const decimals = mintData.value.decimals;
+
+        console.log(`Token Account: ${oldTokenAccount.toBase58()}`);
+        console.log(`mint: ${mint}`);
+        console.log(`amount: ${amount}`);
+        console.log(`decimals: ${decimals}`);
+        tokens_tmp.push([mint, amount, decimals]);
+        if (decimals > 0) {
+          fungible_tokens_tmp.push([mint, amount, decimals]);
+        }
+      }
+      setTokens(tokens_tmp);
+      setFungibleTokens(fungible_tokens_tmp);
+      setSpinning(false);
+    };
+    getTokens();
   }, [balance, router, network]);
 
   const airdrop = async () => {
@@ -76,14 +135,6 @@ const Wallet: NextPage = () => {
 
   const handleSend = () => {
     router.push("/transfer");
-  };
-
-  const showModal = () => {
-    setVisible(true);
-  };
-
-  const handleClose = () => {
-    setVisible(false);
   };
 
   const displayAddress = (address: string) =>
@@ -148,15 +199,38 @@ const Wallet: NextPage = () => {
               backgroundColor: "rgb(42, 42, 42)",
             }}
           >
-            <List>
-              <List.Item key="sol">
-                <List.Item.Meta
-                  avatar={<Avatar src={"/solana.png"} />}
-                  title="Solana"
-                  description={`${balance} SOL`}
-                />
-              </List.Item>
-            </List>
+            <List
+              dataSource={fungibleTokens}
+              loading={spinning}
+              renderItem={(item) => (
+                <List.Item key={item[0].toBase58()}>
+                  <List.Item.Meta
+                    avatar={
+                      <Avatar
+                        src={
+                          item[0] == PublicKey.default
+                            ? "/solana.png"
+                            : "/token.png"
+                        }
+                      />
+                    }
+                    title={
+                      item[0] == PublicKey.default ? "Solana" : "Unknown Token"
+                    }
+                    description={
+                      item[0] == PublicKey.default
+                        ? `${balance} SOL`
+                        : displayAddress(item[0].toBase58())
+                    }
+                  />
+                  {item[0] != PublicKey.default && (
+                    <p>
+                      {(Number(item[1]) / Math.pow(10, item[2])).toString()}
+                    </p>
+                  )}
+                </List.Item>
+              )}
+            />
           </div>
         </Dashboard>
       )}

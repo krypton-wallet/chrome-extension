@@ -58,9 +58,9 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
       target: '/wallet',
     },
     {
-      key: 'token',
+      key: 'nft',
       icon: <AppstoreOutlined style={{ fontSize: '23px'}}/>,
-      target: '/token',
+      target: '/nft',
     },
     {
       key: 'swap',

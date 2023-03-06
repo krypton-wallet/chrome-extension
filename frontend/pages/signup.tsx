@@ -318,10 +318,18 @@ const Signup: NextPage = () => {
       feePayer,
       nftMint,
       feePayer,
-      0,
-      null
+      AuthorityType.MintTokens,
+      null,
+      [],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      },
+      TOKEN_PROGRAM_ID
     )
     console.log("Disabled!")
+
 
     // console.log("Creating token account for native SOL...");
     // const senderSOLTokenAccount = await getOrCreateAssociatedTokenAccount(
