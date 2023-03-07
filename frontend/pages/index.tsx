@@ -18,7 +18,7 @@ import {
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
 import bs58 from "bs58";
-import { initialize } from '../../solmate';
+import { initialize } from '../../wallet-standard';
 import { Solmate, SolmateEvent } from '../../wallet-standard/src/window';
 
 const Home: NextPage = () => {
