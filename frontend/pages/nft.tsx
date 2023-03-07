@@ -14,7 +14,7 @@ const displayAddress = (address: string) =>
   `${address.slice(0, 4)}...${address.slice(-4)}`;
 
 const NFT: NextPage = () => {
-  const { tokens, setTokens, programId, account, setPDA } = useGlobalState();
+  const { tokens, setTokens, walletProgramId, account, setPDA } = useGlobalState();
   const [nfts, setNfts] = useState<Array<[PublicKey, bigint, number]>>([]);
   const [spinning, setSpinning] = useState<boolean>(true);
 
@@ -28,7 +28,7 @@ const NFT: NextPage = () => {
           Buffer.from("profile", "utf-8"),
           account?.publicKey.toBuffer() ?? new Buffer(""),
         ],
-        programId ?? PublicKey.default
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       console.log("PDA: ", profile_pda[0].toBase58());

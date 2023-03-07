@@ -4,14 +4,28 @@ import Link from "next/link";
 import { LoginOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Card } from "../../styles/StyledComponents.styles";
 import { refreshBalance } from "../../utils";
-import { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
 import bs58 from "bs58";
 
 const LoginAccount = (): ReactElement => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { network, balance, setBalance, account, setAccount, programId, setPDA } = useGlobalState();
+  const {
+    network,
+    balance,
+    setBalance,
+    account,
+    setAccount,
+    walletProgramId,
+    setPDA,
+  } = useGlobalState();
   const router = useRouter();
   useEffect(() => {
     setLoading(false);
@@ -28,18 +42,21 @@ const LoginAccount = (): ReactElement => {
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
       setAccount(currKeypair);
     });
-    
+
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const publicKey = account?.publicKey ?? new Keypair().publicKey;
     const balance1 = await connection.getBalance(publicKey);
     setBalance(balance1 / LAMPORTS_PER_SOL);
 
-    console.log("program id: ", programId?.toBase58())
-    console.log("account: ", account?.publicKey.toBase58())
+    console.log("program id: ", walletProgramId.toBase58());
+    console.log("account: ", account?.publicKey.toBase58());
 
     const profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), account?.publicKey.toBuffer() ?? new Buffer("")],
-      programId ?? PublicKey.default
+      [
+        Buffer.from("profile", "utf-8"),
+        account?.publicKey.toBuffer() ?? new Buffer(""),
+      ],
+      walletProgramId
     );
     setPDA(profile_pda[0]);
   };
@@ -50,9 +67,7 @@ const LoginAccount = (): ReactElement => {
         style={{ fontSize: "3rem", margin: "2rem 0", display: "block" }}
       />
       <h2>Already have a wallet?</h2>
-      <p>
-        View your portfolio and guardian list, buy and transfer assets.
-      </p>
+      <p>View your portfolio and guardian list, buy and transfer assets.</p>
 
       <div className={"buttons"}>
         {!loading && (

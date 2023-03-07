@@ -19,11 +19,10 @@ import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { network, balance, setBalance, account, setAccount, pda, setPDA } =
+  const { walletProgramId, account, setAccount, pda, setPDA } =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
@@ -75,7 +74,7 @@ const Transfer: NextPage = () => {
             isWritable: true,
           },
         ],
-        programId,
+        programId: walletProgramId,
         data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
       })
     );

@@ -14,8 +14,8 @@ export type GlobalContextType = {
   setGuardians: React.Dispatch<React.SetStateAction<Array<PublicKey>>>;
   pda: PublicKey | null;
   setPDA: React.Dispatch<React.SetStateAction<PublicKey | null>>;
-  programId: PublicKey | null;
-  setProgramId: React.Dispatch<React.SetStateAction<PublicKey | null>>;
+  walletProgramId: PublicKey;
+  setWalletProgramId: React.Dispatch<React.SetStateAction<PublicKey>>;
   recoverPk: PublicKey | null;
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   tokens: Array<[PublicKey, bigint, number]>;
@@ -35,8 +35,8 @@ export const GlobalContext = createContext<GlobalContextType>({
   setGuardians: () => null,
   pda: null,
   setPDA: () => null,
-  programId: new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"),
-  setProgramId: () => null,
+  walletProgramId: new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"),
+  setWalletProgramId: () => null,
   recoverPk: null,
   setRecoverPk: () => null,
   tokens: [],

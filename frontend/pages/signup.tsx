@@ -53,38 +53,15 @@ const customMint = new Keypair().publicKey;
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const sol_pk = new PublicKey(SOL_MINT);
 
-const program_id = new PublicKey(
-  "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
-);
-
 const Signup: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const {
-    setAccount,
-    account,
-    setPDA,
-    pda,
-    programId,
-    setProgramId,
-    network,
-    setBalance,
-  } = useGlobalState();
+  const { setAccount, account, setPDA, walletProgramId, network, setBalance } =
+    useGlobalState();
 
   const router = useRouter();
   const [form] = Form.useForm();
   form.setFieldsValue({ thres: "2" });
-
-  const mintAuthority = new Keypair();
-  const freezeAuthority = new Keypair();
-
-  useEffect(() => {
-    setProgramId(program_id);
-  }, []);
-
-  const handleCancel = () => {
-    setVisible(false);
-  };
 
   const handleChange = (value: string) => {
     form.setFieldsValue({ thres: value });
@@ -97,7 +74,7 @@ const Signup: NextPage = () => {
     //const feePayer = Keypair.fromSecretKey(feePayer_sk);
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), feePayer.publicKey.toBuffer()],
-      program_id
+      walletProgramId
     );
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
@@ -114,7 +91,7 @@ const Signup: NextPage = () => {
 
     console.log("pk: ", feePayer.publicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
-    console.log("program id: ", programId?.toBase58());
+    console.log("program id: ", walletProgramId.toBase58());
 
     console.log("Requesting Airdrop of 0.2 SOL...");
     const signature = await connection.requestAirdrop(feePayer.publicKey, 2e8);
@@ -146,7 +123,7 @@ const Signup: NextPage = () => {
           isWritable: false,
         },
       ],
-      programId: programId ?? new Keypair().publicKey,
+      programId: walletProgramId,
       data: Buffer.concat([idx, acct_len, recovery_threshold]),
     });
 
@@ -312,7 +289,7 @@ const Signup: NextPage = () => {
     );
     console.log("Minted!\n");
 
-    console.log("Disabling future minting...")
+    console.log("Disabling future minting...");
     await setAuthority(
       connection,
       feePayer,
@@ -327,9 +304,8 @@ const Signup: NextPage = () => {
         commitment: "confirmed",
       },
       TOKEN_PROGRAM_ID
-    )
-    console.log("Disabled!")
-
+    );
+    console.log("Disabled!");
 
     // console.log("Creating token account for native SOL...");
     // const senderSOLTokenAccount = await getOrCreateAssociatedTokenAccount(

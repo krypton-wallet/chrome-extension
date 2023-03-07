@@ -22,7 +22,6 @@ import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
 
 const { Paragraph } = Typography;
-const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
 const Wallet: NextPage = () => {
   const {
@@ -33,7 +32,7 @@ const Wallet: NextPage = () => {
     setAccount,
     pda,
     setPDA,
-    tokens,
+    walletProgramId,
     setTokens,
   } = useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
@@ -56,7 +55,7 @@ const Wallet: NextPage = () => {
       setAccount(currKeypair);
       const profile_pda = PublicKey.findProgramAddressSync(
         [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
-        programId
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       const connection = new Connection(clusterApiUrl(network), "confirmed");
@@ -86,7 +85,7 @@ const Wallet: NextPage = () => {
           Buffer.from("profile", "utf-8"),
           account?.publicKey.toBuffer() ?? new Buffer(""),
         ],
-        programId ?? PublicKey.default
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       console.log("PDA: ", profile_pda[0].toBase58());

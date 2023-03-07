@@ -57,7 +57,7 @@ const feePayer_sk = new Uint8Array([
 const Guardian: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const { setGuardians, guardians, programId, pda, account, setPDA } = useGlobalState();
+  const { setGuardians, guardians, walletProgramId, pda, account, setPDA } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
@@ -70,7 +70,7 @@ const Guardian: NextPage = () => {
       console.log("account: ", account?.publicKey.toBase58())
       const profile_pda = PublicKey.findProgramAddressSync(
         [Buffer.from("profile", "utf-8"), account?.publicKey.toBuffer() ?? new Buffer("")],
-        programId ?? PublicKey.default
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       console.log("PDA: ", profile_pda[0].toBase58())
@@ -98,12 +98,6 @@ const Guardian: NextPage = () => {
 
   const showModal = () => {
     setIsModalOpen(true);
-  };
-
-  const handleModalOk = (values: any) => {
-    console.log("Values received:", values);
-    setIsModalOpen(false);
-    setGuardians((prev) => [...prev]);
   };
 
   const onFinish = async (values: any) => {
@@ -139,7 +133,7 @@ const Guardian: NextPage = () => {
           isWritable: false,
         },
       ],
-      programId: programId ?? new Keypair().publicKey,
+      programId: walletProgramId,
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
@@ -170,10 +164,6 @@ const Guardian: NextPage = () => {
   const handleOk = () => {
     setLoading(true);
     form.submit();
-  };
-
-  const handleCancel = () => {
-    setVisible(false);
   };
 
   return (

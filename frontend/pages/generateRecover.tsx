@@ -33,7 +33,7 @@ const GenerateRecover: NextPage = () => {
   const [form] = Form.useForm();
   const router = useRouter();
 
-  const { account, setAccount, programId } = useGlobalState();
+  const { account, setAccount, walletProgramId } = useGlobalState();
 
   useInterval(async () => {
     const res = await Axios.get(
@@ -64,9 +64,6 @@ const GenerateRecover: NextPage = () => {
     const newFeePayer = account ?? new Keypair();
     const nonceAccount = new Keypair();
     const default_pk = new Keypair().publicKey;
-    const programId = new PublicKey(
-      "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
-    );
 
     console.log("curr new pk: ", newFeePayer.publicKey.toBase58());
     console.log("nonce pk: ", nonceAccount.publicKey.toBase58());
@@ -81,11 +78,11 @@ const GenerateRecover: NextPage = () => {
 
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), pk.toBuffer()],
-      programId ?? default_pk
+      walletProgramId
     );
     const new_profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), newFeePayer.publicKey.toBuffer()],
-      programId ?? default_pk
+      walletProgramId
     );
 
     // "BvxqrkebkExVvDRfJHogQGcKfvKWuL2P5ErjDVxjdS9N"
@@ -181,7 +178,7 @@ const GenerateRecover: NextPage = () => {
         },
         ...guard_keys,
       ],
-      programId: programId ?? default_pk,
+      programId: walletProgramId,
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
@@ -246,8 +243,6 @@ const GenerateRecover: NextPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => {}, []);
-
   return (
     <>
       <h1 className={"title"}>Recover Wallet with Guardians</h1>
@@ -258,9 +253,9 @@ const GenerateRecover: NextPage = () => {
             <p>Enter your old public key to get a unique recovery link</p>
           )}
           {generated && (
-            <p style={{textAlign: 'center'}}>
-              Copy the following link and send it to your guardians for them to sign the
-              recovery
+            <p style={{ textAlign: "center" }}>
+              Copy the following link and send it to your guardians for them to
+              sign the recovery
             </p>
           )}
 

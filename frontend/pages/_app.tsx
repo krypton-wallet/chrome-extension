@@ -13,7 +13,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [balance, setBalance] = useState<number | null>(null);
   const [guardians, setGuardians] = useState<Array<PublicKey>>([]);
   const [pda, setPDA] = useState<PublicKey | null>(null);
-  const [programId, setProgramId] = useState<PublicKey | null>(
+  const [walletProgramId, setWalletProgramId] = useState<PublicKey>(
     new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL")
   );
   const [recoverPk, setRecoverPk] = useState<PublicKey | null>(null);
@@ -34,8 +34,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         setGuardians,
         pda,
         setPDA,
-        programId,
-        setProgramId,
+        walletProgramId,
+        setWalletProgramId,
         recoverPk,
         setRecoverPk,
         tokens,

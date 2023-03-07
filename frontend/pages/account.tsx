@@ -11,10 +11,10 @@ import styles from "../components/Layout/index.module.css";
 import { useRouter } from "next/router";
 
 const { Paragraph } = Typography;
-const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
 const Account: NextPage = () => {
-  const { account, pda, setAccount, setPDA } = useGlobalState();
+  const { account, pda, setAccount, setPDA, walletProgramId } =
+    useGlobalState();
 
   const displayAddress = (address: string) =>
     `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -36,7 +36,7 @@ const Account: NextPage = () => {
           Buffer.from("profile", "utf-8"),
           account?.publicKey.toBuffer() ?? new Buffer(""),
         ],
-        programId ?? PublicKey.default
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       //console.log("PDA: ", profile_pda[0].toBase58());

@@ -27,15 +27,12 @@ const BN = require("bn.js");
 const { Paragraph, Text } = Typography;
 
 const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
-  const { account } = useGlobalState();
+  const { account, walletProgramId } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
   const [succeeded, setSucceeded] = useState<boolean>(false);
   const [msg, setMsg] = useState<any>("");
   const connection = new Connection("https://api.devnet.solana.com/");
-  const programId = new PublicKey(
-    "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
-  );
 
   const onRecover = async () => {
     try {
@@ -82,14 +79,14 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
           Buffer.from("profile", "utf-8"),
           new PublicKey(res_data.pk).toBuffer(),
         ],
-        programId
+        walletProgramId
       );
       const new_profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
           new PublicKey(res_data.new_pk).toBuffer(),
         ],
-        programId
+        walletProgramId
       );
       let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
         programId: TOKEN_PROGRAM_ID,
@@ -194,7 +191,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: false,
             },
           ],
-          programId,
+          programId: walletProgramId,
           data: Buffer.concat([idx2, amountBuf, recoveryModeBuf]),
         });
 
@@ -241,7 +238,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: true,
             },
           ],
-          programId,
+          programId: walletProgramId,
           data: Buffer.concat([idx3, amountBuf1, recoveryModeBuf1]),
         })
       );

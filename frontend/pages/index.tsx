@@ -24,20 +24,13 @@ import { Solmate, SolmateEvent } from '../../wallet-standard/src/window';
 const Home: NextPage = () => {
   const router = useRouter();
   const {
-    network,
-    balance,
-    setBalance,
+    walletProgramId,
     account,
     setAccount,
     setPDA,
-    setProgramId,
   } = useGlobalState();
-  const programId = new PublicKey(
-    "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
-  );
 
   useEffect(() => {
-    setProgramId(programId);
     chrome.storage.sync.get(["sk"]).then(async (result) => {
       if (result.sk == undefined) {
         router.push("/");
@@ -52,7 +45,7 @@ const Home: NextPage = () => {
           Buffer.from("profile", "utf-8"),
           account?.publicKey.toBuffer() ?? new Buffer(""),
         ],
-        programId ?? PublicKey.default
+        walletProgramId
       );
       setPDA(profile_pda[0]);
       //console.log("PDA: ", profile_pda[0].toBase58());

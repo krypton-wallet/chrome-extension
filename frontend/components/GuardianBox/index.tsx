@@ -23,7 +23,7 @@ const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
     setMnemonic,
     setGuardians,
     guardians,
-    programId,
+    walletProgramId,
     pda,
     account,
   } = useGlobalState();
@@ -57,7 +57,7 @@ const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
           isWritable: false,
         },
       ],
-      programId: programId ?? defaultpk,
+      programId: walletProgramId,
       data: Buffer.concat([idx3, new_acct_len]),
     });
 
