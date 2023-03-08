@@ -19,10 +19,11 @@ import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
+import { isNumber } from "../utils";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, setPDA } =
+  const { walletProgramId, account, setAccount, pda, balance} =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
@@ -120,10 +121,7 @@ const Transfer: NextPage = () => {
               },
               {
                 validator(_, value) {
-                  // if (value.length === 44) {
-                  //   return Promise.resolve();
-                  // }
-                  if (true) {
+                  if(PublicKey.isOnCurve(value)){
                     return Promise.resolve();
                   }
                   return Promise.reject(new Error("Invalid public key"));
@@ -151,13 +149,13 @@ const Transfer: NextPage = () => {
               },
               {
                 validator(_, value) {
-                  // if (value.length === 44) {
-                  //   return Promise.resolve();
-                  // }
-                  if (true) {
-                    return Promise.resolve();
+                  if(!isNumber(value)){
+                    return Promise.reject(new Error("Not a number"));
                   }
-                  return Promise.reject(new Error("Invalid public key"));
+                  if(Number(value) > (balance ?? 0)) {
+                    return Promise.reject(new Error("Cannot transfer more SOL than balance"));
+                  }
+                  return Promise.resolve();
                 },
               },
             ]}

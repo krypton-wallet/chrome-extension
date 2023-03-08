@@ -203,13 +203,18 @@ const Guardian: NextPage = () => {
                   required: true,
                   message: "Please input the public key of guardian",
                 },
+                {
+                  validator(_, value) {
+                    if(PublicKey.isOnCurve(value)){
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
               ]}
             >
               <Input />
             </Form.Item>
-            {/* <Form.Item name="description" label="Description">
-            <Input type="textarea" />
-          </Form.Item> */}
             <Form.Item
               name="modifier"
               className="collection-create-form_last-form-item"

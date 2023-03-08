@@ -50,4 +50,11 @@ const handleAirdrop = async (network: Cluster, account: Keypair | null) => {
   }
 };
 
-export { refreshBalance, handleAirdrop };
+function isNumber(value: string | number): boolean
+{
+   return ((value != null) &&
+           (value !== '') &&
+           !isNaN(Number(value.toString())));
+}
+
+export { refreshBalance, handleAirdrop, isNumber };

@@ -277,10 +277,7 @@ const GenerateRecover: NextPage = () => {
                     },
                     {
                       validator(_, value) {
-                        // if (value.length === 44) {
-                        //   return Promise.resolve();
-                        // }
-                        if (true) {
+                        if(PublicKey.isOnCurve(value)){
                           return Promise.resolve();
                         }
                         return Promise.reject(new Error("Invalid public key"));
