@@ -120,6 +120,15 @@ p {
   background-color: rgb(42, 42, 42);
 }
 
+.ant-list-item {
+  padding: 10px 10px
+}
+
+.ant-list-item:hover {
+  background-color: rgb(70, 70, 70);
+  cursor: pointer;
+}
+
 .ant-list-item-meta-description {
   color: #d3d3d3;
 }
@@ -162,6 +171,10 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active{
     -webkit-box-shadow: 0 0 0 30px rgb(42, 42, 42) inset !important;
     -webkit-text-fill-color: white !important;
+}
+
+.ant-form-item {
+  margin: 30px 0 0 0;
 }
 
 .ant-form-item-label>label {

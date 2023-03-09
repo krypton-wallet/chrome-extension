@@ -9,9 +9,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-
-const displayAddress = (address: string) =>
-  `${address.slice(0, 4)}...${address.slice(-4)}`;
+import { displayAddress } from "../utils";
 
 const NFT: NextPage = () => {
   const { tokens, setTokens, walletProgramId, account, setPDA } = useGlobalState();

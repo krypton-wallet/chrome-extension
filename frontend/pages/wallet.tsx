@@ -4,7 +4,7 @@ import { Button, Tooltip, Drawer, Typography, List, Avatar } from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
 import TransactionLayout from "../components/TransactionLayout";
-import { refreshBalance, handleAirdrop } from "../utils";
+import { refreshBalance, handleAirdrop, displayAddress } from "../utils";
 import { ArrowRightOutlined, LoadingOutlined } from "@ant-design/icons";
 import {
   Dashboard,
@@ -136,9 +136,6 @@ const Wallet: NextPage = () => {
     router.push("/transfer");
   };
 
-  const displayAddress = (address: string) =>
-    `${address.slice(0, 4)}...${address.slice(-4)}`;
-
   return (
     <>
       {account && (
@@ -202,7 +199,19 @@ const Wallet: NextPage = () => {
               dataSource={fungibleTokens}
               loading={spinning}
               renderItem={(item) => (
-                <List.Item key={item[0].toBase58()}>
+                <List.Item
+                  key={item[0].toBase58()}
+                  onClick={() => {
+                    if(item[0] == PublicKey.default) {
+                      handleSend()
+                    } else {
+                      router.push({
+                        pathname: '/token/[pk]',
+                        query: { pk: item[0].toBase58() ?? null },
+                      });
+                    }
+                  }}
+                >
                   <List.Item.Meta
                     avatar={
                       <Avatar

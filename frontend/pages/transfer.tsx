@@ -23,9 +23,10 @@ import { isNumber } from "../utils";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, balance} =
+  const { walletProgramId, account, setAccount, pda, balance } =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
+  const connection = new Connection("https://api.devnet.solana.com/");
 
   const [form] = Form.useForm();
   const router = useRouter();
@@ -37,7 +38,7 @@ const Transfer: NextPage = () => {
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log(values);
-    const dest_pk = new PublicKey(values.pk);
+    const dest_pda = new PublicKey(values.pk);
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
     const connection = new Connection("https://api.devnet.solana.com/");
 
@@ -65,7 +66,7 @@ const Transfer: NextPage = () => {
             isWritable: true,
           },
           {
-            pubkey: dest_pk,
+            pubkey: dest_pda,
             isSigner: false,
             isWritable: true,
           },
@@ -110,7 +111,6 @@ const Transfer: NextPage = () => {
           layout="vertical"
           requiredMark={false}
           onFinish={handleOk}
-          style={{ marginTop: "15px" }}
         >
           <Form.Item
             name="pk"
@@ -120,8 +120,11 @@ const Transfer: NextPage = () => {
                 message: "Please enter the recipient's address",
               },
               {
-                validator(_, value) {
-                  if(PublicKey.isOnCurve(value)){
+                async validator(_, value) {
+                  const pdaInfo = await connection.getAccountInfo(
+                    new PublicKey(value)
+                  );
+                  if (pdaInfo) {
                     return Promise.resolve();
                   }
                   return Promise.reject(new Error("Invalid public key"));
@@ -149,11 +152,13 @@ const Transfer: NextPage = () => {
               },
               {
                 validator(_, value) {
-                  if(!isNumber(value)){
+                  if (!isNumber(value)) {
                     return Promise.reject(new Error("Not a number"));
                   }
-                  if(Number(value) > (balance ?? 0)) {
-                    return Promise.reject(new Error("Cannot transfer more SOL than balance"));
+                  if (Number(value) > (balance ?? 0)) {
+                    return Promise.reject(
+                      new Error("Cannot transfer more SOL than balance")
+                    );
                   }
                   return Promise.resolve();
                 },
@@ -178,6 +183,7 @@ const Transfer: NextPage = () => {
               justifyContent: "space-between",
               marginTop: "1px",
               marginBottom: "10px",
+              alignItems: "flex-end",
             }}
           >
             <Button

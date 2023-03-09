@@ -57,4 +57,7 @@ function isNumber(value: string | number): boolean
            !isNaN(Number(value.toString())));
 }
 
-export { refreshBalance, handleAirdrop, isNumber };
+const displayAddress = (address: string) =>
+    `${address.slice(0, 4)}...${address.slice(-4)}`;
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress };

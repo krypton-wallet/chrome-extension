@@ -9,15 +9,13 @@ import bs58 from "bs58";
 import Link from "next/link";
 import styles from "../components/Layout/index.module.css";
 import { useRouter } from "next/router";
+import { displayAddress } from "../utils";
 
 const { Paragraph } = Typography;
 
 const Account: NextPage = () => {
   const { account, pda, setAccount, setPDA, walletProgramId } =
     useGlobalState();
-
-  const displayAddress = (address: string) =>
-    `${address.slice(0, 4)}...${address.slice(-4)}`;
 
   const router = useRouter();
 
