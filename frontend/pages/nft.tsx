@@ -10,11 +10,14 @@ import {
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { displayAddress } from "../utils";
+import { useRouter } from "next/router";
 
 const NFT: NextPage = () => {
-  const { tokens, setTokens, walletProgramId, account, setPDA } = useGlobalState();
+  const { tokens, setTokens, walletProgramId, account, setPDA } =
+    useGlobalState();
   const [nfts, setNfts] = useState<Array<[PublicKey, bigint, number]>>([]);
   const [spinning, setSpinning] = useState<boolean>(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Fetching all tokens from PDA
@@ -51,8 +54,8 @@ const NFT: NextPage = () => {
         console.log(`amount: ${amount}`);
         console.log(`decimals: ${decimals}`);
         tokens_tmp.push([mint, amount, decimals]);
-        if(decimals == 0){
-          nfts_tmp.push([mint, amount, decimals])
+        if (decimals == 0 && Number(amount) != 0) {
+          nfts_tmp.push([mint, amount, decimals]);
         }
       }
       setTokens(tokens_tmp);
@@ -70,7 +73,15 @@ const NFT: NextPage = () => {
           dataSource={nfts}
           loading={spinning}
           renderItem={(item) => (
-            <List.Item key={item[0].toBase58()}>
+            <List.Item
+              key={item[0].toBase58()}
+              onClick={() => {
+                router.push({
+                  pathname: "/nft/[pk]",
+                  query: { pk: item[0].toBase58() ?? null },
+                });
+              }}
+            >
               <List.Item.Meta
                 avatar={<Avatar src={"/token.png"} />}
                 title="Unknown Token"

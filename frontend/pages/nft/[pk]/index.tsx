@@ -25,9 +25,6 @@ import Link from "next/link";
 
 const Token: NextPage = () => {
   const router = useRouter();
-  const { pda } = useGlobalState();
-  const [tokenBalance, setTokenBalance] = useState<number>(0);
-  const [decimals, setDecimals] = useState<number>(1);
   let { pk } = router.query;
   if (!pk) {
     pk = "";
@@ -35,44 +32,10 @@ const Token: NextPage = () => {
   if (Array.isArray(pk)) {
     pk = pk[0];
   }
-  const mint_pk = pk ? new PublicKey(pk) : PublicKey.default;
-  const connection = new Connection("https://api.devnet.solana.com/");
-
-  useEffect(() => {
-    const getMintInfo = async () => {
-      console.log("Getting src token account...");
-      const srcAssociatedToken = await getAssociatedTokenAddress(
-        mint_pk,
-        pda ?? PublicKey.default,
-        true,
-        TOKEN_PROGRAM_ID
-      );
-      const srcTokenAccount = await getAccount(
-        connection,
-        srcAssociatedToken,
-        "confirmed",
-        TOKEN_PROGRAM_ID
-      );
-      console.log(`Src Token Account: ${srcTokenAccount.address.toBase58()}`);
-
-      const tokenAccountData = await getAccount(
-        connection,
-        srcTokenAccount.address
-      );
-      const balance = Number(tokenAccountData.amount);
-      const mintData = await getMint(connection, mint_pk);
-      const decimals = Number(mintData.decimals);
-      setTokenBalance(balance);
-      setDecimals(decimals);
-      console.log("DESIRED BALANCE: ", balance)
-      console.log("CURRENT BALANCE: ", tokenBalance)
-    };
-    getMintInfo();
-  }, [router]);
 
   const handleClick = () => {
     router.push({
-      pathname: "/token/[pk]/send",
+      pathname: "/nft/[pk]/send",
       query: { pk: pk },
     });
   };
@@ -89,7 +52,6 @@ const Token: NextPage = () => {
         }}
         src="/token.png"
       ></img>
-      {/* <p>{tokenBalance / Math.pow(10, decimals)} tokens</p> */}
       <Button
         type="primary"
         //   loading={loading}

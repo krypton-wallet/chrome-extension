@@ -34,8 +34,6 @@ import { displayAddress, isNumber } from "../../../utils";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [tokenBalance, setTokenBalance] = useState<number>(0);
-  const [decimals, setDecimals] = useState<number>(1);
   const { walletProgramId, account, setAccount, pda, balance } =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
@@ -50,39 +48,9 @@ const Send: NextPage = () => {
   }
   const mint_pk = pk ? new PublicKey(pk) : PublicKey.default;
 
-  useEffect(() => {
-    const getTokenAccountBalance = async () => {
-      console.log("Getting src token account...");
-      const srcAssociatedToken = await getAssociatedTokenAddress(
-        mint_pk,
-        pda ?? PublicKey.default,
-        true,
-        TOKEN_PROGRAM_ID
-      );
-      const srcTokenAccount = await getAccount(
-        connection,
-        srcAssociatedToken,
-        "confirmed",
-        TOKEN_PROGRAM_ID
-      );
-      console.log(`Src Token Account: ${srcTokenAccount.address.toBase58()}`);
-
-      const tokenAccountData = await getAccount(
-        connection,
-        srcTokenAccount.address
-      );
-      const balance = Number(tokenAccountData.amount);
-      const mintData = await getMint(connection, mint_pk);
-      const decimals = Number(mintData.decimals);
-      setTokenBalance(balance);
-      setDecimals(decimals);
-    };
-    getTokenAccountBalance();
-  }, [tokenBalance]);
-
   const handleCancel = () => {
     router.push({
-      pathname: "/token/[pk]",
+      pathname: "/nft/[pk]",
       query: { pk: pk },
     });
   };
@@ -91,7 +59,7 @@ const Send: NextPage = () => {
     setLoading(true);
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
-    const amount = Number(values.amount) * LAMPORTS_PER_SOL;
+    let amount = 1;
 
     console.log("Getting src token account...");
     const srcAssociatedToken = await getAssociatedTokenAddress(
@@ -216,7 +184,7 @@ const Send: NextPage = () => {
 
   return (
     <>
-      <h1 className={"title"}>Send Token</h1>
+      <h1 className={"title"}>Send NFT</h1>
       <h2 style={{ color: "white" }}>{displayAddress(pk ?? "")}</h2>
 
       {!finished && (
@@ -257,48 +225,6 @@ const Send: NextPage = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="amount"
-            rules={[
-              {
-                required: true,
-                message: "Please enter amount of tokens",
-              },
-              {
-                async validator(_, value) {
-                  if (!isNumber(value)) {
-                    return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > tokenBalance / Math.pow(10, decimals)) {
-                    return Promise.reject(
-                      new Error("Cannot transfer more than balance")
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder="Amount"
-              style={{
-                width: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item>
-          <span
-            style={{
-              opacity: "60%",
-              color: "white",
-              marginTop: "2px",
-              marginLeft: "230px",
-            }}
-          >
-            balance: {tokenBalance / Math.pow(10, decimals)}
-          </span>
           <div
             style={{
               display: "flex",
