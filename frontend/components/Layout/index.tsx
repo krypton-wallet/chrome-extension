@@ -53,38 +53,38 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
   const footerItems = [
     {
-      key: 'wallet',
-      icon: <WalletOutlined style={{ fontSize: '23px'}}/>,
-      target: '/wallet',
+      key: "wallet",
+      icon: <WalletOutlined style={{ fontSize: "23px" }} />,
+      target: "/wallet",
     },
     {
-      key: 'nft',
-      icon: <AppstoreOutlined style={{ fontSize: '23px'}}/>,
-      target: '/nft',
+      key: "nft",
+      icon: <AppstoreOutlined style={{ fontSize: "23px" }} />,
+      target: "/nft",
     },
     {
-      key: 'swap',
-      icon: <SwapOutlined style={{ fontSize: '23px'}}/>,
-      target: '/',
-    }, 
-    {
-      key: 'guardian',
-      icon: <TeamOutlined style={{ fontSize: '23px'}}/>,
-      target: '/guardian',
+      key: "swap",
+      icon: <SwapOutlined style={{ fontSize: "23px" }} />,
+      target: "/",
     },
     {
-      key: 'recovery',
-      icon: <MedicineBoxOutlined style={{ fontSize: '23px'}}/>,
-      target: '/generateRecover',
-    }
-  ]
+      key: "guardian",
+      icon: <TeamOutlined style={{ fontSize: "23px" }} />,
+      target: "/guardian",
+    },
+    {
+      key: "recovery",
+      icon: <MedicineBoxOutlined style={{ fontSize: "23px" }} />,
+      target: "/generateRecover",
+    },
+  ];
 
   const handleMenuClick = ({ key }: { key: string }) => {
-    const { target } = footerItems.find(item => item.key === key) || {};
-    if(target) {
-      router.push(target)
+    const { target } = footerItems.find((item) => item.key === key) || {};
+    if (target) {
+      router.push(target);
     }
-  }
+  };
 
   const handleLogout = () => {
     setAccount(null);
@@ -121,7 +121,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                 className="ant-dropdown-link"
                 onClick={(e) => e.preventDefault()}
               >
-                {network == 'devnet' ? 'Devnet' : 'Devnet'} <DownOutlined />
+                {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
               </a>
             </Dropdown>
 
@@ -155,16 +155,22 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
         {/* <Divider style={{ marginTop: "3rem" }} /> */}
 
-        <footer className={styles.footerHome}>
-          <Menu
-            theme="dark"
-            mode="horizontal"
-            items={footerItems}
-            onClick={handleMenuClick}
-            style={{backgroundColor: "rgb(34, 34, 34)", alignItems: 'center', height: '60px'}}
-            selectable={false}
-          />
-        </footer>
+        {!router.pathname.startsWith("/adapter") && (
+          <footer className={styles.footerHome}>
+            <Menu
+              theme="dark"
+              mode="horizontal"
+              items={footerItems}
+              onClick={handleMenuClick}
+              style={{
+                backgroundColor: "rgb(34, 34, 34)",
+                alignItems: "center",
+                height: "60px",
+              }}
+              selectable={false}
+            />
+          </footer>
+        )}
       </main>
     </div>
   );

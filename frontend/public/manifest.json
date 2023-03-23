@@ -4,7 +4,8 @@
     "version": "0.0.1",
     "manifest_version": 3,
     "permissions": [
-      "storage"
+      "storage",
+      "scripting"
     ],
     "action": {
       "default_title": "SolMate app",
@@ -13,6 +14,28 @@
     "icons": {
       "48": "solmate_logo.png",
       "128": "solmate_logo.png"
+    },
+    "content_scripts": [
+      {
+          "matches": ["*://*/*"],
+          "js": ["content.js"],
+          "run_at": "document_start",
+          "all_frames": true
+      }
+    ],
+    "background": {
+      "service_worker": "background.js",
+      "type": "module"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "script.js"
+        ],
+        "matches": ["*://*/*"]
+      }
+    ],
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'"
     }
-    
   }

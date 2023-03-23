@@ -18,17 +18,10 @@ import {
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
 import bs58 from "bs58";
-import { initialize } from '../../wallet-standard';
-import { Solmate, SolmateEvent } from '../../wallet-standard/src/window';
 
 const Home: NextPage = () => {
   const router = useRouter();
-  const {
-    walletProgramId,
-    account,
-    setAccount,
-    setPDA,
-  } = useGlobalState();
+  const { walletProgramId, account, setAccount, setPDA } = useGlobalState();
 
   useEffect(() => {
     chrome.storage.sync.get(["sk"]).then(async (result) => {
@@ -49,44 +42,6 @@ const Home: NextPage = () => {
       );
       setPDA(profile_pda[0]);
       //console.log("PDA: ", profile_pda[0].toBase58());
-
-      /*
-      const solmate: Solmate = {
-        publicKey: currKeypair.publicKey,
-        connect: function (options?: { onlyIfTrusted?: boolean | undefined; } | undefined): Promise<{ publicKey: PublicKey; }> {
-          throw new Error("Function not implemented.");
-        },
-        disconnect: function (): Promise<void> {
-          throw new Error("Function not implemented.");
-        },
-        signAndSendTransaction: function <T extends Transaction | VersionedTransaction>(transaction: T, options?: SendOptions | undefined): Promise<{ signature: string; }> {
-          throw new Error("Function not implemented.");
-        },
-        signTransaction: function <T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
-          throw new Error("Function not implemented.");
-        },
-        signAllTransactions: function <T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
-          throw new Error("Function not implemented.");
-        },
-        signMessage: function (message: Uint8Array): Promise<{ signature: Uint8Array; }> {
-          throw new Error("Function not implemented.");
-        },
-        on: function <E extends keyof SolmateEvent>(event: E, listener: SolmateEvent[E], context?: any): void {
-          throw new Error("Function not implemented.");
-        },
-        off: function <E extends keyof SolmateEvent>(event: E, listener: SolmateEvent[E], context?: any): void {
-          throw new Error("Function not implemented.");
-        }
-      }
-      initialize(solmate)
-      try {
-        Object.defineProperty(window, 'solmate', { value: solmate })
-        console.log('here')
-      }
-      catch (error) {
-        console.error(error);
-      }
-      */
     });
   }, []);
 
