@@ -50,7 +50,7 @@ const Token: NextPage = () => {
           height: "20%",
           margin: "20px 20px",
         }}
-        src="/token.png"
+        src="/static/images/token.png"
       ></img>
       <Button
         type="primary"

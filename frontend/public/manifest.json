@@ -12,8 +12,8 @@
       "default_popup": "index.html"
     },
     "icons": {
-      "48": "solmate_logo.png",
-      "128": "solmate_logo.png"
+      "48": "./static/icons/solmate_logo.png",
+      "128": "./static/icons/solmate_logo.png"
     },
     "content_scripts": [
       {

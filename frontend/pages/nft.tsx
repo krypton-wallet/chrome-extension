@@ -83,7 +83,7 @@ const NFT: NextPage = () => {
               }}
             >
               <List.Item.Meta
-                avatar={<Avatar src={"/token.png"} />}
+                avatar={<Avatar src={"/static/images/token.png"} />}
                 title="Unknown Token"
                 description={displayAddress(item[0].toBase58())}
               />

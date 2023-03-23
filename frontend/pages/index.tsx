@@ -3,17 +3,9 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import CreateAccount from "../components/CreateAccount";
 import styled from "styled-components";
-import LoginAccount from "../components/LoginAccount";
-import RestoreAccount from "../components/RestoreAccount";
 import {
-  clusterApiUrl,
-  Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
-  SendOptions,
-  Transaction,
-  VersionedTransaction,
 } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";

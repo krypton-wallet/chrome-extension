@@ -217,8 +217,8 @@ const Wallet: NextPage = () => {
                       <Avatar
                         src={
                           item[0] == PublicKey.default
-                            ? "/solana.png"
-                            : "/token.png"
+                            ? "/static/images/solana.png"
+                            : "/static/images/token.png"
                         }
                       />
                     }
