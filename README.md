@@ -2,9 +2,7 @@
 
 Introducing SolMate, a Solana smart contract wallet with multisig social recovery, eliminating fear of losing your private key and improving usability and security with advanced features
 
-![homepage](./frontend/public/static/images/homepage.png)
-
----
+![homepage](./frontend/public/static/images/ui.png)
 
 ## ✨ Key Features
 
@@ -15,8 +13,6 @@ Introducing SolMate, a Solana smart contract wallet with multisig social recover
 - Multi-factor authentication with authApp
 - Ability to interact with arbitrary smart contracts
 - Optional whitelist checking
-
----
 
 ## 🧑‍💻 Getting started
 
@@ -30,8 +26,6 @@ cd solmate-extension
 yarn
 ```
 
----
-
 ## 💻 Build extension
 
 Build the solmate extension with
@@ -41,8 +35,6 @@ yarn build
 ```
 
 You can load unpacked the /frontend/out folder in chrome extension developer mode and use it
-
----
 
 ## 📈 Flow Diagram
 
