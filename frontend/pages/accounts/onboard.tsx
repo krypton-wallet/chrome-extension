@@ -17,7 +17,7 @@ const Onboard: NextPage = () => {
 
   return (
     <>
-      <h2 className={"title"}>Add a new account</h2>
+      <h1 className={"title"}>Add a new account</h1>
       <div className={"tokenlist"} style={{ margin: "13px 0" }}>
         <List style={{ margin: "10px 0" }}>
           <List.Item
@@ -61,7 +61,10 @@ const Onboard: NextPage = () => {
       </div>
 
       <Link href="/accounts" passHref>
-        <a className={styles.back}>
+        <a
+          className={styles.back}
+          style={{ position: "absolute", bottom: "60px", fontSize: "17px" }}
+        >
           <ArrowLeftOutlined /> Back
         </a>
       </Link>
