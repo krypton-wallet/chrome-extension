@@ -20,6 +20,8 @@ export type GlobalContextType = {
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   tokens: Array<[PublicKey, bigint, number]>;
   setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint, number]>>>;
+  currId: number | null;
+  setCurrId: React.Dispatch<React.SetStateAction<number | null>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -41,6 +43,8 @@ export const GlobalContext = createContext<GlobalContextType>({
   setRecoverPk: () => null,
   tokens: [],
   setTokens: () => null,
+  currId: 1,
+  setCurrId: () => null,
 });
 
 export const useGlobalState = () => useContext(GlobalContext);

@@ -45,9 +45,24 @@ p {
 }
 
 /* button */
-.ant-btn {
+.ant-btn, .ant-btn:active, .ant-btn:focus {
   color: #fff;
+  border-color: #fff;
   background-color: rgb(42, 42, 42);
+}
+
+.ant-btn:hover {
+  color: #fff;
+  border-color: #fff;
+  background-color: #415bf5;
+}
+
+.more-button, .more-button:active, .more-button:focus, .more-button:hover {
+  border-color: transparent;
+}
+
+.more-button:hover {
+  background-color: rgb(34, 34, 34);
 }
 
 /* dropdown */
@@ -127,6 +142,10 @@ p {
 .ant-list-item:hover {
   background-color: rgb(70, 70, 70);
   cursor: pointer;
+}
+
+.ant-list-item-meta {
+  align-items: center;
 }
 
 .ant-list-item-meta-description {
@@ -243,4 +262,9 @@ input:-webkit-autofill:active{
 
 .ant-result {
   padding: 15px 32px;
+}
+
+/* typography */
+.ant-typography-edit-content, .ant-typography-div {
+  margin-left: 63px;
 }

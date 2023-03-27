@@ -25,6 +25,7 @@
   width: 100%;
   background-color: rgb(34, 34, 34);
   color: #fff;
+  align-items: center;
 }
 
 .top {

@@ -3,10 +3,7 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import CreateAccount from "../components/CreateAccount";
 import styled from "styled-components";
-import {
-  Keypair,
-  PublicKey,
-} from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
 import bs58 from "bs58";

@@ -19,7 +19,6 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import bs58 from "bs58";
 
 const { Paragraph } = Typography;
 
@@ -34,6 +33,8 @@ const Wallet: NextPage = () => {
     setPDA,
     walletProgramId,
     setTokens,
+    currId,
+    setCurrId,
   } = useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
   const [fungibleTokens, setFungibleTokens] = useState<
@@ -45,24 +46,7 @@ const Wallet: NextPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    console.log("Balance at start: ", balance);
-    chrome.storage.sync.get(["sk"]).then(async (result) => {
-      if (result.sk == undefined) {
-        router.push("/");
-        return;
-      }
-      const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
-      setAccount(currKeypair);
-      const profile_pda = PublicKey.findProgramAddressSync(
-        [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
-        walletProgramId
-      );
-      setPDA(profile_pda[0]);
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
-      const balance1 = await connection.getBalance(profile_pda[0]);
-      setBalance(balance1 / LAMPORTS_PER_SOL);
-      //await new Promise((resolve) => setTimeout(resolve, 5000));
-    });
+    console.log("============WALLET PAGE=================");
 
     // if (!account) {
     //   router.push("/");
@@ -79,7 +63,6 @@ const Wallet: NextPage = () => {
     // Fetching all tokens from PDA and filter out fungible tokens
     const getTokens = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", account?.publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
@@ -106,13 +89,9 @@ const Wallet: NextPage = () => {
         const amount = accountInfo.amount;
         const mintData = await connection.getTokenSupply(mint);
         const decimals = mintData.value.decimals;
-
-        console.log(`Token Account: ${oldTokenAccount.toBase58()}`);
-        console.log(`mint: ${mint}`);
-        console.log(`amount: ${amount}`);
-        console.log(`decimals: ${decimals}`);
         tokens_tmp.push([mint, amount, decimals]);
         if (decimals > 0) {
+          console.log(`mint: ${mint}`);
           fungible_tokens_tmp.push([mint, amount, decimals]);
         }
       }
@@ -121,7 +100,7 @@ const Wallet: NextPage = () => {
       setSpinning(false);
     };
     getTokens();
-  }, [balance, router, network]);
+  }, [balance, router, network, currId]);
 
   const airdrop = async () => {
     setAirdropLoading(true);
@@ -202,11 +181,11 @@ const Wallet: NextPage = () => {
                 <List.Item
                   key={item[0].toBase58()}
                   onClick={() => {
-                    if(item[0] == PublicKey.default) {
-                      handleSend()
+                    if (item[0] == PublicKey.default) {
+                      handleSend();
                     } else {
                       router.push({
-                        pathname: '/token/[pk]',
+                        pathname: "/token/[pk]",
                         query: { pk: item[0].toBase58() ?? null },
                       });
                     }

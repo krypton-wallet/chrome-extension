@@ -1,5 +1,10 @@
-import { Badge, Dropdown, Menu, Divider, MenuProps } from "antd";
-import React, { BaseSyntheticEvent, ReactElement } from "react";
+import { Badge, Dropdown, Menu, Divider, MenuProps, Button } from "antd";
+import React, {
+  BaseSyntheticEvent,
+  ReactElement,
+  useEffect,
+  useState,
+} from "react";
 import {
   DownOutlined,
   UserOutlined,
@@ -26,8 +31,9 @@ type DomEvent = {
 };
 
 const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
-  const { network, setNetwork, account, setAccount, setBalance, setMnemonic } =
+  const { network, setNetwork, account, setAccount, setBalance, currId, pda } =
     useGlobalState();
+  const [accountName, setAccountName] = useState<string>("");
 
   const router = useRouter();
 
@@ -93,6 +99,10 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     router.push("/");
   };
 
+  const handleAccountSwitch = () => {
+    router.push("/accounts");
+  };
+
   const settingMenu = (
     <Menu>
       <Menu.Item key="/account" icon={<UserOutlined />}>
@@ -103,45 +113,67 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     </Menu>
   );
 
+  useEffect(() => {
+    // Set account name
+    chrome.storage.sync.get(["currId", "accounts"]).then((result) => {
+      const id = result["currId"];
+      const accountObj = JSON.parse(result["accounts"]);
+      const name = accountObj[id]["name"];
+      setAccountName(name);
+    });
+  }, [currId, pda]);
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <header className={styles.header}>
-          <Link href={`/`} passHref>
-            <div className={`${styles.top} ${styles.logo}`}>SolMate</div>
-          </Link>
+        {!router.pathname.startsWith("/accounts") && (
+          <header className={styles.header}>
+            <Button
+              shape="round"
+              icon={<UserOutlined />}
+              onClick={handleAccountSwitch}
+              size="middle"
+              style={{ marginLeft: "10px" }}
+            >
+              {accountName}
+            </Button>
 
-          <Menu
-            mode="horizontal"
-            className={styles.nav}
-            selectedKeys={[router.pathname]}
-          >
-            <Dropdown className={styles.top} overlay={menu} disabled={!account}>
-              <a
-                className="ant-dropdown-link"
-                onClick={(e) => e.preventDefault()}
-              >
-                {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
-              </a>
-            </Dropdown>
-
-            {account && (
+            <Menu
+              mode="horizontal"
+              className={styles.nav}
+              selectedKeys={[router.pathname]}
+            >
               <Dropdown
                 className={styles.top}
-                overlay={settingMenu}
+                overlay={menu}
                 disabled={!account}
-                placement="bottomRight"
               >
                 <a
                   className="ant-dropdown-link"
                   onClick={(e) => e.preventDefault()}
                 >
-                  <SettingOutlined />
+                  {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
                 </a>
               </Dropdown>
-            )}
-          </Menu>
-        </header>
+
+              {account && (
+                <Dropdown
+                  className={styles.top}
+                  overlay={settingMenu}
+                  disabled={!account}
+                  placement="bottomRight"
+                >
+                  <a
+                    className="ant-dropdown-link"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <SettingOutlined />
+                  </a>
+                </Dropdown>
+              )}
+            </Menu>
+          </header>
+        )}
 
         {children}
 
@@ -155,22 +187,23 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
         {/* <Divider style={{ marginTop: "3rem" }} /> */}
 
-        {!router.pathname.startsWith("/adapter") && (
-          <footer className={styles.footerHome}>
-            <Menu
-              theme="dark"
-              mode="horizontal"
-              items={footerItems}
-              onClick={handleMenuClick}
-              style={{
-                backgroundColor: "rgb(34, 34, 34)",
-                alignItems: "center",
-                height: "60px",
-              }}
-              selectable={false}
-            />
-          </footer>
-        )}
+        {!router.pathname.startsWith("/adapter") &&
+          router.pathname != "/accounts/onboard" && (
+            <footer className={styles.footerHome}>
+              <Menu
+                theme="dark"
+                mode="horizontal"
+                items={footerItems}
+                onClick={handleMenuClick}
+                style={{
+                  backgroundColor: "rgb(34, 34, 34)",
+                  alignItems: "center",
+                  height: "60px",
+                }}
+                selectable={false}
+              />
+            </footer>
+          )}
       </main>
     </div>
   );

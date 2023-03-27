@@ -75,14 +75,12 @@ export const Question = styled.p`
 
 export const Box = styled.div`
   text-align: center;
-  max-width: 800px;
-  width: 100%;
+  width: 90%;
   padding-top: 0.7rem;
   padding: 10px;
   color: #fff;
   font-weight: 600;
-  border: 1px solid #ddd;
-  background-color: rgb(34, 34, 34);
+  background-color: rgb(42, 42, 42);
   border-radius: 4px;
   transition: color 0.15s ease, border-color 0.15s ease,
     background-color 0.15s ease;

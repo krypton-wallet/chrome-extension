@@ -1,6 +1,4 @@
-import {
-  Keypair,
-} from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 
 const responseHandlers = new Map();
@@ -40,7 +38,7 @@ const launchPopup = async (message, sender, sendResponse) => {
   chrome.windows.getLastFocused(async (focusedWindow) => {
     await chrome.storage.sync.set({ searchParams: searchParams });
     const popup = await chrome.windows.create({
-      url: "adapter/" + message.data.method +".html",
+      url: "adapter/" + message.data.method + ".html",
       type: "popup",
       width: 450,
       height: 650,
@@ -49,13 +47,13 @@ const launchPopup = async (message, sender, sendResponse) => {
       focused: true,
     });
 
-    const listener = windowId => {
+    const listener = (windowId) => {
       if (windowId === popup.id) {
         const responseHandler = responseHandlers.get(message.data.id);
         if (responseHandler) {
           responseHandlers.delete(message.data.id);
           responseHandler({
-            error: 'Operation cancelled',
+            error: "Operation cancelled",
             id: message.data.id,
           });
         }

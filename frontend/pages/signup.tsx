@@ -82,12 +82,34 @@ const Signup: NextPage = () => {
     setPDA(profile_pda[0]);
 
     const connection = new Connection("https://api.devnet.solana.com/");
+    const secretKey = base58.encode(feePayer.secretKey);
+    const publicKey = feePayer.publicKey.toBase58();
+    var count = 0;
 
-    chrome.storage.sync
-      .set({ sk: base58.encode(feePayer.secretKey) })
-      .then(() => {
-        console.log("Value is set to " + base58.encode(feePayer.secretKey));
-      });
+    //chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}" });
+
+    chrome.storage.sync.get("counter", (res) => {
+      count = res["counter"];
+    });
+
+    chrome.storage.sync.get("accounts", (res) => {
+      var accountRes = res["accounts"];
+      if (accountRes != null) {
+        var old = JSON.parse(accountRes);
+        old[count] = {
+          name: "Account " + count.toString(),
+          sk: secretKey,
+          pk: publicKey,
+          pda: profile_pda[0].toBase58()
+        };
+        var values = JSON.stringify(old);
+        chrome.storage.sync.set({ accounts: values, counter: count + 1, currId: count });
+      } else {
+        return false;
+      }
+    });
+
+    chrome.storage.sync.set({ sk: base58.encode(feePayer.secretKey) });
 
     console.log("pk: ", feePayer.publicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());

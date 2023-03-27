@@ -18,6 +18,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
   const [recoverPk, setRecoverPk] = useState<PublicKey | null>(null);
   const [tokens, setTokens] = useState<Array<[PublicKey, bigint, number]>>([]);
+  const [currId, setCurrId] = useState<number | null>(1);
 
   return (
     <GlobalContext.Provider
@@ -40,6 +41,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         setRecoverPk,
         tokens,
         setTokens,
+        currId,
+        setCurrId
       }}
     >
       <Layout>

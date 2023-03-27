@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { List, Avatar } from "antd";
-import { useGlobalState } from "../context";
+import { useGlobalState } from "../../context";
 import {
   clusterApiUrl,
   Connection,
@@ -9,7 +9,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { displayAddress } from "../utils";
+import { displayAddress } from "../../utils";
 import { useRouter } from "next/router";
 
 const NFT: NextPage = () => {
@@ -49,12 +49,9 @@ const NFT: NextPage = () => {
         const mintData = await connection.getTokenSupply(mint);
         const decimals = mintData.value.decimals;
 
-        console.log(`Token Account: ${oldTokenAccount.toBase58()}`);
-        console.log(`mint: ${mint}`);
-        console.log(`amount: ${amount}`);
-        console.log(`decimals: ${decimals}`);
         tokens_tmp.push([mint, amount, decimals]);
         if (decimals == 0 && Number(amount) != 0) {
+          console.log(`mint: ${mint}`);
           nfts_tmp.push([mint, amount, decimals]);
         }
       }
