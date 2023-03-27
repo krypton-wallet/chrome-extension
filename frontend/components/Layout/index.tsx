@@ -115,80 +115,76 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
   useEffect(() => {
     // Set account name
-    chrome.storage.sync.get(["currId", "accounts"]).then((result) => {
-      const id = result["currId"];
-      const accountObj = JSON.parse(result["accounts"]);
-      const name = accountObj[id]["name"];
-      setAccountName(name);
-    });
+    if (router.pathname != "/" && router.pathname != "/signup") {
+      chrome.storage.sync.get(["currId", "accounts"]).then((result) => {
+        const id = result["currId"];
+        const accountObj = JSON.parse(result["accounts"]);
+        const name = accountObj[id]["name"];
+        setAccountName(name);
+      });
+    }
   }, [currId, pda]);
 
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        {!router.pathname.startsWith("/accounts") && (
-          <header className={styles.header}>
-            <Button
-              shape="round"
-              icon={<UserOutlined />}
-              onClick={handleAccountSwitch}
-              size="middle"
-              style={{ marginLeft: "10px" }}
-            >
-              {accountName}
-            </Button>
-
-            <Menu
-              mode="horizontal"
-              className={styles.nav}
-              selectedKeys={[router.pathname]}
-            >
-              <Dropdown
-                className={styles.top}
-                overlay={menu}
-                disabled={!account}
+        {!router.pathname.startsWith("/accounts") &&
+          router.pathname != "/" &&
+          router.pathname != "/signup" && (
+            <header className={styles.header}>
+              <Button
+                shape="round"
+                icon={<UserOutlined />}
+                onClick={handleAccountSwitch}
+                size="middle"
+                style={{ marginLeft: "10px" }}
               >
-                <a
-                  className="ant-dropdown-link"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
-                </a>
-              </Dropdown>
+                {accountName}
+              </Button>
 
-              {account && (
+              <Menu
+                mode="horizontal"
+                className={styles.nav}
+                selectedKeys={[router.pathname]}
+              >
                 <Dropdown
                   className={styles.top}
-                  overlay={settingMenu}
+                  overlay={menu}
                   disabled={!account}
-                  placement="bottomRight"
                 >
                   <a
                     className="ant-dropdown-link"
                     onClick={(e) => e.preventDefault()}
                   >
-                    <SettingOutlined />
+                    {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
                   </a>
                 </Dropdown>
-              )}
-            </Menu>
-          </header>
-        )}
+
+                {account && (
+                  <Dropdown
+                    className={styles.top}
+                    overlay={settingMenu}
+                    disabled={!account}
+                    placement="bottomRight"
+                  >
+                    <a
+                      className="ant-dropdown-link"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <SettingOutlined />
+                    </a>
+                  </Dropdown>
+                )}
+              </Menu>
+            </header>
+          )}
 
         {children}
 
-        {/* {router.pathname !== "/" && (
-          <Link href="/" passHref>
-            <a className={styles.back}>
-              <ArrowLeftOutlined /> Back Home
-            </a>
-          </Link>
-        )} */}
-
-        {/* <Divider style={{ marginTop: "3rem" }} /> */}
-
         {!router.pathname.startsWith("/adapter") &&
-          router.pathname != "/accounts/onboard" && (
+          router.pathname != "/accounts/onboard" &&
+          router.pathname != "/" &&
+          router.pathname != "/signup" && (
             <footer className={styles.footerHome}>
               <Menu
                 theme="dark"

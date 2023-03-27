@@ -168,12 +168,12 @@ const Wallet: NextPage = () => {
             style={{
               marginLeft: "30px",
               marginRight: "30px",
-              marginTop: "30px",
+              marginTop: "23px",
               width: "77%",
               padding: "0.2rem 0.7rem",
               backgroundColor: "rgb(42, 42, 42)",
               overflowY: 'auto',
-              maxHeight: '260px'
+              maxHeight: '275px'
             }}
           >
             <List

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import CreateAccount from "../components/CreateAccount";
@@ -11,17 +11,17 @@ import bs58 from "bs58";
 const Home: NextPage = () => {
   const router = useRouter();
   const { walletProgramId, account, setAccount, setPDA } = useGlobalState();
+  const [visible, setVisible] = useState<boolean>(false);
 
   useEffect(() => {
     chrome.storage.sync.get(["sk"]).then(async (result) => {
       if (result.sk == undefined) {
-        router.push("/");
+        chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}" });
+        setVisible(true);
         return;
       }
-      //console.log("Value currently is " + result.sk);
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
       setAccount(currKeypair);
-      //console.log("account: ", account?.publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
@@ -30,7 +30,7 @@ const Home: NextPage = () => {
         walletProgramId
       );
       setPDA(profile_pda[0]);
-      //console.log("PDA: ", profile_pda[0].toBase58());
+      router.push("/wallet");
     });
   }, []);
 
@@ -46,26 +46,32 @@ const Home: NextPage = () => {
         />
         <link rel="icon" href="/solmate_logo.ico" />
       </Head>
-      <HomeTitle>
-        a{" "}
-        <a href="https://solana.com/" className="gradient-text">
-          Solana
-        </a>{" "}
-        smart contract wallet with multisig social recovery
-      </HomeTitle>
-
-      <HomeGrid>
-        <CreateAccount />
-      </HomeGrid>
+      {!visible && (
+        <div style={{ minWidth: "600px", minHeight: "500px" }}></div>
+      )}
+      {visible && (
+        <>
+          <HomeTitle>
+            a{" "}
+            <a href="https://solana.com/" className="gradient-text">
+              Solana
+            </a>{" "}
+            smart contract wallet with multisig social recovery
+          </HomeTitle>
+          <HomeGrid>
+            <CreateAccount />
+          </HomeGrid>
+        </>
+      )}
     </>
   );
 };
 
 const HomeTitle = styled.h1`
   padding: 0 3rem;
-  margin: 1.5rem 1rem;
+  margin: 1.7rem 1rem;
   line-height: 1.25;
-  font-size: 1.45rem;
+  font-size: 1.7rem;
   font-weight: normal;
   text-align: center;
   color: #fff;
@@ -88,6 +94,7 @@ const HomeGrid = styled.div`
   flex-wrap: wrap;
   max-width: 2000px;
   width: 100%;
+  height: 100%;
 `;
 
 export default Home;

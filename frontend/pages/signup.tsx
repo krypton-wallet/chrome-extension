@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Select } from "antd";
 import { useGlobalState } from "../context";
-import { LoadingOutlined } from "@ant-design/icons";
+import { LoadingOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 
 import {
@@ -35,23 +35,10 @@ import {
 } from "@solana/spl-token";
 import base58 from "bs58";
 import { refreshBalance } from "../utils";
+import Link from "next/link";
+import styles from "../components/Layout/index.module.css";
 
 const BN = require("bn.js");
-
-const mintAuthority_sk = new Uint8Array([
-  241, 145, 177, 126, 244, 190, 248, 188, 151, 50, 224, 196, 43, 153, 22, 94,
-  67, 183, 97, 245, 201, 103, 103, 109, 45, 164, 181, 109, 138, 152, 137, 101,
-  163, 141, 201, 165, 214, 152, 171, 237, 175, 1, 228, 183, 81, 244, 27, 10,
-  157, 38, 80, 90, 173, 131, 130, 132, 188, 250, 138, 16, 12, 217, 109, 213,
-]);
-
-// const customMint = new PublicKey(
-//   "9mMtr7Rx8ajjpRbHmUzb5gjgBLqNtPABdkNiUBAkTrmR"
-// );
-const customMint = new Keypair().publicKey;
-
-const SOL_MINT = "So11111111111111111111111111111111111111112";
-const sol_pk = new PublicKey(SOL_MINT);
 
 const Signup: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -71,7 +58,6 @@ const Signup: NextPage = () => {
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
     const feePayer = new Keypair();
-    //const feePayer = Keypair.fromSecretKey(feePayer_sk);
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), feePayer.publicKey.toBuffer()],
       walletProgramId
@@ -85,8 +71,6 @@ const Signup: NextPage = () => {
     const secretKey = base58.encode(feePayer.secretKey);
     const publicKey = feePayer.publicKey.toBase58();
     var count = 0;
-
-    //chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}" });
 
     chrome.storage.sync.get("counter", (res) => {
       count = res["counter"];
@@ -184,6 +168,8 @@ const Signup: NextPage = () => {
     // console.log(
     //   "token account created: " + senderTokenAccount.address.toBase58() + "\n"
     // );
+
+    console.log(profile_pda)
 
     console.log("Getting associated token address...");
     const associatedToken = await getAssociatedTokenAddress(
@@ -436,6 +422,11 @@ const Signup: NextPage = () => {
               </Button>
             )}
           </Form.Item>
+          <Link href="/" passHref>
+            <a className={styles.back}>
+              <ArrowLeftOutlined /> Back Home
+            </a>
+          </Link>
         </StyledForm>
       )}
 
