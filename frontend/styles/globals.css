@@ -133,6 +133,7 @@ p {
   width: 100%;
   padding: 0.2rem 0.7rem;
   background-color: rgb(42, 42, 42);
+  overflow: auto;
 }
 
 .ant-list-item {
@@ -268,3 +269,26 @@ input:-webkit-autofill:active{
 .ant-typography-edit-content, .ant-typography-div {
   margin-left: 63px;
 }
+
+
+/* ===== Scrollbar CSS ===== */
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #b3b3b3 #1a1a1a;
+  }
+
+  /* Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #b3b3b3;
+    border-radius: 10px;
+    border: 3px solid #bababa;
+  }
