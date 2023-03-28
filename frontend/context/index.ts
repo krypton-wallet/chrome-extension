@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from "react";
 import { Keypair, Cluster, PublicKey } from "@solana/web3.js";
+import { PgpCardInfo } from "bloss-js";
 
 export type GlobalContextType = {
   network: Cluster | undefined;
@@ -22,6 +23,8 @@ export type GlobalContextType = {
   setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint, number]>>>;
   currId: number | null;
   setCurrId: React.Dispatch<React.SetStateAction<number | null>>;
+  yubikeyInfo: PgpCardInfo | null;
+  setYubikeyInfo: React.Dispatch<React.SetStateAction<PgpCardInfo | null>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -45,6 +48,8 @@ export const GlobalContext = createContext<GlobalContextType>({
   setTokens: () => null,
   currId: 1,
   setCurrId: () => null,
+  yubikeyInfo: null,
+  setYubikeyInfo: () => null,
 });
 
 export const useGlobalState = () => useContext(GlobalContext);

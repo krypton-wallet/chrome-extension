@@ -5,7 +5,8 @@
     "manifest_version": 3,
     "permissions": [
       "storage",
-      "scripting"
+      "scripting",
+      "nativeMessaging"
     ],
     "action": {
       "default_title": "SolMate app",

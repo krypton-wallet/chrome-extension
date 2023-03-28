@@ -1,65 +1,60 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { List, Avatar, Button } from "antd";
+import { List } from "antd";
 import {
-  WalletOutlined,
-  NodeCollapseOutlined,
   KeyOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import styles from "../../../components/Layout/index.module.css";
 import Link from "next/link";
+import { listCards, PgpCardInfo } from "bloss-js"
+import bs58 from "bs58";
+import { displayAddress } from "../../../utils";
+import { useGlobalState } from "../../../context";
 
 const YubikeyOnboard: NextPage = () => {
   const router = useRouter();
+  const [keyInfos, setKeyInfos] = useState<PgpCardInfo[]>([]);
+  const { setYubikeyInfo } = useGlobalState();
+
+  const keyItems = keyInfos.map(info => {
+    return <List.Item
+      key={info.aid}
+      onClick={() => {
+        setYubikeyInfo(info);
+        router.push("/accounts/yubikey/signup");
+      }}
+      style={{ marginBottom: "20px" }}
+    >
+      <List.Item.Meta
+        avatar={
+          <KeyOutlined style={{ fontSize: "25px", color: "#fff" }} />
+        }
+        title={`${info.manufacturer} Card (no. ${info.serialNumber})`}
+        description={displayAddress(bs58.encode(info.pubkeyBytes))}
+      />
+    </List.Item>
+  });
+
+  useEffect(() => {
+    listCards().then((cards: PgpCardInfo[]) => {
+        setKeyInfos(cards);
+    }).catch((e) => {
+        alert(e)
+    });
+  }, []);
 
   return (
     <>
       <h1 className={"title"}>Select a YubiKey</h1>
       <div className={"tokenlist"} style={{ margin: "13px 0" }}>
         <List style={{ margin: "10px 0" }}>
-          <List.Item
-            key="standard"
-            onClick={() => {
-              router.push("/signup");
-            }}
-            style={{ marginBottom: "20px" }}
-          >
-            <List.Item.Meta
-              avatar={
-                <WalletOutlined style={{ fontSize: "25px", color: "#fff" }} />
-              }
-              title="Standard Account"
-              description={"Create a new SolMate wallet"}
-            />
-          </List.Item>
-
-          <List.Item key="yubikey" style={{ marginBottom: "20px" }}>
-            <List.Item.Meta
-              avatar={
-                <KeyOutlined style={{ fontSize: "25px", color: "#fff" }} />
-              }
-              title="Yubikey"
-              description={"Connect to your Yubikey wallet"}
-            />
-          </List.Item>
-
-          <List.Item key="ledger">
-            <List.Item.Meta
-              avatar={
-                <NodeCollapseOutlined
-                  style={{ fontSize: "25px", color: "#fff" }}
-                />
-              }
-              title="Ledger Account"
-              description={"Connect to your Ledger Wallet"}
-            />
-          </List.Item>
+          {keyItems}
         </List>
       </div>
 
-      <Link href="/accounts" passHref>
+      <Link href="/accounts/onboard" passHref>
         <a
           className={styles.back}
           style={{ position: "absolute", bottom: "60px", fontSize: "17px" }}
