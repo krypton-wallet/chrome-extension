@@ -10,6 +10,11 @@ import bs58 from "bs58";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import Link from "next/link";
 import styles from "../../../components/Layout/index.module.css";
+import { Transaction } from "@solana/web3.js";
+
+const sendAndConfirmTransaction = (transaction: Transaction, aid: string): string => {
+    return ""
+}
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
