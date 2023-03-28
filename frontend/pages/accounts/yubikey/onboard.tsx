@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NextPage } from "next";
 import { List, Avatar, Button } from "antd";
-import { useGlobalState } from "../../context";
 import {
   WalletOutlined,
   NodeCollapseOutlined,
@@ -9,15 +8,15 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/router";
-import styles from "../../components/Layout/index.module.css";
+import styles from "../../../components/Layout/index.module.css";
 import Link from "next/link";
 
-const Onboard: NextPage = () => {
+const YubikeyOnboard: NextPage = () => {
   const router = useRouter();
 
   return (
     <>
-      <h1 className={"title"}>Add a new account</h1>
+      <h1 className={"title"}>Select a YubiKey</h1>
       <div className={"tokenlist"} style={{ margin: "13px 0" }}>
         <List style={{ margin: "10px 0" }}>
           <List.Item
@@ -36,12 +35,7 @@ const Onboard: NextPage = () => {
             />
           </List.Item>
 
-          <List.Item
-            key="yubikey"
-            onClick={() => {
-              router.push("/accounts/yubikey/onboard");
-            }}
-            style={{ marginBottom: "20px" }}>
+          <List.Item key="yubikey" style={{ marginBottom: "20px" }}>
             <List.Item.Meta
               avatar={
                 <KeyOutlined style={{ fontSize: "25px", color: "#fff" }} />
@@ -77,4 +71,4 @@ const Onboard: NextPage = () => {
   );
 };
 
-export default Onboard;
+export default YubikeyOnboard;
