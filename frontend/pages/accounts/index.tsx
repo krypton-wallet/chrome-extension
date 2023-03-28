@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { List, Avatar, Button } from "antd";
+import { List, Avatar, Button, Skeleton, Empty } from "antd";
 import { useGlobalState } from "../../context";
 import {
   UserAddOutlined,
@@ -81,7 +81,9 @@ const AccountList: NextPage = () => {
       <div className={"tokenlist"}>
         <List
           dataSource={accounts}
-          loading={spinning}
+          locale={{
+            emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+          }}
           renderItem={(item) => (
             <List.Item
               key={item[2]}

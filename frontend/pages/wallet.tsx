@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Button, Tooltip, Drawer, Typography, List, Avatar } from "antd";
+import { Button, Tooltip, Drawer, Typography, List, Avatar, Skeleton, Empty } from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
 import TransactionLayout from "../components/TransactionLayout";
@@ -178,7 +178,9 @@ const Wallet: NextPage = () => {
           >
             <List
               dataSource={fungibleTokens}
-              loading={spinning}
+              locale={{
+                emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+              }}
               renderItem={(item) => (
                 <List.Item
                   key={item[0].toBase58()}

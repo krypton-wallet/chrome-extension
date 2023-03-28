@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { List, Avatar } from "antd";
+import { List, Avatar, Skeleton, Empty } from "antd";
 import { useGlobalState } from "../../context";
 import {
   clusterApiUrl,
@@ -68,7 +68,9 @@ const NFT: NextPage = () => {
       <div className={"tokenlist"}>
         <List
           dataSource={nfts}
-          loading={spinning}
+          locale={{
+            emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+          }}
           renderItem={(item) => (
             <List.Item
               key={item[0].toBase58()}
