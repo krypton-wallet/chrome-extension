@@ -51,6 +51,11 @@ p {
   background-color: rgb(42, 42, 42);
 }
 
+.ant-btn-primary:active, .ant-btn-primary:focus {
+  background-color: #415bf5;
+  border-color: transparent;
+}
+
 .ant-btn:hover {
   color: #fff;
   border-color: #fff;
@@ -63,6 +68,10 @@ p {
 
 .more-button:hover {
   background-color: rgb(34, 34, 34);
+}
+
+.edit-btn:hover, .edit-btn:focus {
+  background-color: #ff4d4f;
 }
 
 /* dropdown */
@@ -270,6 +279,14 @@ input:-webkit-autofill:active{
   margin-left: 63px;
 }
 
+/* switch */
+.ant-switch-disabled {
+  opacity: 1;
+}
+
+.ant-switch-checked {
+  background-color: #415bf5;
+}
 
 /* ===== Scrollbar CSS ===== */
   /* Firefox */

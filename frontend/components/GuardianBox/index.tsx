@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect, useState } from "react";
+import React, { ReactElement, useState } from "react";
 import { Button, Typography } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -11,26 +11,25 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import { useGlobalState } from "../../context";
+import { displayAddress } from "../../utils";
 
 const BN = require("bn.js");
 
 const { Paragraph } = Typography;
 
-const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
-  const {
-    setAccount,
-    mnemonic,
-    setMnemonic,
-    setGuardians,
-    guardians,
-    walletProgramId,
-    pda,
-    account,
-  } = useGlobalState();
+const GuardianBox = ({
+  guardian,
+  editMode,
+}: {
+  guardian: PublicKey;
+  editMode: boolean;
+}): ReactElement => {
+  const { setGuardians, guardians, walletProgramId, pda, account } =
+    useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
 
   const onDelete = async () => {
-    setLoading(true)
+    setLoading(true);
     const connection = new Connection("https://api.devnet.solana.com/");
     const defaultpk = PublicKey.default;
 
@@ -84,17 +83,36 @@ const GuardianBox = ({ guardian }: { guardian: PublicKey }): ReactElement => {
     setLoading(false);
   };
 
-  //   useEffect(() => {
-  //     console.log("rerendered cuz guardians changed: ", guardians)
-  //   }, [guardians])
-
   return (
-    <Box>
-      <Paragraph>{guardian.toBase58()}</Paragraph>
-      {!loading && <Button type="primary" onClick={onDelete} danger>
-        Delete
-      </Button>}
-      {loading && <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />}
+    <Box
+      style={{
+        display: "flex",
+        width: "350px",
+        justifyContent: "center",
+        marginTop: "10px",
+      }}
+    >
+      <Paragraph copyable={{ text: guardian.toBase58(), tooltips: `Copy` }}>
+        {displayAddress(guardian.toBase58())}
+      </Paragraph>
+
+      {!loading && editMode && (
+        <Button
+          style={{ marginLeft: "140px" }}
+          type="primary"
+          onClick={onDelete}
+          danger
+        >
+          Delete
+        </Button>
+      )}
+
+      {loading && editMode && (
+        <LoadingOutlined
+          style={{ fontSize: 24, color: "#fff", marginLeft: "190px" }}
+          spin
+        />
+      )}
     </Box>
   );
 };

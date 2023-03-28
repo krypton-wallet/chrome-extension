@@ -1,9 +1,8 @@
-import React, { ReactElement, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Button, Alert, Popconfirm, Modal, Form, Input, Radio } from "antd";
-import PhraseBox from "../components/UrlBox";
+import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
 import { useGlobalState } from "../context";
-import { LoadingOutlined } from "@ant-design/icons";
+import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 
 // Import Bip39 to generate a phrase and convert it to a seed:
@@ -19,45 +18,18 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import GuardianBox from "../components/GuardianBox";
-import { createGlobalStyle } from "styled-components";
-import form from "antd/lib/form";
 import base58 from "bs58";
-// Import the Keypair class from Solana's web3.js library:
+import { containsPk } from "../utils";
 
 const BN = require("bn.js");
 
-const guard1_sk = new Uint8Array([
-  219, 192, 245, 18, 33, 148, 209, 236, 79, 88, 130, 250, 118, 164, 109, 172,
-  44, 165, 195, 136, 163, 187, 142, 184, 86, 208, 221, 3, 162, 127, 89, 82, 164,
-  161, 91, 84, 42, 199, 40, 204, 137, 172, 179, 152, 212, 17, 58, 31, 149, 133,
-  67, 96, 23, 111, 83, 3, 119, 19, 37, 234, 163, 216, 53, 177,
-]);
-
-const guard2_sk = new Uint8Array([
-  16, 5, 214, 175, 105, 238, 18, 14, 125, 4, 242, 215, 158, 179, 200, 230, 230,
-  16, 36, 227, 200, 142, 130, 53, 235, 159, 100, 69, 177, 36, 239, 113, 42, 210,
-  117, 85, 113, 159, 206, 119, 128, 70, 103, 49, 182, 66, 56, 157, 83, 23, 35,
-  230, 206, 33, 216, 246, 225, 4, 210, 157, 161, 122, 142, 66,
-]);
-
-const guard3_sk = new Uint8Array([
-  94, 98, 75, 17, 140, 107, 60, 66, 202, 114, 237, 8, 118, 129, 7, 68, 173, 6,
-  106, 131, 118, 72, 208, 174, 113, 231, 127, 154, 50, 191, 223, 209, 194, 4,
-  95, 55, 179, 216, 90, 90, 229, 27, 131, 112, 116, 110, 129, 176, 218, 139,
-  146, 221, 75, 148, 197, 54, 113, 159, 226, 239, 52, 43, 19, 81,
-]);
-
-const feePayer_sk = new Uint8Array([
-  106, 239, 158, 103, 197, 210, 91, 64, 112, 50, 190, 210, 69, 58, 113, 130,
-  168, 199, 156, 103, 186, 170, 85, 248, 149, 123, 203, 109, 98, 129, 140, 45,
-  131, 193, 148, 111, 29, 124, 161, 112, 165, 212, 174, 108, 106, 188, 96, 114,
-  158, 16, 122, 70, 49, 145, 128, 123, 155, 213, 214, 67, 186, 75, 46, 174,
-]);
-
 const Guardian: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [visible, setVisible] = useState<boolean>(false);
-  const { setGuardians, guardians, walletProgramId, pda, account, setPDA } = useGlobalState();
+  const [isPkValid, setIsPkValid] = useState<boolean>(false);
+  const [editmode, setEditmode] = useState<boolean>(false);
+  const [thres, setThres] = useState<number>(0);
+  const { setGuardians, guardians, walletProgramId, pda, account, setPDA } =
+    useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
@@ -67,17 +39,21 @@ const Guardian: NextPage = () => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", account?.publicKey.toBase58())
+      console.log("account: ", account?.publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
-        [Buffer.from("profile", "utf-8"), account?.publicKey.toBuffer() ?? new Buffer("")],
+        [
+          Buffer.from("profile", "utf-8"),
+          account?.publicKey.toBuffer() ?? new Buffer(""),
+        ],
         walletProgramId
       );
       setPDA(profile_pda[0]);
-      console.log("PDA: ", profile_pda[0].toBase58())
+      console.log("PDA: ", profile_pda[0].toBase58());
       const pda_account = await connection.getAccountInfo(
         profile_pda[0] ?? PublicKey.default
       );
       const pda_data = pda_account?.data ?? new Buffer("");
+      const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
       const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
@@ -89,7 +65,8 @@ const Guardian: NextPage = () => {
         console.log(`guard ${i + 1}: `, guard.toBase58());
         guardians_tmp.push(guard);
       }
-      setGuardians(guardians_tmp)
+      setThres(threshold);
+      setGuardians(guardians_tmp);
     };
     getGuardians();
   }, []);
@@ -101,10 +78,10 @@ const Guardian: NextPage = () => {
   };
 
   const onFinish = async (values: any) => {
-    console.log("=====ADDING GUARDIAN======")
+    console.log("=====ADDING GUARDIAN======");
     console.log("Values received:", values);
     setLoading(true);
-    form.resetFields()
+    form.resetFields();
 
     // Instr Add
     console.log("Adding guardian for account " + account?.publicKey + "...");
@@ -155,10 +132,12 @@ const Guardian: NextPage = () => {
     setLoading(false);
     setIsModalOpen(false);
     setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
+    form.resetFields();
   };
 
   const handleModalCancel = () => {
     setIsModalOpen(false);
+    form.resetFields();
   };
 
   const handleOk = () => {
@@ -166,19 +145,84 @@ const Guardian: NextPage = () => {
     form.submit();
   };
 
+  const toggleEditmode = () => {
+    setEditmode(!editmode);
+  };
+
   return (
     <>
-      <h1 className={"title"}>Guardians</h1>
-      <div>
+      <h1 className={"title"} style={{ marginBottom: "7px", marginTop: "10px" }}>
+        Guardians
+      </h1>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <p style={{ marginRight: "10px" }}>Guardian Protection: </p>
+        <Switch
+          checkedChildren="on"
+          unCheckedChildren="off"
+          disabled={true}
+          checked={guardians.length >= thres}
+        />
+      </div>
+
+      <div style={{ overflow: "auto", height: "250px" }}>
         {guardians?.map((g) => {
-          console.log(g);
-          return <GuardianBox key={g.toBase58()} guardian={g}></GuardianBox>;
+          return (
+            <GuardianBox
+              key={g.toBase58()}
+              guardian={g}
+              editMode={editmode}
+            ></GuardianBox>
+          );
         })}
       </div>
 
-      <Button type="primary" onClick={showModal}>
+      {guardians.length < thres && (
+        <Alert
+          message={`Need ${
+            thres - guardians.length
+          } more guardian(s) to activate recovery feature`}
+          type="warning"
+          style={{ width: "85%", position: "absolute", bottom: "120px" }}
+          showIcon
+        />
+      )}
+
+      <Button
+        type="primary"
+        icon={<UserAddOutlined />}
+        onClick={showModal}
+        size="middle"
+        style={{ position: "absolute", bottom: "120px", width: "85%" }}
+      >
         Add New Guardian
       </Button>
+
+      {!editmode && (
+        <Button
+          icon={<EditOutlined />}
+          onClick={toggleEditmode}
+          size="middle"
+          style={{ position: "absolute", bottom: "70px", width: "85%" }}
+          className="edit-btn"
+          danger
+        >
+          Edit Guardian List
+        </Button>
+      )}
+
+      {editmode && (
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
+          onClick={toggleEditmode}
+          size="middle"
+          style={{ position: "absolute", bottom: "70px", width: "85%" }}
+          danger
+          className="edit-btn"
+        >
+          Finish Edit
+        </Button>
+      )}
 
       <Modal
         title="Add New Guardian"
@@ -186,6 +230,7 @@ const Guardian: NextPage = () => {
         onOk={handleOk}
         onCancel={handleModalCancel}
         confirmLoading={loading}
+        okButtonProps={{ disabled: !isPkValid }}
       >
         {!loading && (
           <Form
@@ -200,14 +245,24 @@ const Guardian: NextPage = () => {
               label="Guardian Public Key"
               rules={[
                 {
-                  required: true,
-                  message: "Please input the public key of guardian",
-                },
-                {
-                  validator(_, value) {
-                    if(PublicKey.isOnCurve(value)){
+                  async validator(_, value) {
+                    if (containsPk(value, guardians)) {
+                      setIsPkValid(false);
+                      return Promise.reject(
+                        new Error("Duplicate guardian key")
+                      );
+                    }
+
+                    const connection = new Connection(clusterApiUrl("devnet"));
+                    const pda_account = await connection.getAccountInfo(
+                      new PublicKey(value)
+                    );
+                    console.log("checking if PDA is valid: ", pda_account);
+                    if (PublicKey.isOnCurve(value) || pda_account != null) {
+                      setIsPkValid(true);
                       return Promise.resolve();
                     }
+                    setIsPkValid(false);
                     return Promise.reject(new Error("Invalid public key"));
                   },
                 },
@@ -227,26 +282,6 @@ const Guardian: NextPage = () => {
           </Form>
         )}
       </Modal>
-
-      {/* <PhraseBox guardian={guardians[0].publicKey.toBase58()}></PhraseBox> */}
-
-      {/* {!loading && (
-        <Popconfirm
-          title="Do you confirm your signup"
-          visible={visible}
-          onConfirm={handleOk}
-          okButtonProps={{ loading: loading }}
-          onCancel={handleCancel}
-          cancelText={"No"}
-          okText={"Yes"}
-        >
-          <Button type="primary" onClick={showPopconfirm}>
-            Finish
-          </Button>
-        </Popconfirm>
-      )} */}
-
-      {/* {loading && <LoadingOutlined style={{ fontSize: 24 }} spin />} */}
     </>
   );
 };

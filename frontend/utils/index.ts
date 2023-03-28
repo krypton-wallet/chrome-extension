@@ -60,4 +60,16 @@ function isNumber(value: string | number): boolean
 const displayAddress = (address: string) =>
     `${address.slice(0, 4)}...${address.slice(-4)}`;
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress };
+function containsPk(obj: string, list: Array<PublicKey>) {
+  var i;
+  for (i = 0; i < list.length; i++) {
+    console.log("list item: ", list[i].toBase58())
+    console.log("obj: ", obj)
+      if (list[i].toBase58() == obj) {
+          return true;
+      }
+  }
+  return false;
+}
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk };
