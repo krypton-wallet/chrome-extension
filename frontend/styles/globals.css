@@ -288,6 +288,11 @@ input:-webkit-autofill:active{
   background-color: #415bf5;
 }
 
+/* alert */
+.ant-alert-message {
+  font-size: 12px;
+}
+
 /* ===== Scrollbar CSS ===== */
   /* Firefox */
   * {

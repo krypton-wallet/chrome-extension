@@ -151,7 +151,7 @@ const Guardian: NextPage = () => {
 
   return (
     <>
-      <h1 className={"title"} style={{ marginBottom: "7px", marginTop: "10px" }}>
+      <h1 className={"title"} style={{ marginBottom: "10px" }}>
         Guardians
       </h1>
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -182,47 +182,49 @@ const Guardian: NextPage = () => {
             thres - guardians.length
           } more guardian(s) to activate recovery feature`}
           type="warning"
-          style={{ width: "85%", position: "absolute", bottom: "120px" }}
+          style={{ width: "85%", position: "absolute", bottom: "95px" }}
           showIcon
         />
       )}
 
-      <Button
-        type="primary"
-        icon={<UserAddOutlined />}
-        onClick={showModal}
-        size="middle"
-        style={{ position: "absolute", bottom: "120px", width: "85%" }}
-      >
-        Add New Guardian
-      </Button>
-
-      {!editmode && (
-        <Button
-          icon={<EditOutlined />}
-          onClick={toggleEditmode}
-          size="middle"
-          style={{ position: "absolute", bottom: "70px", width: "85%" }}
-          className="edit-btn"
-          danger
-        >
-          Edit Guardian List
-        </Button>
-      )}
-
-      {editmode && (
+      <div style={{ display: "flex", position: "absolute", bottom: "90px" }}>
         <Button
           type="primary"
-          icon={<EditOutlined />}
-          onClick={toggleEditmode}
+          icon={<UserAddOutlined />}
+          onClick={showModal}
           size="middle"
-          style={{ position: "absolute", bottom: "70px", width: "85%" }}
-          danger
-          className="edit-btn"
+          style={{ width: "168px", marginRight: "20px" }}
         >
-          Finish Edit
+          Add
         </Button>
-      )}
+
+        {!editmode && (
+          <Button
+            icon={<EditOutlined />}
+            onClick={toggleEditmode}
+            size="middle"
+            style={{ width: "168px" }}
+            className="edit-btn"
+            danger
+          >
+            Edit
+          </Button>
+        )}
+
+        {editmode && (
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={toggleEditmode}
+            size="middle"
+            style={{ width: "168px" }}
+            danger
+            className="edit-btn"
+          >
+            Finish
+          </Button>
+        )}
+      </div>
 
       <Modal
         title="Add New Guardian"
