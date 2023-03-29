@@ -10,8 +10,6 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
@@ -19,7 +17,8 @@ import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-import { isNumber } from "../utils";
+import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
+import { KeypairSigner } from "../types/account";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,16 +45,21 @@ const Transfer: NextPage = () => {
     const idx = Buffer.from(new Uint8Array([7]));
     console.log("amt: ", amount);
     console.log("pda: ", pda?.toBase58());
-    console.log("account: ", account?.publicKey.toBase58());
+    console.log("account: ", (await account!.getPublicKey()).toBase58());
     const amountBuf = Buffer.from(
       new Uint8Array(new BN(amount).toArray("le", 8))
     );
     //console.log("amt bn: ", new BN(amount))
     const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
-    const transferSOLTx = new Transaction();
+
+    const recentBlockhash = await connection.getLatestBlockhash();
+    const transferSOLTx = new Transaction({
+      feePayer: await account!.getPublicKey(),
+      ...recentBlockhash,
+    });
     let newaccount = account;
     if (!newaccount) {
-      newaccount = new Keypair();
+      newaccount = new KeypairSigner(new Keypair());
     }
     transferSOLTx.add(
       new TransactionInstruction({
@@ -71,7 +75,7 @@ const Transfer: NextPage = () => {
             isWritable: true,
           },
           {
-            pubkey: account?.publicKey ?? PublicKey.default,
+            pubkey: await account!.getPublicKey(),
             isSigner: true,
             isWritable: true,
           },
@@ -80,10 +84,9 @@ const Transfer: NextPage = () => {
         data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
       })
     );
-    transferSOLTx.feePayer = newaccount.publicKey;
 
     console.log("Transfering native SOL...");
-    let transfer_sol_txid = await sendAndConfirmTransaction(
+    let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferSOLTx,
       [newaccount],

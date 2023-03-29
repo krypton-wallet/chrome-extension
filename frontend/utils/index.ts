@@ -1,4 +1,4 @@
-import { Cluster, clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
+import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
 import { message } from "antd";
 import bs58 from "bs58";
 import { Signer } from "../types/account";
@@ -83,18 +83,22 @@ const sendAndConfirmTransactionWithAccount = async (
   connection: Connection,
   transaction: Transaction,
   signers: Signer[],
+  options?: ConfirmOptions &
+      Readonly<{
+        abortSignal?: AbortSignal;
+      }>,
 ) => {
   const transactionBuffer = transaction.serializeMessage();
   
-  signers.forEach(async (signer) => {
-  const signature = await signer.signMessage(transactionBuffer);
-  transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
-  })
+  for(const signer of signers) {
+    const signature = await signer.signMessage(transactionBuffer);
+    transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+  }
   const finalSignature = bs58.encode(new Uint8Array(transaction.signature!));
 
   // TODO: Add assert or other error checking for this
   const isVerifiedSignature = transaction.verifySignatures();
-  console.log(`The signatures were verifed: ${isVerifiedSignature}`);
+  console.log(`The signatures were verified: ${isVerifiedSignature}`);
 
   const rawTransaction = transaction.serialize();
   const latestBlockHash = await connection.getLatestBlockhash();
@@ -102,7 +106,7 @@ const sendAndConfirmTransactionWithAccount = async (
     blockhash: latestBlockHash.blockhash,
     lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
     signature: finalSignature,
-  });
+  }, options);
 
   if (txid != finalSignature) {
     console.log("SOMETHING WRONG: TXID != SIGNATURE!!!!!!!!!!!");
@@ -113,4 +117,10 @@ const sendAndConfirmTransactionWithAccount = async (
   return txid;
 }
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount };
+const partialSign = async (tx: Transaction, signer: Signer) => {
+  const transactionBuffer = tx.serializeMessage();
+  const signature = await signer.signMessage(transactionBuffer);
+  tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+}
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign };

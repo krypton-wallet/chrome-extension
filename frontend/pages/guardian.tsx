@@ -5,21 +5,16 @@ import { useGlobalState } from "../context";
 import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 
-// Import Bip39 to generate a phrase and convert it to a seed:
-import * as Bip39 from "bip39";
 import {
   clusterApiUrl,
   Connection,
-  Keypair,
   PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
 import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
-import { containsPk } from "../utils";
+import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 
 const BN = require("bn.js");
 
@@ -39,11 +34,11 @@ const Guardian: NextPage = () => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", account?.publicKey.toBase58());
+      console.log("account: ", (await account!.getPublicKey()).toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
-          account?.publicKey.toBuffer() ?? new Buffer(""),
+          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
         ],
         walletProgramId
       );
@@ -84,7 +79,10 @@ const Guardian: NextPage = () => {
     form.resetFields();
 
     // Instr Add
-    console.log("Adding guardian for account " + account?.publicKey + "...");
+    const publicKey = await account!.getPublicKey();
+    console.log(
+      "Adding guardian for account " + publicKey + "..."
+    );
     const connection = new Connection("https://api.devnet.solana.com/");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(
@@ -100,7 +98,7 @@ const Guardian: NextPage = () => {
           isWritable: true,
         },
         {
-          pubkey: account?.publicKey ?? defaultpk,
+          pubkey: publicKey,
           isSigner: true,
           isWritable: true,
         },
@@ -114,13 +112,16 @@ const Guardian: NextPage = () => {
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
-    const tx = new Transaction({ ...latestBlockhash });
+    const tx = new Transaction({
+      feePayer: publicKey,
+      ...latestBlockhash,
+    });
     tx.add(addToRecoveryListIx);
 
-    const txid = await sendAndConfirmTransaction(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
-      [account ?? new Keypair()],
+      [account!],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",

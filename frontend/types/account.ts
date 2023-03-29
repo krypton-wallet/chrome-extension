@@ -1,4 +1,4 @@
-import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { getPubkey, signMessage } from "bloss-js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";

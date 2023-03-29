@@ -21,6 +21,7 @@ import {
 import bs58 from "bs58";
 import Link from "next/link";
 import styles from "../../components/Layout/index.module.css";
+import { KeypairSigner } from "../../types/account";
 
 const AccountList: NextPage = () => {
   const {
@@ -105,7 +106,7 @@ const AccountList: NextPage = () => {
                   const currKeypair = Keypair.fromSecretKey(
                     bs58.decode(secretKey)
                   );
-                  setAccount(currKeypair);
+                  setAccount(new KeypairSigner(currKeypair));
                   const profile_pda = PublicKey.findProgramAddressSync(
                     [
                       Buffer.from("profile", "utf-8"),

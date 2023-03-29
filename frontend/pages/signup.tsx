@@ -10,7 +10,6 @@ import {
   Keypair,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
-  sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
   TransactionInstruction,
@@ -34,9 +33,10 @@ import {
   setAuthority,
 } from "@solana/spl-token";
 import base58 from "bs58";
-import { refreshBalance } from "../utils";
+import { refreshBalance, sendAndConfirmTransactionWithAccount } from "../utils";
 import Link from "next/link";
 import styles from "../components/Layout/index.module.css";
+import { KeypairSigner } from "../types/account";
 
 const BN = require("bn.js");
 
@@ -64,7 +64,7 @@ const Signup: NextPage = () => {
     );
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
-    setAccount(feePayer);
+    setAccount(new KeypairSigner(feePayer));
     setPDA(profile_pda[0]);
 
     const connection = new Connection("https://api.devnet.solana.com/");
@@ -134,10 +134,14 @@ const Signup: NextPage = () => {
     });
 
     console.log("Initializing social wallet...");
-    let tx = new Transaction();
+    const recentBlockhash = await connection.getLatestBlockhash();
+    let tx = new Transaction({
+      feePayer: feePayer.publicKey,
+      ...recentBlockhash,
+    });
     tx.add(initializeSocialWalletIx);
 
-    let txid = await sendAndConfirmTransaction(connection, tx, [feePayer], {
+    let txid = await sendAndConfirmTransactionWithAccount(connection, tx, [new KeypairSigner(feePayer)], {
       skipPreflight: true,
       preflightCommitment: "confirmed",
       commitment: "confirmed",
@@ -180,7 +184,12 @@ const Signup: NextPage = () => {
     );
 
     console.log("Creating token account for mint...");
-    const createTA_tx = new Transaction().add(
+    const recentBlockhash1 = await connection.getLatestBlockhash();
+    const createTA_tx = new Transaction({
+      feePayer: feePayer.publicKey,
+      ...recentBlockhash1,
+    });
+    createTA_tx.add(
       createAssociatedTokenAccountInstruction(
         feePayer.publicKey,
         associatedToken,
@@ -190,7 +199,7 @@ const Signup: NextPage = () => {
       )
     );
 
-    await sendAndConfirmTransaction(connection, createTA_tx, [feePayer], {
+    await sendAndConfirmTransactionWithAccount(connection, createTA_tx, [new KeypairSigner(feePayer)], {
       skipPreflight: true,
       preflightCommitment: "confirmed",
       commitment: "confirmed",
@@ -248,7 +257,12 @@ const Signup: NextPage = () => {
     );
 
     console.log("Creating token account for NFT...");
-    const createNFT_TA_tx = new Transaction().add(
+    const recentBlockhash2 = await connection.getLatestBlockhash();
+    const createNFT_TA_tx = new Transaction({
+      feePayer: feePayer.publicKey,
+      ...recentBlockhash2,
+    });
+    createNFT_TA_tx.add(
       createAssociatedTokenAccountInstruction(
         feePayer.publicKey,
         associatedNFTToken,
@@ -258,7 +272,7 @@ const Signup: NextPage = () => {
       )
     );
 
-    await sendAndConfirmTransaction(connection, createNFT_TA_tx, [feePayer], {
+    await sendAndConfirmTransactionWithAccount(connection, createNFT_TA_tx, [new KeypairSigner(feePayer)], {
       skipPreflight: true,
       preflightCommitment: "confirmed",
       commitment: "confirmed",
@@ -368,7 +382,7 @@ const Signup: NextPage = () => {
     //   `Sender Token Account Balance: ${senderTokenAccountBalance.value.amount}\n`
     // );
 
-    refreshBalance(network, feePayer)
+    refreshBalance(network, new KeypairSigner(feePayer))
       .then((updatedBalance) => {
         console.log("updated balance: ", updatedBalance);
         setBalance(updatedBalance);
