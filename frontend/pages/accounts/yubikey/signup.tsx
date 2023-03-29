@@ -5,73 +5,13 @@ import { useRouter, withRouter } from "next/router";
 import React, { useEffect } from "react";
 import { useGlobalState } from "../../../context";
 import { KeyOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { displayAddress } from "../../../utils";
+import { displayAddress, sendAndConfirmTransactionWithAccount } from "../../../utils";
 import bs58 from "bs58";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import Link from "next/link";
 import styles from "../../../components/Layout/index.module.css";
 import { Connection, PublicKey, sendAndConfirmRawTransaction, SystemProgram, Transaction } from "@solana/web3.js";
-
-// interface Signer {
-//     pk(): PublicKey;
-//     signMessage(msg: Buffer): string;
-// }
-
-
-
-// THIS IS THE SKETCH OF THE sendAndConfirmTransaction WRAPPER THAT HANDLES ALL ACCOUNT TYPES
-
-// const SACTBAW = async (connection: Connection, transaction: Transaction, account: Signer) => {
-//     const transactionBuffer = transaction.serializeMessage();
-//     const signature = await account.signMessage(
-//         transactionBuffer
-//     );
-//     transaction.addSignature(account.pk(), Buffer.from(signature));
-
-//     // TODO: Add assert or other error checking for this
-//     const isVerifiedSignature = transaction.verifySignatures();
-//     console.log(`The signatures were verifed: ${isVerifiedSignature}`);
-
-//     const rawTransaction = transaction.serialize();
-//     const latestBlockHash = await connection.getLatestBlockhash();
-//     return await sendAndConfirmRawTransaction(connection, rawTransaction, {
-//             blockhash: latestBlockHash.blockhash,
-//             lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-//             signature: bs58.encode(signature),
-//     });
-// }
-
-
-// Example of yubikey version of sendAndConfirmTransaction
-// Needs some cleaning up tho
-const signTransactionWithYubikeyAndSendAndConfirmThatShit = async (
-    connection: Connection,
-    transaction: Transaction,
-    aid: string,
-    pin: string,
-    touchCallback: (aid: string) => void,
-): Promise<string> => {
-    const transactionBuffer = transaction.serializeMessage();
-    const signature = await signMessage(
-        aid,
-        new Uint8Array(transactionBuffer),
-        new TextEncoder().encode(pin),
-        touchCallback,
-    );
-    transaction.addSignature(new PublicKey(await getPubkey(aid)), Buffer.from(signature));
-
-    // TODO: Add assert or other error checking for this
-    const isVerifiedSignature = transaction.verifySignatures();
-    console.log(`The signatures were verifed: ${isVerifiedSignature}`);
-
-    const rawTransaction = transaction.serialize();
-    const latestBlockHash = await connection.getLatestBlockhash();
-    return await sendAndConfirmRawTransaction(connection, rawTransaction, {
-            blockhash: latestBlockHash.blockhash,
-            lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-            signature: bs58.encode(signature),
-    });
-}
+import { YubikeySigner } from "../../../types/account";
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
@@ -146,12 +86,10 @@ const YubikeySignup: NextPage = () => {
             })
         );
 
-        const sig = await signTransactionWithYubikeyAndSendAndConfirmThatShit(
+        const sig = await sendAndConfirmTransactionWithAccount(
             connection,
             transaction,
-            bigYubi,
-            "123456",
-            (aid: string) => console.log(`Awaiting touch on ${aid}`),
+            new YubikeySigner(bigYubi),
         );
 
         return sig;
