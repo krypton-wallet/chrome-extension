@@ -36,7 +36,12 @@ const Onboard: NextPage = () => {
             />
           </List.Item>
 
-          <List.Item key="yubikey" style={{ marginBottom: "20px" }}>
+          <List.Item
+            key="yubikey"
+            onClick={() => {
+              router.push("/accounts/yubikey/onboard");
+            }}
+            style={{ marginBottom: "20px" }}>
             <List.Item.Meta
               avatar={
                 <KeyOutlined style={{ fontSize: "25px", color: "#fff" }} />

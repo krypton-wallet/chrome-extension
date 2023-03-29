@@ -4,14 +4,15 @@ import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
   Connection,
-  Keypair,
   PublicKey,
-  sendAndConfirmTransaction,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
 import { useGlobalState } from "../../context";
-import { displayAddress } from "../../utils";
+import {
+  displayAddress,
+  sendAndConfirmTransactionWithAccount,
+} from "../../utils";
 
 const BN = require("bn.js");
 
@@ -46,7 +47,7 @@ const GuardianBox = ({
           isWritable: true,
         },
         {
-          pubkey: account?.publicKey ?? defaultpk,
+          pubkey: await account!.getPublicKey(),
           isSigner: true,
           isWritable: true,
         },
@@ -60,13 +61,17 @@ const GuardianBox = ({
       data: Buffer.concat([idx3, new_acct_len]),
     });
 
-    const tx = new Transaction();
+    const recentBlockhash = await connection.getLatestBlockhash();
+    const tx = new Transaction({
+      feePayer: await account!.getPublicKey(),
+      ...recentBlockhash,
+    });
     tx.add(deleteFromRecoveryIx);
 
-    const txid = await sendAndConfirmTransaction(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
-      [account ?? new Keypair()],
+      [account!],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",

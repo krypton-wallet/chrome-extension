@@ -7,11 +7,7 @@ import { StyledForm } from "../../../styles/StyledComponents.styles";
 import styles from "../../../components/Layout/index.module.css";
 import {
   Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
@@ -30,7 +26,10 @@ import { useGlobalState } from "../../../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-import { displayAddress, isNumber } from "../../../utils";
+import {
+  displayAddress,
+  sendAndConfirmTransactionWithAccount,
+} from "../../../utils";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -59,6 +58,7 @@ const Send: NextPage = () => {
     setLoading(true);
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
+    const feePayerPk = await account!.getPublicKey();
     let amount = 1;
 
     console.log("Getting src token account...");
@@ -88,9 +88,14 @@ const Send: NextPage = () => {
     console.log(destTAInfo);
     if (!destTAInfo) {
       console.log("Creating token account for mint...");
-      const createTA_tx = new Transaction().add(
+      const recentBlockhash = await connection.getLatestBlockhash();
+      const createTA_tx = new Transaction({
+        feePayer: feePayerPk,
+        ...recentBlockhash,
+      });
+      createTA_tx.add(
         createAssociatedTokenAccountInstruction(
-          account?.publicKey ?? PublicKey.default,
+          await account!.getPublicKey(),
           associatedToken,
           dest_pda,
           mint_pk,
@@ -98,10 +103,10 @@ const Send: NextPage = () => {
         )
       );
 
-      await sendAndConfirmTransaction(
+      await sendAndConfirmTransactionWithAccount(
         connection,
         createTA_tx,
-        [account ?? new Keypair()],
+        [account!],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -120,7 +125,12 @@ const Send: NextPage = () => {
     console.log(`New Token Account: ${destTokenAccount.address.toBase58()}`);
 
     /* TRANSACTION: Transfer Token */
-    let transferTokenTx = new Transaction();
+    const recentBlockhash = await connection.getLatestBlockhash();
+    const transferTokenTx = new Transaction({
+      feePayer: feePayerPk,
+      ...recentBlockhash,
+    });
+
     const idx2 = Buffer.from(new Uint8Array([6]));
     const amountBuf = Buffer.from(
       new Uint8Array(new BN(Number(amount)).toArray("le", 8))
@@ -134,12 +144,12 @@ const Send: NextPage = () => {
           isWritable: true,
         },
         {
-          pubkey: account?.publicKey ?? PublicKey.default,
+          pubkey: feePayerPk,
           isSigner: false,
           isWritable: true,
         },
         {
-          pubkey: account?.publicKey ?? PublicKey.default,
+          pubkey: feePayerPk,
           isSigner: true,
           isWritable: true,
         },
@@ -166,10 +176,10 @@ const Send: NextPage = () => {
     transferTokenTx.add(transferAndCloseIx);
 
     console.log("Transfering token...");
-    let txid = await sendAndConfirmTransaction(
+    let txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferTokenTx,
-      [account ?? new Keypair()],
+      [account!],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
