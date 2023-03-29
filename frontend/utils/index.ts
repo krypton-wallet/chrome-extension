@@ -8,13 +8,13 @@ const programId = new PublicKey(
 );
 
 // implement a function that gets an account's balance
-const refreshBalance = async (network: Cluster | undefined, account: Keypair | null) => {
+const refreshBalance = async (network: Cluster | undefined, account: Signer | null) => {
   // This line ensures the function returns before running if no account has been set
   if (!account) return 0;
 
   try {
     const connection = new Connection(clusterApiUrl(network), "confirmed");
-    const publicKey = account.publicKey;
+    const publicKey = await account.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
       programId
@@ -30,13 +30,13 @@ const refreshBalance = async (network: Cluster | undefined, account: Keypair | n
 };
 
 // implement a function that airdrops SOL into devnet account
-const handleAirdrop = async (network: Cluster, account: Keypair | null) => {
+const handleAirdrop = async (network: Cluster, account: Signer | null) => {
   // This line ensures the function returns before running if no account has been set
   if (!account) return;
 
   try {
     const connection = new Connection(clusterApiUrl(network), "confirmed");
-    const publicKey = account.publicKey;
+    const publicKey = await account.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
       programId
@@ -82,12 +82,15 @@ function containsPk(obj: string, list: Array<PublicKey>) {
 const sendAndConfirmTransactionWithAccount = async (
   connection: Connection,
   transaction: Transaction,
-  signer: Signer,
+  signers: Signer[],
 ) => {
   const transactionBuffer = transaction.serializeMessage();
   
+  signers.forEach(async (signer) => {
   const signature = await signer.signMessage(transactionBuffer);
   transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+  })
+  const finalSignature = bs58.encode(new Uint8Array(transaction.signature!));
 
   // TODO: Add assert or other error checking for this
   const isVerifiedSignature = transaction.verifySignatures();
@@ -98,13 +101,13 @@ const sendAndConfirmTransactionWithAccount = async (
   const txid = await sendAndConfirmRawTransaction(connection, rawTransaction, {
     blockhash: latestBlockHash.blockhash,
     lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-    signature: bs58.encode(signature),
+    signature: finalSignature,
   });
 
-  if (txid != bs58.encode(signature)) {
+  if (txid != finalSignature) {
     console.log("SOMETHING WRONG: TXID != SIGNATURE!!!!!!!!!!!");
     console.log(txid);
-    console.log(bs58.encode(signature));
+    console.log(finalSignature);
   }
 
   return txid;
