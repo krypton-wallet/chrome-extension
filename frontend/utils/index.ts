@@ -1,5 +1,7 @@
-import { Cluster, clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Cluster, clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
 import { message } from "antd";
+import bs58 from "bs58";
+import { Signer } from "../types/account";
 
 const programId = new PublicKey(
   "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
@@ -72,4 +74,40 @@ function containsPk(obj: string, list: Array<PublicKey>) {
   return false;
 }
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk };
+/*
+ * Sign transaction with the given account.
+ * Also use that account as the fee payer.
+ * Then send and confirm the signed transaction.
+ */
+const sendAndConfirmTransactionWithAccount = async (
+  connection: Connection,
+  transaction: Transaction,
+  signer: Signer,
+) => {
+  const transactionBuffer = transaction.serializeMessage();
+  
+  const signature = await signer.signMessage(transactionBuffer);
+  transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+
+  // TODO: Add assert or other error checking for this
+  const isVerifiedSignature = transaction.verifySignatures();
+  console.log(`The signatures were verifed: ${isVerifiedSignature}`);
+
+  const rawTransaction = transaction.serialize();
+  const latestBlockHash = await connection.getLatestBlockhash();
+  const txid = await sendAndConfirmRawTransaction(connection, rawTransaction, {
+    blockhash: latestBlockHash.blockhash,
+    lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    signature: bs58.encode(signature),
+  });
+
+  if (txid != bs58.encode(signature)) {
+    console.log("SOMETHING WRONG: TXID != SIGNATURE!!!!!!!!!!!");
+    console.log(txid);
+    console.log(bs58.encode(signature));
+  }
+
+  return txid;
+}
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount };

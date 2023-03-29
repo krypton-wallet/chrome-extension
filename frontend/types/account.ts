@@ -1,5 +1,5 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { signMessage } from "bloss-js";
+import { Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
+import { getPubkey, signMessage } from "bloss-js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
 
@@ -9,13 +9,16 @@ interface Signer {
 }
 
 export class KeypairSigner implements Signer {
-    keypair: Keypair;
+    private keypair: Keypair;
+
     constructor(keypair: Keypair) {
         this.keypair = keypair;
     }
+
     async getPublicKey(): Promise<PublicKey> {
         return this.keypair.publicKey;
     }
+
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
       const secretKey = this.keypair.secretKey;
       const sig = nacl.sign.detached(message, secretKey);
@@ -24,19 +27,26 @@ export class KeypairSigner implements Signer {
 }
 
 export class YubikeySigner implements Signer {
-    aid: string;
+    private aid: string;
+
     constructor(aid: string) {
         this.aid = aid;
     }
+
     async getPublicKey(): Promise<PublicKey> {
-        return PublicKey.default;
+        return new PublicKey(await getPubkey(this.aid));
     }
+
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
-        const pin = new Uint8Array([]);
-        const sig = await signMessage(this.aid, message, pin, () => {console.log('touched')})
+        // TODO: Replace this with a popup that collects pin from user.
+        const pin = new TextEncoder().encode("123456");
+    
+        // TODO: Replace this with a popup that prompts the user to touch yubikey.
+        const touchCallback = () => console.log(`Awaiting touch on key ${this.aid}`);
+
+        const sig = await signMessage(this.aid, message, pin, touchCallback);
         return sig;
     }
 }
-
 
 export type {Signer}
