@@ -1,8 +1,8 @@
 import { Button, Form, List, Select, Table } from "antd";
-import { PgpCardInfo } from "bloss-js";
+import { getPubkey, PgpCardInfo, signMessage } from "bloss-js";
 import { NextPage } from "next";
 import { useRouter, withRouter } from "next/router";
-import React from "react";
+import React, { useEffect } from "react";
 import { useGlobalState } from "../../../context";
 import { KeyOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { displayAddress } from "../../../utils";
@@ -10,10 +10,67 @@ import bs58 from "bs58";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import Link from "next/link";
 import styles from "../../../components/Layout/index.module.css";
-import { Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, sendAndConfirmRawTransaction, SystemProgram, Transaction } from "@solana/web3.js";
 
-const sendAndConfirmTransaction = (transaction: Transaction, aid: string): string => {
-    return ""
+// interface Signer {
+//     pk(): PublicKey;
+//     signMessage(msg: Buffer): string;
+// }
+
+
+
+// THIS IS THE SKETCH OF THE sendAndConfirmTransaction WRAPPER THAT HANDLES ALL ACCOUNT TYPES
+
+// const SACTBAW = async (connection: Connection, transaction: Transaction, account: Signer) => {
+//     const transactionBuffer = transaction.serializeMessage();
+//     const signature = await account.signMessage(
+//         transactionBuffer
+//     );
+//     transaction.addSignature(account.pk(), Buffer.from(signature));
+
+//     // TODO: Add assert or other error checking for this
+//     const isVerifiedSignature = transaction.verifySignatures();
+//     console.log(`The signatures were verifed: ${isVerifiedSignature}`);
+
+//     const rawTransaction = transaction.serialize();
+//     const latestBlockHash = await connection.getLatestBlockhash();
+//     return await sendAndConfirmRawTransaction(connection, rawTransaction, {
+//             blockhash: latestBlockHash.blockhash,
+//             lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+//             signature: bs58.encode(signature),
+//     });
+// }
+
+
+// Example of yubikey version of sendAndConfirmTransaction
+// Needs some cleaning up tho
+const signTransactionWithYubikeyAndSendAndConfirmThatShit = async (
+    connection: Connection,
+    transaction: Transaction,
+    aid: string,
+    pin: string,
+    touchCallback: (aid: string) => void,
+): Promise<string> => {
+    const transactionBuffer = transaction.serializeMessage();
+    const signature = await signMessage(
+        aid,
+        new Uint8Array(transactionBuffer),
+        new TextEncoder().encode(pin),
+        touchCallback,
+    );
+    transaction.addSignature(new PublicKey(await getPubkey(aid)), Buffer.from(signature));
+
+    // TODO: Add assert or other error checking for this
+    const isVerifiedSignature = transaction.verifySignatures();
+    console.log(`The signatures were verifed: ${isVerifiedSignature}`);
+
+    const rawTransaction = transaction.serialize();
+    const latestBlockHash = await connection.getLatestBlockhash();
+    return await sendAndConfirmRawTransaction(connection, rawTransaction, {
+            blockhash: latestBlockHash.blockhash,
+            lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+            signature: bs58.encode(signature),
+    });
 }
 
 const YubikeySignup: NextPage = () => {
@@ -62,6 +119,46 @@ const YubikeySignup: NextPage = () => {
   const handleChange = () => {
     console.log("Changed");
   }
+
+  // Demo code that runs once component is loaded.
+  // Transfer SOL from big yubi to small yubi using yubikey version of sendAndConfirmTransaction.
+  useEffect(() => {
+    const bigYubi = "D2760001240103040006205304730000";
+    const smallYubi = "D2760001240103040006223637020000";
+
+    const demo = async () => {
+        const from = new PublicKey(await getPubkey(bigYubi));
+        const to = new PublicKey(await getPubkey(smallYubi));
+
+        const connection = new Connection("https://api.devnet.solana.com/");
+
+        const recentBlockhash = await connection.getLatestBlockhash();
+        let transaction = new Transaction(
+            {
+                recentBlockhash: recentBlockhash.blockhash,
+                feePayer: from,
+            }
+        ).add(
+            SystemProgram.transfer({
+                fromPubkey: from,
+                toPubkey: to,
+                lamports: 1000,
+            })
+        );
+
+        const sig = await signTransactionWithYubikeyAndSendAndConfirmThatShit(
+            connection,
+            transaction,
+            bigYubi,
+            "123456",
+            (aid: string) => console.log(`Awaiting touch on ${aid}`),
+        );
+
+        return sig;
+    }
+
+    demo().then(sig => console.log(`SIGNATURE: ${sig}`));
+  }, []);
 
   return <>
     <h1 className={"title"}>Initialize YubiKey Wallet</h1>
