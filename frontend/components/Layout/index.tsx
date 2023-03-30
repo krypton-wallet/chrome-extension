@@ -1,4 +1,12 @@
-import { Badge, Dropdown, Menu, Divider, MenuProps, Button } from "antd";
+import {
+  Badge,
+  Dropdown,
+  Menu,
+  Divider,
+  MenuProps,
+  Button,
+  Avatar,
+} from "antd";
 import React, {
   BaseSyntheticEvent,
   ReactElement,
@@ -22,8 +30,8 @@ import Link from "next/link";
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
-import { Cluster } from "@solana/web3.js";
-
+import { Cluster, Connection, PublicKey } from "@solana/web3.js";
+import { getAvatar } from "../../utils/avatar";
 type DomEvent = {
   domEvent: BaseSyntheticEvent;
   key: string;
@@ -31,8 +39,17 @@ type DomEvent = {
 };
 
 const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
-  const { network, setNetwork, account, setAccount, setBalance, currId, pda } =
-    useGlobalState();
+  const {
+    network,
+    setNetwork,
+    account,
+    setAccount,
+    setBalance,
+    currId,
+    pda,
+    avatar,
+    setAvatar,
+  } = useGlobalState();
   const [accountName, setAccountName] = useState<string>("");
 
   const router = useRouter();
@@ -105,7 +122,29 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
   const settingMenu = (
     <Menu>
-      <Menu.Item key="/account" icon={<UserOutlined />}>
+      <Menu.Item key="/account">
+        {avatar ? (
+          <Avatar
+            src={avatar}
+            size="small"
+            shape="circle"
+            style={{
+              marginRight: "0.25rem",
+              fontSize: "16px",
+            }}
+            onError={() => {
+              console.log("error");
+              return false;
+            }}
+          />
+        ) : (
+          <UserOutlined
+            style={{
+              marginRight: "0.25rem",
+              fontSize: "16px",
+            }}
+          />
+        )}
         <Link href="/account" passHref>
           Account
         </Link>
@@ -125,6 +164,26 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     }
   }, [currId, pda]);
 
+  useEffect(() => {
+    chrome.storage.sync.get(["currId", "accounts"]).then(async (res) => {
+      const id = res["currId"];
+      const accountObj = JSON.parse(res["accounts"]);
+      if (accountObj[id]["avatar"]) {
+        const connection = new Connection("https://api.devnet.solana.com/");
+        const avatarData = await getAvatar(
+          connection,
+          new PublicKey(accountObj[id].avatar)
+        );
+        const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+          "base64"
+        )}`;
+        setAvatar(avatarSVG);
+      } else {
+        setAvatar(undefined);
+      }
+    });
+  }, [setAvatar]);
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
@@ -134,11 +193,32 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
             <header className={styles.header}>
               <Button
                 shape="round"
-                icon={<UserOutlined />}
                 onClick={handleAccountSwitch}
                 size="middle"
-                style={{ marginLeft: "10px" }}
+                style={{ marginLeft: "10px", paddingLeft: "1rem" }}
               >
+                {avatar ? (
+                  <Avatar
+                    src={avatar}
+                    size="small"
+                    shape="circle"
+                    style={{
+                      marginRight: "0.25rem",
+                      fontSize: "16px",
+                    }}
+                    onError={() => {
+                      console.log("error");
+                      return false;
+                    }}
+                  />
+                ) : (
+                  <UserOutlined
+                    style={{
+                      marginRight: "0.25rem",
+                      fontSize: "16px",
+                    }}
+                  />
+                )}
                 {accountName}
               </Button>
 

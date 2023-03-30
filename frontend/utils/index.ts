@@ -1,7 +1,11 @@
-import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
+import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, sendAndConfirmTransaction, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { message } from "antd";
+import BN from "bn.js";
 import bs58 from "bs58";
 import { Signer } from "../types/account";
+import { generateAvatar } from "./avatar";
+import { AVATAR_PROGRAM_ID, DATA_PROGRAM_ID, PDA_SEED } from "./avatar/constants";
+import { svgPKs } from "./avatar/svg-pubkeys";
 
 const programId = new PublicKey(
   "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
@@ -123,4 +127,4 @@ const partialSign = async (tx: Transaction, signer: Signer) => {
   tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
 }
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign };
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign, generateAvatar };

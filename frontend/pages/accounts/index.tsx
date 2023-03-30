@@ -22,6 +22,7 @@ import bs58 from "bs58";
 import Link from "next/link";
 import styles from "../../components/Layout/index.module.css";
 import { KeypairSigner } from "../../types/account";
+import { getAvatar } from "../../utils/avatar";
 
 const AccountList: NextPage = () => {
   const {
@@ -36,21 +37,36 @@ const AccountList: NextPage = () => {
     setTokens,
     currId,
     setCurrId,
+    setAvatar,
   } = useGlobalState();
 
-  const [accounts, setAccounts] = useState<Array<[number, string, string]>>([]);
+  const [accounts, setAccounts] = useState<
+    Array<[number, string, string, string?]>
+  >([]);
   const [spinning, setSpinning] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
     // Fetching all accounts from chrome storage
-    chrome.storage.sync.get("accounts").then((result) => {
+    chrome.storage.sync.get("accounts").then(async (result) => {
       const accountObj = JSON.parse(result["accounts"]);
-      let accountTmp: Array<[number, string, string]> = [];
+      let accountTmp: Array<[number, string, string, string?]> = [];
       for (var id in accountObj) {
         const name = accountObj[id].name;
         const pda = accountObj[id].pda;
-        accountTmp.push([Number(id), name, pda]);
+        if (accountObj[id].avatar) {
+          const connection = new Connection("https://api.devnet.solana.com/");
+          const avatarData = await getAvatar(
+            connection,
+            new PublicKey(accountObj[id].avatar)
+          );
+          const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+            "base64"
+          )}`;
+          accountTmp.push([Number(id), name, pda, avatarSVG]);
+        } else {
+          accountTmp.push([Number(id), name, pda]);
+        }
       }
       setAccounts(accountTmp);
       setSpinning(false);
@@ -83,7 +99,7 @@ const AccountList: NextPage = () => {
         <List
           dataSource={accounts}
           locale={{
-            emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+            emptyText: spinning ? <Skeleton active={true} /> : <Empty />,
           }}
           renderItem={(item) => (
             <List.Item
@@ -97,6 +113,11 @@ const AccountList: NextPage = () => {
                 //   query: { id: item[2] },
                 // });
                 setCurrId(id);
+                if (item.length > 3) {
+                  setAvatar(item[3]);
+                } else {
+                  setAvatar(undefined);
+                }
 
                 chrome.storage.sync.get(["accounts"]).then(async (result) => {
                   const accountObj = JSON.parse(result["accounts"]);
@@ -128,7 +149,13 @@ const AccountList: NextPage = () => {
               }}
             >
               <List.Item.Meta
-                avatar={<Avatar src={"/static/images/profile.png"} />}
+                avatar={
+                  <Avatar
+                    src={
+                      item.length > 3 ? item[3] : "/static/images/profile.png"
+                    }
+                  />
+                }
                 title={item[1]}
                 description={displayAddress(item[2])}
               />
