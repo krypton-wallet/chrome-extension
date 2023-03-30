@@ -97,47 +97,47 @@ const YubikeySignup: NextPage = () => {
         })
       );
 
-        const sig = await sendAndConfirmTransactionWithAccount(
-            connection,
-            transaction,
+      const sig = await sendAndConfirmTransactionWithAccount(
+        connection,
+        transaction,
 
-            /// Example of initializing YubikeySigner with callbacks that open
-            /// global modals to collect pin from user and prompt for touch
-            /// confirmation. Uses the functions provided in useGlobalModalContext()
-            /// to control global modals.
-            [new YubikeySigner(
-                bigYubi,
-                () => {
-                    const promise = new Promise<string>((resolve, reject) => {
-                        showModal(
-                            <PinentryModal
-                                title={"Please unlock your YubiKey"}
-                                description={`Enter PIN for YubiKey ${bigYubi}`}
-                                onSubmitPin={(pin: string) => {
-                                    hideModal();
-                                    resolve(pin);
-                                }}
-                                onCancel={() => {
-                                    hideModal();
-                                    reject("User cancelled");
-                                }}
-                            ></PinentryModal>
-                        );
-                    })
-                    return promise;
-                },
-                () => {
-                    showModal(
-                        <TouchConfirmModal
-                            onCancel={() => {
-                                hideModal();
-                                console.log("User cancelled touch");
-                            }}
-                        ></TouchConfirmModal>);
-                },
-                hideModal,
-            )],
-        );
+        /// Example of initializing YubikeySigner with callbacks that open
+        /// global modals to collect pin from user and prompt for touch
+        /// confirmation. Uses the functions provided in useGlobalModalContext()
+        /// to control global modals.
+        [new YubikeySigner(
+          bigYubi,
+          () => {
+            const promise = new Promise<string>((resolve, reject) => {
+              showModal(
+                <PinentryModal
+                  title={"Please unlock your YubiKey"}
+                  description={`Enter PIN for YubiKey ${bigYubi}`}
+                  onSubmitPin={(pin: string) => {
+                    hideModal();
+                    resolve(pin);
+                  }}
+                  onCancel={() => {
+                    hideModal();
+                    reject("User cancelled");
+                  }}
+                ></PinentryModal>
+              );
+            })
+            return promise;
+          },
+          () => {
+            showModal(
+              <TouchConfirmModal
+                onCancel={() => {
+                  hideModal();
+                  console.log("User cancelled touch");
+                }}
+              ></TouchConfirmModal>);
+          },
+          hideModal,
+        )],
+      );
 
       return sig;
     };
