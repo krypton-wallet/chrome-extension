@@ -84,16 +84,20 @@ const Signup: NextPage = () => {
           name: "Account " + count.toString(),
           sk: secretKey,
           pk: publicKey,
-          pda: profile_pda[0].toBase58()
+          pda: profile_pda[0].toBase58(),
         };
         var values = JSON.stringify(old);
-        chrome.storage.sync.set({ accounts: values, counter: count + 1, currId: count });
+        chrome.storage.sync.set({
+          accounts: values,
+          counter: count + 1,
+          currId: count,
+        });
       } else {
         return false;
       }
     });
 
-    chrome.storage.sync.set({ sk: base58.encode(feePayer.secretKey) });
+    chrome.storage.sync.set({ pk: feePayer.publicKey.toBase58(), mode: 0 });
 
     console.log("pk: ", feePayer.publicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
@@ -141,11 +145,16 @@ const Signup: NextPage = () => {
     });
     tx.add(initializeSocialWalletIx);
 
-    let txid = await sendAndConfirmTransactionWithAccount(connection, tx, [new KeypairSigner(feePayer)], {
-      skipPreflight: true,
-      preflightCommitment: "confirmed",
-      commitment: "confirmed",
-    });
+    let txid = await sendAndConfirmTransactionWithAccount(
+      connection,
+      tx,
+      [new KeypairSigner(feePayer)],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      }
+    );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
@@ -173,7 +182,7 @@ const Signup: NextPage = () => {
     //   "token account created: " + senderTokenAccount.address.toBase58() + "\n"
     // );
 
-    console.log(profile_pda)
+    console.log(profile_pda);
 
     console.log("Getting associated token address...");
     const associatedToken = await getAssociatedTokenAddress(
@@ -199,11 +208,16 @@ const Signup: NextPage = () => {
       )
     );
 
-    await sendAndConfirmTransactionWithAccount(connection, createTA_tx, [new KeypairSigner(feePayer)], {
-      skipPreflight: true,
-      preflightCommitment: "confirmed",
-      commitment: "confirmed",
-    });
+    await sendAndConfirmTransactionWithAccount(
+      connection,
+      createTA_tx,
+      [new KeypairSigner(feePayer)],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      }
+    );
 
     console.log("Getting sender token account...");
     const senderTokenAccount = await getAccount(
@@ -272,11 +286,16 @@ const Signup: NextPage = () => {
       )
     );
 
-    await sendAndConfirmTransactionWithAccount(connection, createNFT_TA_tx, [new KeypairSigner(feePayer)], {
-      skipPreflight: true,
-      preflightCommitment: "confirmed",
-      commitment: "confirmed",
-    });
+    await sendAndConfirmTransactionWithAccount(
+      connection,
+      createNFT_TA_tx,
+      [new KeypairSigner(feePayer)],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      }
+    );
 
     console.log("Getting sender token account...");
     const senderNFTTokenAccount = await getAccount(

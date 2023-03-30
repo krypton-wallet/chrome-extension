@@ -1,7 +1,7 @@
 import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
 import { message } from "antd";
 import bs58 from "bs58";
-import { Signer } from "../types/account";
+import { KeypairSigner, Signer, YubikeySigner } from "../types/account";
 
 const programId = new PublicKey(
   "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
@@ -123,4 +123,44 @@ const partialSign = async (tx: Transaction, signer: Signer) => {
   tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
 }
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign };
+const getSignerFromPkString = async (pk: string): Promise<Signer> => {
+  const promise = new Promise<Signer>((resolve, reject) => {
+    chrome.storage.sync.get(["mode", "accounts", "y_accounts"]).then(async (result) => {
+      // standard
+      if(result.mode == 0) {
+        const accountObj = JSON.parse(result["accounts"]);
+        for (var id in accountObj) {
+          console.log("actual: ", accountObj[id]['pk'])
+          console.log("desired: ", pk)
+          if(accountObj[id].pk == pk){
+            const newKeypair = Keypair.fromSecretKey(
+              bs58.decode(accountObj[id].sk)
+            );
+            console.log("Standard keypair FOUND!");
+            resolve(new KeypairSigner(newKeypair));
+            
+          }
+        }
+        console.log("Standard keypair not found");
+      }
+
+      // yubikey
+      else if (result.mode == 1) {
+        const accountObj = JSON.parse(result["y_accounts"]);
+        for (var id in accountObj) {
+          console.log("actual: ", accountObj[id]['pk'])
+          console.log("desired: ", pk)
+          if(accountObj[id]['pk'] == pk){
+            const tmpKeypair = new YubikeySigner(accountObj[id]['aid'])
+            console.log("Yubikey keypair FOUND!");
+            resolve(tmpKeypair);
+          }
+        }
+        console.log("Yubikey keypair not found")
+      }
+    })
+  })
+return promise;
+}
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign, getSignerFromPkString };
