@@ -6,6 +6,7 @@ import type { AppProps } from "next/app";
 import { GlobalContext } from "../context";
 import Layout from "../components/Layout";
 import { PgpCardInfo } from "bloss-js";
+import { GlobalModal } from "../components/GlobalModal";
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [network, setNetwork] = useState<Cluster | undefined>("devnet");
@@ -49,9 +50,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         setYubikeyInfo,
       }}
     >
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
+      <GlobalModal>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </GlobalModal>
     </GlobalContext.Provider>
   );
 }

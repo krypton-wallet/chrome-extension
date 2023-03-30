@@ -28,9 +28,30 @@ export class KeypairSigner implements Signer {
 
 export class YubikeySigner implements Signer {
     private aid: string;
+    private getPin: () => Promise<string>;
+    private touchPrompt: () => void;
+    private afterTouchCallback: () => void;
 
-    constructor(aid: string) {
+    /**
+     * Create a new Yubikey signer.
+     *
+     * @param aid OpenPGP AID that uniquely specifies the Yubikey
+     * @param getPin an async callback that collects the Yubikey pin from the user
+     * @param touchPrompt called when the Yubikey expects touch confirmation from the user.
+     *     For example, open a dialog in the UI saying "Touch your Yubikey..."
+     * @param afterTouchCallback called once touch confirmation is established.
+     *     For example, to close the "Touch your Yubikey..." dialog
+     */
+    constructor(
+        aid: string,
+        getPin: () => Promise<string>,
+        touchPrompt: () => void,
+        afterTouchCallback: () => void,
+    ) {
         this.aid = aid;
+        this.getPin = getPin;
+        this.touchPrompt = touchPrompt;
+        this.afterTouchCallback = afterTouchCallback;
     }
 
     async getPublicKey(): Promise<PublicKey> {
@@ -38,13 +59,9 @@ export class YubikeySigner implements Signer {
     }
 
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
-        // TODO: Replace this with a popup that collects pin from user.
-        const pin = new TextEncoder().encode("123456");
-    
-        // TODO: Replace this with a popup that prompts the user to touch yubikey.
-        const touchCallback = () => console.log(`Awaiting touch on key ${this.aid}`);
-
-        const sig = await signMessage(this.aid, message, pin, touchCallback);
+        const pin = new TextEncoder().encode(await this.getPin());
+        const sig = await signMessage(this.aid, message, pin, this.touchPrompt);
+        this.afterTouchCallback();
         return sig;
     }
 }

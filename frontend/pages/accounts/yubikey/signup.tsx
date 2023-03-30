@@ -12,6 +12,9 @@ import Link from "next/link";
 import styles from "../../../components/Layout/index.module.css";
 import { Connection, PublicKey, sendAndConfirmRawTransaction, SystemProgram, Transaction } from "@solana/web3.js";
 import { YubikeySigner } from "../../../types/account";
+import { useGlobalModalContext } from "../../../components/GlobalModal";
+import PinentryModal from "../../../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
@@ -62,6 +65,7 @@ const YubikeySignup: NextPage = () => {
 
   // Demo code that runs once component is loaded.
   // Transfer SOL from big yubi to small yubi using yubikey version of sendAndConfirmTransaction.
+  const { showModal, hideModal } = useGlobalModalContext();
   useEffect(() => {
     const bigYubi = "D2760001240103040006205304730000";
     const smallYubi = "D2760001240103040006223637020000";
@@ -89,7 +93,43 @@ const YubikeySignup: NextPage = () => {
         const sig = await sendAndConfirmTransactionWithAccount(
             connection,
             transaction,
-            new YubikeySigner(bigYubi),
+
+            /// Example of initializing YubikeySigner with callbacks that open
+            /// global modals to collect pin from user and prompt for touch
+            /// confirmation. Uses the functions provided in useGlobalModalContext()
+            /// to control global modals.
+            new YubikeySigner(
+                bigYubi,
+                () => {
+                    const promise = new Promise<string>((resolve, reject) => {
+                        showModal(
+                            <PinentryModal
+                                title={"Please unlock your YubiKey"}
+                                description={`Enter PIN for YubiKey ${bigYubi}`}
+                                onSubmitPin={(pin: string) => {
+                                    hideModal();
+                                    resolve(pin);
+                                }}
+                                onCancel={() => {
+                                    hideModal();
+                                    reject("User cancelled");
+                                }}
+                            ></PinentryModal>
+                        );
+                    })
+                    return promise;
+                },
+                () => {
+                    showModal(
+                        <TouchConfirmModal
+                            onCancel={() => {
+                                hideModal();
+                                console.log("User cancelled touch");
+                            }}
+                        ></TouchConfirmModal>);
+                },
+                hideModal,
+            ),
         );
 
         return sig;
