@@ -1,4 +1,4 @@
-import { Cluster, clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
+import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmRawTransaction, Transaction } from "@solana/web3.js";
 import { message } from "antd";
 import bs58 from "bs58";
 import { Signer } from "../types/account";
@@ -8,13 +8,13 @@ const programId = new PublicKey(
 );
 
 // implement a function that gets an account's balance
-const refreshBalance = async (network: Cluster | undefined, account: Keypair | null) => {
+const refreshBalance = async (network: Cluster | undefined, account: Signer | null) => {
   // This line ensures the function returns before running if no account has been set
   if (!account) return 0;
 
   try {
     const connection = new Connection(clusterApiUrl(network), "confirmed");
-    const publicKey = account.publicKey;
+    const publicKey = await account.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
       programId
@@ -30,13 +30,13 @@ const refreshBalance = async (network: Cluster | undefined, account: Keypair | n
 };
 
 // implement a function that airdrops SOL into devnet account
-const handleAirdrop = async (network: Cluster, account: Keypair | null) => {
+const handleAirdrop = async (network: Cluster, account: Signer | null) => {
   // This line ensures the function returns before running if no account has been set
   if (!account) return;
 
   try {
     const connection = new Connection(clusterApiUrl(network), "confirmed");
-    const publicKey = account.publicKey;
+    const publicKey = await account.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
       programId
@@ -82,32 +82,45 @@ function containsPk(obj: string, list: Array<PublicKey>) {
 const sendAndConfirmTransactionWithAccount = async (
   connection: Connection,
   transaction: Transaction,
-  signer: Signer,
+  signers: Signer[],
+  options?: ConfirmOptions &
+      Readonly<{
+        abortSignal?: AbortSignal;
+      }>,
 ) => {
   const transactionBuffer = transaction.serializeMessage();
   
-  const signature = await signer.signMessage(transactionBuffer);
-  transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+  for(const signer of signers) {
+    const signature = await signer.signMessage(transactionBuffer);
+    transaction.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+  }
+  const finalSignature = bs58.encode(new Uint8Array(transaction.signature!));
 
   // TODO: Add assert or other error checking for this
   const isVerifiedSignature = transaction.verifySignatures();
-  console.log(`The signatures were verifed: ${isVerifiedSignature}`);
+  console.log(`The signatures were verified: ${isVerifiedSignature}`);
 
   const rawTransaction = transaction.serialize();
   const latestBlockHash = await connection.getLatestBlockhash();
   const txid = await sendAndConfirmRawTransaction(connection, rawTransaction, {
     blockhash: latestBlockHash.blockhash,
     lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-    signature: bs58.encode(signature),
-  });
+    signature: finalSignature,
+  }, options);
 
-  if (txid != bs58.encode(signature)) {
+  if (txid != finalSignature) {
     console.log("SOMETHING WRONG: TXID != SIGNATURE!!!!!!!!!!!");
     console.log(txid);
-    console.log(bs58.encode(signature));
+    console.log(finalSignature);
   }
 
   return txid;
 }
 
-export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount };
+const partialSign = async (tx: Transaction, signer: Signer) => {
+  const transactionBuffer = tx.serializeMessage();
+  const signature = await signer.signMessage(transactionBuffer);
+  tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
+}
+
+export { refreshBalance, handleAirdrop, isNumber, displayAddress, containsPk, sendAndConfirmTransactionWithAccount, partialSign };

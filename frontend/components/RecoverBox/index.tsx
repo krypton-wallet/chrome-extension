@@ -4,9 +4,7 @@ import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
   Connection,
-  Keypair,
   PublicKey,
-  sendAndConfirmTransaction,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
@@ -20,7 +18,7 @@ import {
 } from "@solana/spl-token";
 import { useGlobalState } from "../../context";
 import Axios from "axios";
-import base58 from "bs58";
+import { sendAndConfirmTransactionWithAccount } from "../../utils";
 
 const BN = require("bn.js");
 
@@ -37,7 +35,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
   const onRecover = async () => {
     try {
       console.log("\n=====RECOVERING======");
-      console.log("Signer: ", account?.publicKey.toBase58());
+      console.log("Signer: ", (await account!.getPublicKey()).toBase58());
       setLoading(true);
       const res = await Axios.get(
         "http://localhost:5000/api/getFromPk/" + old_pk
@@ -92,7 +90,11 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      let transferCloseTx = new Transaction();
+      const recentBlockhash0 = await connection.getLatestBlockhash();
+      const transferCloseTx = new Transaction({
+        feePayer: await account!.getPublicKey(),
+        ...recentBlockhash0,
+      });
 
       allTA_res.value.forEach(async (e) => {
         const oldTokenAccount = e.pubkey;
@@ -116,9 +118,13 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         );
 
         console.log("Creating token account for mint...");
-        const createTA_tx = new Transaction().add(
+        const recentBlockhash = await connection.getLatestBlockhash();
+        const createTA_tx = new Transaction({
+          feePayer: await account!.getPublicKey(),
+          ...recentBlockhash,
+        }).add(
           createAssociatedTokenAccountInstruction(
-            account?.publicKey ?? PublicKey.default,
+            await account!.getPublicKey(),
             associatedToken,
             new_profile_pda[0],
             mint,
@@ -126,10 +132,10 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
           )
         );
 
-        await sendAndConfirmTransaction(
+        await sendAndConfirmTransactionWithAccount(
           connection,
           createTA_tx,
-          [account ?? new Keypair()],
+          [account!],
           {
             skipPreflight: true,
             preflightCommitment: "confirmed",
@@ -171,7 +177,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: true,
             },
             {
-              pubkey: account?.publicKey ?? PublicKey.default,
+              pubkey: await account!.getPublicKey(),
               isSigner: true,
               isWritable: true,
             },
@@ -219,7 +225,12 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         new Uint8Array(new BN(Number(1)).toArray("le", 8))
       );
       const recoveryModeBuf1 = Buffer.from(new Uint8Array([1]));
-      const transferSOLTx = new Transaction().add(
+
+      const recentBlockhash = await connection.getLatestBlockhash();
+      const transferSOLTx = new Transaction({
+        feePayer: await account!.getPublicKey(),
+        ...recentBlockhash,
+      }).add(
         new TransactionInstruction({
           keys: [
             {
@@ -233,7 +244,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: true,
             },
             {
-              pubkey: account?.publicKey ?? PublicKey.default,
+              pubkey: await account!.getPublicKey(),
               isSigner: true,
               isWritable: true,
             },
@@ -244,10 +255,10 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       );
 
       console.log("Transfering native SOL...");
-      let transfer_sol_txid = await sendAndConfirmTransaction(
+      let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
         connection,
         transferSOLTx,
-        [account ?? new Keypair()],
+        [account!],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -260,10 +271,10 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
 
       /* TRANSACTION: Transfer and close all token accounts */
       console.log("Transfering and closing...");
-      let transfer_txid = await sendAndConfirmTransaction(
+      let transfer_txid = await sendAndConfirmTransactionWithAccount(
         connection,
         transferCloseTx,
-        [account ?? new Keypair()],
+        [account!],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",

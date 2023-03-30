@@ -7,6 +7,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
 import bs58 from "bs58";
+import { KeypairSigner } from "../types/account";
 
 const Home: NextPage = () => {
   const router = useRouter();
@@ -21,12 +22,9 @@ const Home: NextPage = () => {
         return;
       }
       const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
-      setAccount(currKeypair);
+      setAccount(new KeypairSigner(currKeypair));
       const profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          account?.publicKey.toBuffer() ?? new Buffer(""),
-        ],
+        [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
         walletProgramId
       );
       setPDA(profile_pda[0]);

@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Button, Tooltip, Drawer, Typography, List, Avatar, Skeleton, Empty } from "antd";
+import {
+  Button,
+  Tooltip,
+  Typography,
+  List,
+  Avatar,
+  Skeleton,
+  Empty,
+} from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
-import TransactionLayout from "../components/TransactionLayout";
 import { refreshBalance, handleAirdrop, displayAddress } from "../utils";
 import { ArrowRightOutlined, LoadingOutlined } from "@ant-design/icons";
 import {
@@ -66,7 +73,7 @@ const Wallet: NextPage = () => {
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
-          account?.publicKey.toBuffer() ?? new Buffer(""),
+          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
         ],
         walletProgramId
       );
@@ -172,14 +179,14 @@ const Wallet: NextPage = () => {
               width: "77%",
               padding: "0.2rem 0.7rem",
               backgroundColor: "rgb(42, 42, 42)",
-              overflowY: 'auto',
-              maxHeight: '275px'
+              overflowY: "auto",
+              maxHeight: "275px",
             }}
           >
             <List
               dataSource={fungibleTokens}
               locale={{
-                emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+                emptyText: spinning ? <Skeleton active={true} /> : <Empty />,
               }}
               renderItem={(item) => (
                 <List.Item

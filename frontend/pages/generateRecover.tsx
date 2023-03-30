@@ -14,7 +14,6 @@ import {
   Keypair,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
-  sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
   TransactionInstruction,
@@ -24,6 +23,8 @@ import BN from "bn.js";
 import base58 from "bs58";
 import RecoverBox from "../components/RecoverBox";
 import { StyledForm } from "../styles/StyledComponents.styles";
+import { partialSign, sendAndConfirmTransactionWithAccount } from "../utils";
+import { KeypairSigner } from "../types/account";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -37,7 +38,7 @@ const GenerateRecover: NextPage = () => {
 
   useInterval(async () => {
     const res = await Axios.get(
-      "http://localhost:5000/api/getFromNewPk/" + account?.publicKey
+      "http://localhost:5000/api/getFromNewPk/" + await account!.getPublicKey()
     );
     const res_data = res.data[0];
     if (res_data == undefined) {
@@ -61,11 +62,11 @@ const GenerateRecover: NextPage = () => {
     setRecoverPk(pk);
 
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-    const newFeePayer = account ?? new Keypair();
+    const newFeePayer = account!;
+    const newPublicKey = await newFeePayer.getPublicKey();
     const nonceAccount = new Keypair();
-    const default_pk = new Keypair().publicKey;
 
-    console.log("curr new pk: ", newFeePayer.publicKey.toBase58());
+    console.log("curr new pk: ", newPublicKey.toBase58());
     console.log("nonce pk: ", nonceAccount.publicKey.toBase58());
 
     // console.log("Requesting Airdrop of 1 SOL to newFeePayer...");
@@ -81,7 +82,7 @@ const GenerateRecover: NextPage = () => {
       walletProgramId
     );
     const new_profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), newFeePayer.publicKey.toBuffer()],
+      [Buffer.from("profile", "utf-8"), newPublicKey.toBuffer()],
       walletProgramId
     );
 
@@ -106,11 +107,15 @@ const GenerateRecover: NextPage = () => {
     }
 
     // Transaction 1: setup nonce
-    let tx = new Transaction();
+    const recentBlockhash = await connection.getLatestBlockhash();
+    let tx = new Transaction({
+      feePayer: await account!.getPublicKey(),
+      ...recentBlockhash,
+    });
     tx.add(
       // create nonce account linked to new FeePayer
       SystemProgram.createAccount({
-        fromPubkey: newFeePayer.publicKey,
+        fromPubkey: newPublicKey,
         newAccountPubkey: nonceAccount.publicKey,
         lamports: await connection.getMinimumBalanceForRentExemption(
           NONCE_ACCOUNT_LENGTH
@@ -121,15 +126,14 @@ const GenerateRecover: NextPage = () => {
       // init nonce account
       SystemProgram.nonceInitialize({
         noncePubkey: nonceAccount.publicKey, // nonce account pubkey
-        authorizedPubkey: newFeePayer.publicKey, // nonce account auth
+        authorizedPubkey: newPublicKey, // nonce account auth
       })
     );
-    (tx.feePayer = newFeePayer.publicKey),
-      console.log("Sending nonce transaction...");
-    let txid = await sendAndConfirmTransaction(
+    (tx.feePayer = newPublicKey), console.log("Sending nonce transaction...");
+    let txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
-      [newFeePayer, nonceAccount],
+      [newFeePayer, new KeypairSigner(nonceAccount)],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -172,7 +176,7 @@ const GenerateRecover: NextPage = () => {
           isWritable: true,
         },
         {
-          pubkey: newFeePayer.publicKey,
+          pubkey: newPublicKey,
           isSigner: true,
           isWritable: true,
         },
@@ -198,23 +202,25 @@ const GenerateRecover: NextPage = () => {
 
     console.log("Creating recoverWallet transaction...");
     tx = new Transaction();
-    tx.feePayer = newFeePayer.publicKey;
+    tx.feePayer = newPublicKey;
     tx.recentBlockhash = nonceAccountData?.nonce;
     tx.signatures = guard_sigs;
     tx.add(
       SystemProgram.nonceAdvance({
         noncePubkey: nonceAccount.publicKey,
-        authorizedPubkey: newFeePayer.publicKey,
+        authorizedPubkey: newPublicKey,
       })
     );
     tx.add(recoverWalletIx);
     console.log("Signing...");
-    tx.partialSign(newFeePayer);
+    //tx.partialSign(newFeePayer);
+    await partialSign(tx, newFeePayer);
 
     const serializedTx = tx.serialize({
       requireAllSignatures: false,
     });
     const txBased64 = serializedTx.toString("base64");
+    console.log("TX base 64: ", txBased64)
     let transaction = Transaction.from(Buffer.from(txBased64, "base64"));
     console.log("Signed. Transaction created");
 
@@ -231,7 +237,7 @@ const GenerateRecover: NextPage = () => {
     console.log("Creating transaction entry in DB...");
     await Axios.post("http://localhost:5000/api/create", {
       pk: pk,
-      new_pk: newFeePayer.publicKey,
+      new_pk: newPublicKey,
       sig_remain: thres,
       transaction: txBased64,
     }).then((res) => {
@@ -277,7 +283,7 @@ const GenerateRecover: NextPage = () => {
                     },
                     {
                       validator(_, value) {
-                        if(PublicKey.isOnCurve(value)){
+                        if (PublicKey.isOnCurve(value)) {
                           return Promise.resolve();
                         }
                         return Promise.reject(new Error("Invalid public key"));

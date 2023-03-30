@@ -1,12 +1,13 @@
 import React, { createContext, useContext } from "react";
 import { Keypair, Cluster, PublicKey } from "@solana/web3.js";
 import { PgpCardInfo } from "bloss-js";
+import { Signer } from "../types/account";
 
 export type GlobalContextType = {
   network: Cluster | undefined;
   setNetwork: React.Dispatch<React.SetStateAction<Cluster | undefined>>;
-  account: Keypair | null;
-  setAccount: React.Dispatch<React.SetStateAction<Keypair | null>>;
+  account: Signer | null;
+  setAccount: React.Dispatch<React.SetStateAction<Signer | null>>;
   mnemonic: string | null;
   setMnemonic: React.Dispatch<React.SetStateAction<string | null>>;
   balance: number | null;

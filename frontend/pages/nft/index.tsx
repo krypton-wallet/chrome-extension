@@ -23,11 +23,11 @@ const NFT: NextPage = () => {
     // Fetching all tokens from PDA
     const getTokens = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", account?.publicKey.toBase58());
+      console.log("account: ", (await account!.getPublicKey()).toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
-          account?.publicKey.toBuffer() ?? new Buffer(""),
+          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
         ],
         walletProgramId
       );
@@ -69,7 +69,7 @@ const NFT: NextPage = () => {
         <List
           dataSource={nfts}
           locale={{
-            emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+            emptyText: spinning ? <Skeleton active={true} /> : <Empty />,
           }}
           renderItem={(item) => (
             <List.Item
