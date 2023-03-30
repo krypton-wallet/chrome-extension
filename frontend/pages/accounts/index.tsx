@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { List, Avatar, Button, Skeleton, Empty } from "antd";
+import {
+  List,
+  Avatar,
+  Button,
+  Skeleton,
+  Empty,
+  Dropdown,
+  Space,
+  MenuProps,
+} from "antd";
 import { useGlobalState } from "../../context";
 import {
   UserAddOutlined,
   ArrowLeftOutlined,
   MoreOutlined,
   CloseOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { displayAddress } from "../../utils";
+import { displayAddress, getSignerFromPkString } from "../../utils";
 import { useRouter } from "next/router";
 import {
   clusterApiUrl,
@@ -18,10 +28,7 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
 } from "@solana/web3.js";
-import bs58 from "bs58";
 import Link from "next/link";
-import styles from "../../components/Layout/index.module.css";
-import { KeypairSigner } from "../../types/account";
 
 const AccountList: NextPage = () => {
   const {
@@ -38,22 +45,83 @@ const AccountList: NextPage = () => {
     setCurrId,
   } = useGlobalState();
 
-  const [accounts, setAccounts] = useState<Array<[number, string, string]>>([]);
+  const [allAccounts, setAllAccounts] = useState<
+    Array<[number, number, string, string]>
+  >([]);
+  const [standardAccounts, setStandardAccounts] = useState<
+    Array<[number, number, string, string]>
+  >([]);
+  const [yubikeyAccounts, setYubikeyAccounts] = useState<
+    Array<[number, number, string, string]>
+  >([]);
+  const [currAccounts, setCurrAccounts] = useState<
+    Array<[number, number, string, string]>
+  >([]);
+  const [filter, setFilter] = useState<string>("All");
+
   const [spinning, setSpinning] = useState<boolean>(true);
   const router = useRouter();
 
+  const onClick: MenuProps["onClick"] = ({ key }) => {
+    if (key == "1") {
+      setCurrAccounts(allAccounts);
+      setFilter("All");
+    } else if (key == "2") {
+      setCurrAccounts(standardAccounts);
+      setFilter("Standard");
+    } else if (key == "3") {
+      setCurrAccounts(yubikeyAccounts);
+      setFilter("Yubikey");
+    }
+  };
+
+  const items: MenuProps["items"] = [
+    {
+      label: "All",
+      key: "1",
+    },
+    {
+      label: "Standard",
+      key: "2",
+    },
+    {
+      label: "Yubikey",
+      key: "3",
+    },
+  ];
+
   useEffect(() => {
     // Fetching all accounts from chrome storage
-    chrome.storage.sync.get("accounts").then((result) => {
-      const accountObj = JSON.parse(result["accounts"]);
-      let accountTmp: Array<[number, string, string]> = [];
-      for (var id in accountObj) {
-        const name = accountObj[id].name;
-        const pda = accountObj[id].pda;
-        accountTmp.push([Number(id), name, pda]);
+    chrome.storage.sync.get(["accounts", "y_accounts"]).then((result) => {
+      let accountTmp: Array<[number, number, string, string]> = [];
+      let yubikeyAccountTmp: Array<[number, number, string, string]> = [];
+
+      if (result["accounts"] != undefined) {
+        const accountObj = JSON.parse(result["accounts"]);
+
+        for (var id in accountObj) {
+          const name = accountObj[id].name;
+          const pda = accountObj[id].pda;
+          accountTmp.push([0, Number(id), name, pda]);
+        }
+        setStandardAccounts(accountTmp);
+        setSpinning(false);
       }
-      setAccounts(accountTmp);
-      setSpinning(false);
+
+      if (result["y_accounts"] != undefined) {
+        console.log(result["y_accounts"]);
+        const accountObj = JSON.parse(result["y_accounts"]);
+        for (var id in accountObj) {
+          const name = accountObj[id].name;
+          const pda = accountObj[id].pda;
+          yubikeyAccountTmp.push([1, Number(id), name, pda]);
+        }
+        setYubikeyAccounts(yubikeyAccountTmp);
+        setSpinning(false);
+      }
+      const allAccountsTmp = [...accountTmp, ...yubikeyAccountTmp];
+      setAllAccounts(allAccountsTmp);
+      setCurrAccounts(allAccountsTmp);
     });
   }, []);
 
@@ -79,49 +147,70 @@ const AccountList: NextPage = () => {
 
         <h1 className={"title"}>Accounts</h1>
       </div>
+
+      <div style={{ marginBottom: "15px" }}>
+        <Dropdown menu={{ items, onClick }}>
+          <a onClick={(e) => e.preventDefault()}>
+            <Space>
+              {filter}
+              <DownOutlined />
+            </Space>
+          </a>
+        </Dropdown>
+      </div>
+
       <div className={"tokenlist"}>
         <List
-          dataSource={accounts}
+          dataSource={currAccounts}
           locale={{
-            emptyText: spinning ? <Skeleton active={true} /> : <Empty />
+            emptyText: spinning ? <Skeleton active={true} /> : <Empty />,
           }}
           renderItem={(item) => (
             <List.Item
-              key={item[2]}
+              key={item[3]}
               onClick={async () => {
                 console.log("=============SWITCHING ACCOUNT===============");
-                const id = item[0];
-                chrome.storage.sync.set({ currId: id });
-                // router.push({
-                //   pathname: "/accounts/[id]",
-                //   query: { id: item[2] },
-                // });
-                setCurrId(id);
+                const mode = item[0];
+                const id = item[1];
+                if (mode == 0) {
+                  chrome.storage.sync.set({ currId: id });
+                  setCurrId(id);
+                } else if (mode == 1) {
+                  chrome.storage.sync.set({ y_id: id });
+                }
 
-                chrome.storage.sync.get(["accounts"]).then(async (result) => {
-                  const accountObj = JSON.parse(result["accounts"]);
-                  const secretKey = accountObj[id]["sk"];
-                  chrome.storage.sync.set({ sk: secretKey });
+                chrome.storage.sync
+                  .get(["accounts", "y_accounts"])
+                  .then(async (result) => {
+                    let publicKey = "";
+                    if(mode == 0) {
+                      let accountObj = JSON.parse(result["accounts"]);
+                      publicKey = accountObj[id]["pk"];
+                      chrome.storage.sync.set({ mode: 0 });
+                    } else if (mode == 1) {
+                      let accountObj = JSON.parse(result["y_accounts"]);
+                      publicKey = accountObj[id]["pk"];
+                      chrome.storage.sync.set({ mode: 1 });
+                    }
+                    chrome.storage.sync.set({ pk: publicKey });
 
-                  const currKeypair = Keypair.fromSecretKey(
-                    bs58.decode(secretKey)
-                  );
-                  setAccount(new KeypairSigner(currKeypair));
-                  const profile_pda = PublicKey.findProgramAddressSync(
-                    [
-                      Buffer.from("profile", "utf-8"),
-                      currKeypair.publicKey.toBuffer(),
-                    ],
-                    walletProgramId
-                  );
-                  setPDA(profile_pda[0]);
-                  const connection = new Connection(
-                    clusterApiUrl(network),
-                    "confirmed"
-                  );
-                  const balance1 = await connection.getBalance(profile_pda[0]);
-                  setBalance(balance1 / LAMPORTS_PER_SOL);
-                });
+                    setAccount(await getSignerFromPkString(publicKey));
+
+                    const profile_pda = PublicKey.findProgramAddressSync(
+                      [Buffer.from("profile", "utf-8"), new PublicKey(publicKey).toBuffer()],
+                      walletProgramId
+                    );
+                    setPDA(profile_pda[0]);
+                    const connection = new Connection(
+                      clusterApiUrl(network),
+                      "confirmed"
+                    );
+                    const balance1 = await connection.getBalance(
+                      profile_pda[0]
+                    );
+                    setBalance(balance1 / LAMPORTS_PER_SOL);
+                  });
+
                 await new Promise((resolve) => setTimeout(resolve, 60));
 
                 router.push("/wallet");
@@ -129,8 +218,8 @@ const AccountList: NextPage = () => {
             >
               <List.Item.Meta
                 avatar={<Avatar src={"/static/images/profile.png"} />}
-                title={item[1]}
-                description={displayAddress(item[2])}
+                title={item[2]}
+                description={displayAddress(item[3])}
               />
 
               <Button
@@ -141,7 +230,7 @@ const AccountList: NextPage = () => {
                   e.stopPropagation();
                   router.push({
                     pathname: "/accounts/[id]",
-                    query: { id: item[0] },
+                    query: { id: item[1], mode: item[0] },
                   });
                 }}
                 className="more-button"
