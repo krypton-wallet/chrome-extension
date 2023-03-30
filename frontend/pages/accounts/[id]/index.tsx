@@ -17,7 +17,7 @@ const Account: NextPage = () => {
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
 
-  let { id } = router.query;
+  let { id, mode } = router.query;
   if (!id) {
     id = "1";
   }
@@ -26,42 +26,66 @@ const Account: NextPage = () => {
   }
   const selectedId = parseInt(id);
 
+  if (!mode) {
+    mode = "0";
+  }
+  if (Array.isArray(mode)) {
+    mode = mode[0];
+  }
+  const selectedMode = parseInt(mode);
+
   const handleNameChange = (newName: string) => {
     console.log(newName);
-    chrome.storage.sync.get("accounts", (res) => {
-        var accountRes = res["accounts"];
-        if (accountRes != null) {
-          var old = JSON.parse(accountRes);
-          for (var key in old) {
-            if (key == id) {
-                old[id]["name"] = newName;
-                setAccountName(newName);
-                break;
-            }
+    chrome.storage.sync.get(["accounts", "y_accounts"], (res) => {
+      var accountRes = selectedMode == 0 ? res["accounts"] : res["y_accounts"];
+      if (accountRes != null) {
+        var old = JSON.parse(accountRes);
+        for (var key in old) {
+          if (key == id) {
+            old[id]["name"] = newName;
+            setAccountName(newName);
+            break;
           }
-          var values = JSON.stringify(old);
-          chrome.storage.sync.set({ accounts: values });
-        } else {
-          return false;
         }
-      });
+        var values = JSON.stringify(old);
+        if (selectedMode == 0) {
+          chrome.storage.sync.set({ accounts: values });
+        } else if (selectedMode == 1) {
+          chrome.storage.sync.set({ y_accounts: values });
+        }
+      } else {
+        return false;
+      }
+    });
   };
 
   useEffect(() => {
-    chrome.storage.sync.get(["currId", "accounts"]).then((result) => {
-      const accountObj = JSON.parse(result["accounts"]);
-      const name = accountObj[selectedId]["name"];
-      const pk = accountObj[selectedId]["pk"];
-      const pda = accountObj[selectedId]["pda"];
-      setAccountName(name);
-      setPk(pk);
-      setPda(pda);
+    chrome.storage.sync.get(["accounts", "y_accounts"]).then((result) => {
+      if (selectedMode == 0) {
+        const accountObj = JSON.parse(result["accounts"]);
+        const name = accountObj[selectedId]["name"];
+        const pk = accountObj[selectedId]["pk"];
+        const pda = accountObj[selectedId]["pda"];
+        setAccountName(name);
+        setPk(pk);
+        setPda(pda);
+      } else if (selectedMode == 1) {
+        const accountObj = JSON.parse(result["y_accounts"]);
+        const name = accountObj[selectedId]["name"];
+        const pk = accountObj[selectedId]["pk"];
+        const pda = accountObj[selectedId]["pda"];
+        setAccountName(name);
+        setPk(pk);
+        setPda(pda);
+      }
     });
   }, []);
 
   return (
     <>
-    <div style={{ display: "flex", alignItems: "center", marginBottom: '15px' }}>
+      <div
+        style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
+      >
         <Link href="/accounts" passHref>
           <a
             style={{

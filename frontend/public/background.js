@@ -4,19 +4,18 @@ import bs58 from "bs58";
 const responseHandlers = new Map();
 
 const handleConnect = async (message, sender, sendResponse) => {
-  chrome.storage.sync.get(["sk"]).then(async (result) => {
-    if (result.sk == undefined) {
-      console.log("sk not found");
+  chrome.storage.sync.get(["pk"]).then(async (result) => {
+    if (result.pk == undefined) {
+      console.log("pk not found");
       return;
     }
     const callback = async (data, id) => {
       await sendResponse(data, id);
     };
-    const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
     await callback({
       method: "connected",
       params: {
-        publicKey: currKeypair.publicKey,
+        publicKey: new PublicKey(result.pk),
       },
       id: message.data.id,
     });

@@ -34,12 +34,10 @@ const Guardian: NextPage = () => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", (await account!.getPublicKey()).toBase58());
+      const publicKey = await account!.getPublicKey();
+      console.log("account pk: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
-        ],
+        [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
         walletProgramId
       );
       setPDA(profile_pda[0]);
@@ -50,6 +48,7 @@ const Guardian: NextPage = () => {
       const pda_data = pda_account?.data ?? new Buffer("");
       const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
       const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
+      console.log("threshold: ", threshold);
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
       let guardians_tmp = [];
@@ -80,9 +79,7 @@ const Guardian: NextPage = () => {
 
     // Instr Add
     const publicKey = await account!.getPublicKey();
-    console.log(
-      "Adding guardian for account " + publicKey + "..."
-    );
+    console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection("https://api.devnet.solana.com/");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(

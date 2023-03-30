@@ -23,11 +23,12 @@ const NFT: NextPage = () => {
     // Fetching all tokens from PDA
     const getTokens = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      console.log("account: ", (await account!.getPublicKey()).toBase58());
+      const publicKey = await account!.getPublicKey();
+      console.log("account: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
-          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
+          publicKey.toBuffer(),
         ],
         walletProgramId
       );

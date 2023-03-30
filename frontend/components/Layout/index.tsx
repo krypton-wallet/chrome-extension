@@ -115,13 +115,27 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
   useEffect(() => {
     // Set account name
-    if (router.pathname != "/" && router.pathname != "/signup") {
-      chrome.storage.sync.get(["currId", "accounts"]).then((result) => {
-        const id = result["currId"];
-        const accountObj = JSON.parse(result["accounts"]);
-        const name = accountObj[id]["name"];
-        setAccountName(name);
-      });
+    if (
+      router.pathname != "/" &&
+      router.pathname != "/signup" &&
+      router.pathname != "/accounts/yubikey/signup"
+    ) {
+      chrome.storage.sync
+        .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+        .then((result) => {
+          if (result["mode"] == 0) {
+            const id = result["currId"];
+            const accountObj = JSON.parse(result["accounts"]);
+            const name = accountObj[id]["name"];
+            setAccountName(name);
+          } else if (result["mode"] == 1) {
+            const y_id = result["y_id"];
+            const accountObj = JSON.parse(result["y_accounts"]);
+            console.log("yid: ", y_id);
+            const name = accountObj[y_id]["name"];
+            setAccountName(name);
+          }
+        });
     }
   }, [currId, pda]);
 
@@ -130,7 +144,8 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
       <main className={styles.main}>
         {!router.pathname.startsWith("/accounts") &&
           router.pathname != "/" &&
-          router.pathname != "/signup" && (
+          router.pathname != "/signup" &&
+          router.pathname != "/accounts/yubikey/signup" && (
             <header className={styles.header}>
               <Button
                 shape="round"
@@ -184,7 +199,8 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
         {!router.pathname.startsWith("/adapter") &&
           router.pathname != "/accounts/onboard" &&
           router.pathname != "/" &&
-          router.pathname != "/signup" && (
+          router.pathname != "/signup" &&
+          router.pathname != "/accounts/yubikey/signup" && (
             <footer className={styles.footerHome}>
               <Menu
                 theme="dark"

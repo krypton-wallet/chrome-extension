@@ -70,10 +70,12 @@ const Wallet: NextPage = () => {
     // Fetching all tokens from PDA and filter out fungible tokens
     const getTokens = async () => {
       const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const publicKey = await account!.getPublicKey();
+      console.log("account pk: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
         [
           Buffer.from("profile", "utf-8"),
-          (await account!.getPublicKey()).toBuffer() ?? new Buffer(""),
+          publicKey.toBuffer(),
         ],
         walletProgramId
       );
