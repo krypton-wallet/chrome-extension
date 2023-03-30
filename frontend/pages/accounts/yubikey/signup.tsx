@@ -107,12 +107,13 @@ const YubikeySignup: NextPage = () => {
         /// to control global modals.
         [new YubikeySigner(
           bigYubi,
-          () => {
+          (isRetry: boolean) => {
             const promise = new Promise<string>((resolve, reject) => {
               showModal(
                 <PinentryModal
                   title={"Please unlock your YubiKey"}
                   description={`Enter PIN for YubiKey ${bigYubi}`}
+                  isRetry={isRetry}
                   onSubmitPin={(pin: string) => {
                     hideModal();
                     resolve(pin);

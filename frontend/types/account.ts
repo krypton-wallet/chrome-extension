@@ -28,7 +28,7 @@ export class KeypairSigner implements Signer {
 
 export class YubikeySigner implements Signer {
     private aid: string;
-    private getPin: () => Promise<string>;
+    private getPin: (isRetry: boolean) => Promise<string>;
     private touchPrompt: () => void;
     private afterTouchCallback: () => void;
 
@@ -44,7 +44,7 @@ export class YubikeySigner implements Signer {
      */
     constructor(
         aid: string,
-        getPin: () => Promise<string>,
+        getPin: (isRetry: boolean) => Promise<string>,
         touchPrompt: () => void,
         afterTouchCallback: () => void,
     ) {
@@ -59,10 +59,21 @@ export class YubikeySigner implements Signer {
     }
 
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
-        const pin = new TextEncoder().encode(await this.getPin());
-        const sig = await signMessage(this.aid, message, pin, this.touchPrompt);
-        this.afterTouchCallback();
-        return sig;
+        let firstTry = true;
+        while (true) {
+            const pin = new TextEncoder().encode(await this.getPin(!firstTry));
+            try {
+                const sig = await signMessage(this.aid, message, pin, this.touchPrompt);
+                this.afterTouchCallback();
+                return sig;
+            } catch (e: any) {
+                if (Object.hasOwn(e, "type") && e.type === "InvalidPin") {
+                    firstTry = false;
+                    continue;
+                }
+                throw e;
+            }
+        }
     }
 }
 

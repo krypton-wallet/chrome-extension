@@ -5,6 +5,7 @@ const PinentryModal = (
     props: {
         title: string,
         description: string,
+        isRetry: boolean,
         onSubmitPin: (pin: string) => void,
         onCancel: () => void,
     }
@@ -51,7 +52,7 @@ const PinentryModal = (
                 label={props.description}
                 name="pin"
             >
-                <Input.Password placeholder="PIN" type="password" />
+                <Input.Password placeholder="PIN" type="password" status={props.isRetry ? "error" : ""} />
             </Form.Item>
         </Form>
     </Modal>
