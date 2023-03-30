@@ -1,7 +1,7 @@
 import React, { useState, createContext, useContext, ReactElement } from 'react';
 import DefaultModal from './DefaultModal';
 
-type GlobalModalContext = {
+export type GlobalModalContext = {
     showModal: (modal: ReactElement) => void;
     hideModal: () => void;
 };

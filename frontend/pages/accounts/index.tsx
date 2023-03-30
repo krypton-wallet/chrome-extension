@@ -29,6 +29,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import Link from "next/link";
+import { useGlobalModalContext } from "../../components/GlobalModal";
 
 const AccountList: NextPage = () => {
   const {
@@ -129,6 +130,8 @@ const AccountList: NextPage = () => {
     router.push("/accounts/onboard");
   };
 
+  const modalContext = useGlobalModalContext();
+
   return (
     <>
       <div style={{ display: "flex", alignItems: "center" }}>
@@ -194,7 +197,8 @@ const AccountList: NextPage = () => {
                     }
                     chrome.storage.sync.set({ pk: publicKey });
 
-                    setAccount(await getSignerFromPkString(publicKey));
+                    // TODO: Detoxify this
+                    setAccount(await getSignerFromPkString(publicKey, modalContext));
 
                     const profile_pda = PublicKey.findProgramAddressSync(
                       [Buffer.from("profile", "utf-8"), new PublicKey(publicKey).toBuffer()],

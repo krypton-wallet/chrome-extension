@@ -27,6 +27,9 @@ import {
 } from "@solana/web3.js";
 import { YubikeySigner } from "../../../types/account";
 import BN from "bn.js";
+import { useGlobalModalContext } from "../../../components/GlobalModal";
+import PinentryModal from "../../../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
@@ -77,15 +80,49 @@ const YubikeySignup: NextPage = () => {
 
   const [form] = Form.useForm();
   form.setFieldsValue({ thres: "2" });
-  
+
   const handleChange = (value: string) => {
     form.setFieldsValue({ thres: value });
   };
 
+  const { showModal, hideModal } = useGlobalModalContext();
+
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
-    const feePayer = new YubikeySigner(info?.aid!);
+    const feePayer = new YubikeySigner(
+      info?.aid!,
+      (isRetry: boolean) => {
+        const promise = new Promise<string>((resolve, reject) => {
+          showModal(
+            <PinentryModal
+              title={"Please unlock your YubiKey"}
+              description={`Enter PIN for YubiKey ${info?.aid!}`}
+              isRetry={isRetry}
+              onSubmitPin={(pin: string) => {
+                hideModal();
+                resolve(pin);
+              }}
+              onCancel={() => {
+                hideModal();
+                reject("User cancelled");
+              }}
+            ></PinentryModal>
+          );
+        })
+        return promise;
+      },
+      () => {
+        showModal(
+          <TouchConfirmModal
+            onCancel={() => {
+              hideModal();
+              console.log("User cancelled touch");
+            }}
+          ></TouchConfirmModal>);
+      },
+      hideModal,
+    );
     const ybPublicKey = await feePayer.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), ybPublicKey.toBuffer()],
@@ -222,48 +259,48 @@ const YubikeySignup: NextPage = () => {
   //       })
   //     );
 
-      // const sig = await sendAndConfirmTransactionWithAccount(
-      //   connection,
-      //   transaction,
+  // const sig = await sendAndConfirmTransactionWithAccount(
+  //   connection,
+  //   transaction,
 
-      //   /// Example of initializing YubikeySigner with callbacks that open
-      //   /// global modals to collect pin from user and prompt for touch
-      //   /// confirmation. Uses the functions provided in useGlobalModalContext()
-      //   /// to control global modals.
-      //   [new YubikeySigner(
-      //     bigYubi,
-      //     (isRetry: boolean) => {
-      //       const promise = new Promise<string>((resolve, reject) => {
-      //         showModal(
-      //           <PinentryModal
-      //             title={"Please unlock your YubiKey"}
-      //             description={`Enter PIN for YubiKey ${bigYubi}`}
-      //             isRetry={isRetry}
-      //             onSubmitPin={(pin: string) => {
-      //               hideModal();
-      //               resolve(pin);
-      //             }}
-      //             onCancel={() => {
-      //               hideModal();
-      //               reject("User cancelled");
-      //             }}
-      //           ></PinentryModal>
-      //         );
-      //       })
-      //       return promise;
-      //     },
-      //     () => {
-      //       showModal(
-      //         <TouchConfirmModal
-      //           onCancel={() => {
-      //             hideModal();
-      //             console.log("User cancelled touch");
-      //           }}
-      //         ></TouchConfirmModal>);
-      //     },
-      //     hideModal,
-      //   )],
-      // );
+  //   /// Example of initializing YubikeySigner with callbacks that open
+  //   /// global modals to collect pin from user and prompt for touch
+  //   /// confirmation. Uses the functions provided in useGlobalModalContext()
+  //   /// to control global modals.
+  //   [new YubikeySigner(
+  //     bigYubi,
+  //     (isRetry: boolean) => {
+  //       const promise = new Promise<string>((resolve, reject) => {
+  //         showModal(
+  //           <PinentryModal
+  //             title={"Please unlock your YubiKey"}
+  //             description={`Enter PIN for YubiKey ${bigYubi}`}
+  //             isRetry={isRetry}
+  //             onSubmitPin={(pin: string) => {
+  //               hideModal();
+  //               resolve(pin);
+  //             }}
+  //             onCancel={() => {
+  //               hideModal();
+  //               reject("User cancelled");
+  //             }}
+  //           ></PinentryModal>
+  //         );
+  //       })
+  //       return promise;
+  //     },
+  //     () => {
+  //       showModal(
+  //         <TouchConfirmModal
+  //           onCancel={() => {
+  //             hideModal();
+  //             console.log("User cancelled touch");
+  //           }}
+  //         ></TouchConfirmModal>);
+  //     },
+  //     hideModal,
+  //   )],
+  // );
 
   //     return sig;
   //   };

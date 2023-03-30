@@ -7,11 +7,14 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
 import { getSignerFromPkString } from "../utils";
+import { useGlobalModalContext } from "../components/GlobalModal";
 
 const Home: NextPage = () => {
   const router = useRouter();
   const { walletProgramId, account, setAccount, setPDA } = useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
+
+  const modalContext = useGlobalModalContext();
 
   useEffect(() => {
     chrome.storage.sync.get(["pk", "mode"]).then(async (result) => {
@@ -20,7 +23,12 @@ const Home: NextPage = () => {
         setVisible(true);
         return;
       }
-      const currKeypair = await getSignerFromPkString(result.pk);
+
+      // TODO: Detoxify this
+      const currKeypair = await getSignerFromPkString(
+        result.pk,
+        modalContext,
+      );
       setAccount(currKeypair);
     
       const profile_pda = PublicKey.findProgramAddressSync(
