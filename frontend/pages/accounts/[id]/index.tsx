@@ -21,7 +21,7 @@ const Account: NextPage = () => {
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
 
-  let { id } = router.query;
+  let { id, mode } = router.query;
   if (!id) {
     id = "1";
   }
@@ -30,22 +30,33 @@ const Account: NextPage = () => {
   }
   const selectedId = parseInt(id);
 
+  if (!mode) {
+    mode = "0";
+  }
+  if (Array.isArray(mode)) {
+    mode = mode[0];
+  }
+  const selectedMode = parseInt(mode);
+
   const handleNameChange = (newName: string) => {
     console.log(newName);
-    chrome.storage.sync.get("accounts", (res) => {
-      var accountRes = res["accounts"];
+    chrome.storage.sync.get(["accounts", "y_accounts"], (res) => {
+      var accountRes = selectedMode == 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         var old = JSON.parse(accountRes);
         for (var key in old) {
           if (key == id) {
             old[id]["name"] = newName;
             setAccountName(newName);
-
             break;
           }
         }
         var values = JSON.stringify(old);
-        chrome.storage.sync.set({ accounts: values });
+        if (selectedMode == 0) {
+          chrome.storage.sync.set({ accounts: values });
+        } else if (selectedMode == 1) {
+          chrome.storage.sync.set({ y_accounts: values });
+        }
       } else {
         return false;
       }
@@ -53,8 +64,13 @@ const Account: NextPage = () => {
   };
 
   useEffect(() => {
-    chrome.storage.sync.get(["currId", "accounts"]).then(async (result) => {
-      const accountObj = JSON.parse(result["accounts"]);
+    chrome.storage.sync.get(["accounts", "y_accounts"]).then(async (result) => {
+      let accountObj: any = {};
+      if (selectedMode == 0) {
+        accountObj = JSON.parse(result["accounts"]);
+      } else if (selectedMode == 1) {
+        accountObj = JSON.parse(result["y_accounts"]);
+      }
       const name = accountObj[selectedId]["name"];
       const pk = accountObj[selectedId]["pk"];
       const pda = accountObj[selectedId]["pda"];
@@ -75,7 +91,7 @@ const Account: NextPage = () => {
         setAvatar(undefined);
       }
     });
-  }, [selectedId, setAvatar]);
+  }, [selectedId, selectedMode, setAvatar]);
 
   return (
     <>

@@ -6,25 +6,33 @@ import styled from "styled-components";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
-import bs58 from "bs58";
-import { KeypairSigner } from "../types/account";
+import { getSignerFromPkString } from "../utils";
+import { useGlobalModalContext } from "../components/GlobalModal";
 
 const Home: NextPage = () => {
   const router = useRouter();
   const { walletProgramId, account, setAccount, setPDA } = useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
 
+  const modalContext = useGlobalModalContext();
+
   useEffect(() => {
-    chrome.storage.sync.get(["sk"]).then(async (result) => {
-      if (result.sk == undefined) {
-        chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}" });
+    chrome.storage.sync.get(["pk", "mode"]).then(async (result) => {
+      if (result.pk == undefined) {
+        chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}", y_counter: 1, y_id: 1, y_accounts: "{}", mode: 0 });
         setVisible(true);
         return;
       }
-      const currKeypair = Keypair.fromSecretKey(bs58.decode(result.sk));
-      setAccount(new KeypairSigner(currKeypair));
+
+      // TODO: Detoxify this
+      const currKeypair = await getSignerFromPkString(
+        result.pk,
+        modalContext,
+      );
+      setAccount(currKeypair);
+    
       const profile_pda = PublicKey.findProgramAddressSync(
-        [Buffer.from("profile", "utf-8"), currKeypair.publicKey.toBuffer()],
+        [Buffer.from("profile", "utf-8"), new PublicKey(result.pk).toBuffer()],
         walletProgramId
       );
       setPDA(profile_pda[0]);

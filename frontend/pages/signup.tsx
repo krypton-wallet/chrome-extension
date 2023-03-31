@@ -139,7 +139,7 @@ const Signup: NextPage = () => {
       }
     });
 
-    chrome.storage.sync.set({ sk: base58.encode(feePayer.secretKey) });
+    chrome.storage.sync.set({ pk: feePayer.publicKey.toBase58(), mode: 0 });
 
     console.log("pk: ", feePayer.publicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
