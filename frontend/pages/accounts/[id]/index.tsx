@@ -6,6 +6,7 @@ import { displayAddress } from "../../../utils";
 import styles from "../../../components/Layout/index.module.css";
 import Link from "next/link";
 import Paragraph from "antd/lib/typography/Paragraph";
+import { Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
 import { Box } from "../../../styles/StyledComponents.styles";
 import EditableBox from "../../../components/EditableBox";
@@ -112,15 +113,15 @@ const Account: NextPage = () => {
         value={displayAddress(pk)}
         copyableValue={pk}
       />
-      <img
+      <Image
+        width={"23%"}
         style={{
           alignItems: "center",
-          width: "23%",
-          height: "20%",
           marginTop: "15px",
         }}
+        alt="profile avatar"
         src={avatar ? avatar : "/static/images/profile.png"}
-      ></img>
+      />
     </>
   );
 };
