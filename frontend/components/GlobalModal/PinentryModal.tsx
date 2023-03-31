@@ -17,22 +17,7 @@ const PinentryModal = (
         closable={false}
         title={props.title}
         footer={[
-            <Button key="cancel" onClick={props.onCancel}>
-                Cancel
-            </Button>,
-            <Button
-                key="submit"
-                type="primary"
-                onClick={() => {
-                    form.validateFields().then(({ pin }) => {
-                        props.onSubmitPin(pin);
-                    }).catch((info) => {
-                        console.log("Validate Failed:", info);
-                    });
-                }}
-            >
-                Unlock
-            </Button>
+            <Button key="cancel" onClick={props.onCancel}>Cancel</Button>
         ]}
     >
         <Form
@@ -40,18 +25,11 @@ const PinentryModal = (
             layout="vertical"
             name="form_in_modal"
             preserve={false}
-            onSubmitCapture={() => {
-                form.validateFields().then(({ pin }) => {
-                    props.onSubmitPin(pin);
-                }).catch((info) => {
-                    console.log("Validate Failed:", info);
-                });
+            onFinish={({ pin }: { pin: string}) => {
+                props.onSubmitPin(pin);
             }}
         >
-            <Form.Item
-                label={props.description}
-                name="pin"
-            >
+            <Form.Item label={props.description} name="pin">
                 <Input.Password placeholder="PIN" type="password" status={props.isRetry ? "error" : ""} />
             </Form.Item>
         </Form>
