@@ -161,8 +161,7 @@ const getSignerFromPkString = async (pk: string, context: GlobalModalContext): P
                 const promise = new Promise<string>((resolve, reject) => {
                   context.showModal(
                     <PinentryModal
-                      title={"Please unlock your YubiKey"}
-                      description={`Enter PIN for YubiKey ${accountObj[id]['aid']}`}
+                      title={`Please unlock YubiKey no. ${(accountObj[id]['aid'] as string).substring(20, 28)}`}
                       isRetry={isRetry}
                       onSubmitPin={(pin: string) => {
                         context.hideModal();

@@ -96,8 +96,7 @@ const YubikeySignup: NextPage = () => {
         const promise = new Promise<string>((resolve, reject) => {
           showModal(
             <PinentryModal
-              title={"Please unlock your YubiKey"}
-              description={`Enter PIN for YubiKey ${info?.aid!}`}
+              title={`Please unlock YubiKey no. ${(info!.aid as string).substring(20, 28)}`}
               isRetry={isRetry}
               onSubmitPin={(pin: string) => {
                 hideModal();

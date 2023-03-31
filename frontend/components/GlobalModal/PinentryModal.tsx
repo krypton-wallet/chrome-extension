@@ -1,10 +1,10 @@
 import { Button, Form, Input, Modal } from "antd";
-import { ReactElement, useState } from "react";
+import { ReactElement } from "react";
+import { KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 
 const PinentryModal = (
     props: {
         title: string,
-        description: string,
         isRetry: boolean,
         onSubmitPin: (pin: string) => void,
         onCancel: () => void,
@@ -20,6 +20,13 @@ const PinentryModal = (
             <Button key="cancel" onClick={props.onCancel}>Cancel</Button>
         ]}
     >
+        <KeyOutlined style={{
+            fontSize: "50px",
+            color: "#fff",
+            display: "block",
+            marginLeft: "auto",
+            marginRight: "auto",
+        }} />
         <Form
             form={form}
             layout="vertical"
@@ -29,8 +36,23 @@ const PinentryModal = (
                 props.onSubmitPin(pin);
             }}
         >
-            <Form.Item label={props.description} name="pin">
-                <Input.Password placeholder="PIN" type="password" status={props.isRetry ? "error" : ""} />
+            <Form.Item name="pin">
+                <Input.Password
+                    placeholder="PIN"
+                    type="password"
+                    status={props.isRetry ? "error" : ""}
+                    iconRender={(visible) => (
+                        visible ? <EyeOutlined style={{ color: "#fff" }}/>
+                            : <EyeInvisibleOutlined style={{ color: "#fff" }} />
+                    )}
+                    style={{
+                        minWidth: "300px",
+                        backgroundColor: "rgb(34, 34, 34)",
+                        color: "#d3d3d3",
+                        border: "1px solid #d3d3d3",
+                        outlineColor: "#fff"
+                    }}
+                />
             </Form.Item>
         </Form>
     </Modal>
