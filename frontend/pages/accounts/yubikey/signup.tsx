@@ -1,8 +1,7 @@
-import { Button, Form, List, Select, Table } from "antd";
-import { getPubkey, PgpCardInfo, signMessage } from "bloss-js";
+import { Button, Form, Select, Table } from "antd";
 import { NextPage } from "next";
 import { useRouter, withRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useGlobalState } from "../../../context";
 import {
   KeyOutlined,
@@ -10,7 +9,6 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 import {
-  displayAddress,
   refreshBalance,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
@@ -27,9 +25,11 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { KeypairSigner, YubikeySigner } from "../../../types/account";
+import { YubikeySigner } from "../../../types/account";
 import BN from "bn.js";
-import base58 from "bs58";
+import { useGlobalModalContext } from "../../../components/GlobalModal";
+import PinentryModal from "../../../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
@@ -80,15 +80,49 @@ const YubikeySignup: NextPage = () => {
 
   const [form] = Form.useForm();
   form.setFieldsValue({ thres: "2" });
-  
+
   const handleChange = (value: string) => {
     form.setFieldsValue({ thres: value });
   };
 
+  const { showModal, hideModal } = useGlobalModalContext();
+
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
-    const feePayer = new YubikeySigner(info?.aid!);
+    const feePayer = new YubikeySigner(
+      info?.aid!,
+      (isRetry: boolean) => {
+        const promise = new Promise<string>((resolve, reject) => {
+          showModal(
+            <PinentryModal
+              title={"Please unlock your YubiKey"}
+              description={`Enter PIN for YubiKey ${info?.aid!}`}
+              isRetry={isRetry}
+              onSubmitPin={(pin: string) => {
+                hideModal();
+                resolve(pin);
+              }}
+              onCancel={() => {
+                hideModal();
+                reject("User cancelled");
+              }}
+            ></PinentryModal>
+          );
+        })
+        return promise;
+      },
+      () => {
+        showModal(
+          <TouchConfirmModal
+            onCancel={() => {
+              hideModal();
+              console.log("User cancelled touch");
+            }}
+          ></TouchConfirmModal>);
+      },
+      hideModal,
+    );
     const ybPublicKey = await feePayer.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), ybPublicKey.toBuffer()],
@@ -225,11 +259,48 @@ const YubikeySignup: NextPage = () => {
   //       })
   //     );
 
-  //     const sig = await sendAndConfirmTransactionWithAccount(
-  //       connection,
-  //       transaction,
-  //       [new YubikeySigner(bigYubi)]
-  //     );
+  // const sig = await sendAndConfirmTransactionWithAccount(
+  //   connection,
+  //   transaction,
+
+  //   /// Example of initializing YubikeySigner with callbacks that open
+  //   /// global modals to collect pin from user and prompt for touch
+  //   /// confirmation. Uses the functions provided in useGlobalModalContext()
+  //   /// to control global modals.
+  //   [new YubikeySigner(
+  //     bigYubi,
+  //     (isRetry: boolean) => {
+  //       const promise = new Promise<string>((resolve, reject) => {
+  //         showModal(
+  //           <PinentryModal
+  //             title={"Please unlock your YubiKey"}
+  //             description={`Enter PIN for YubiKey ${bigYubi}`}
+  //             isRetry={isRetry}
+  //             onSubmitPin={(pin: string) => {
+  //               hideModal();
+  //               resolve(pin);
+  //             }}
+  //             onCancel={() => {
+  //               hideModal();
+  //               reject("User cancelled");
+  //             }}
+  //           ></PinentryModal>
+  //         );
+  //       })
+  //       return promise;
+  //     },
+  //     () => {
+  //       showModal(
+  //         <TouchConfirmModal
+  //           onCancel={() => {
+  //             hideModal();
+  //             console.log("User cancelled touch");
+  //           }}
+  //         ></TouchConfirmModal>);
+  //     },
+  //     hideModal,
+  //   )],
+  // );
 
   //     return sig;
   //   };

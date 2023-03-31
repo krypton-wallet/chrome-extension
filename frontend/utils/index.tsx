@@ -2,6 +2,9 @@ import { Cluster, clusterApiUrl, ConfirmOptions, Connection, Keypair, LAMPORTS_P
 import { message } from "antd";
 import bs58 from "bs58";
 import { KeypairSigner, Signer, YubikeySigner } from "../types/account";
+import { GlobalModalContext, useGlobalModalContext } from "../components/GlobalModal";
+import PinentryModal from "../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
 
 const programId = new PublicKey(
   "2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"
@@ -123,7 +126,7 @@ const partialSign = async (tx: Transaction, signer: Signer) => {
   tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
 }
 
-const getSignerFromPkString = async (pk: string): Promise<Signer> => {
+const getSignerFromPkString = async (pk: string, context: GlobalModalContext): Promise<Signer> => {
   const promise = new Promise<Signer>((resolve, reject) => {
     chrome.storage.sync.get(["mode", "accounts", "y_accounts"]).then(async (result) => {
       // standard
@@ -145,13 +148,46 @@ const getSignerFromPkString = async (pk: string): Promise<Signer> => {
       }
 
       // yubikey
+      // TODO: Detoxify this
       else if (result.mode == 1) {
         const accountObj = JSON.parse(result["y_accounts"]);
         for (var id in accountObj) {
           console.log("actual: ", accountObj[id]['pk'])
           console.log("desired: ", pk)
           if(accountObj[id]['pk'] == pk){
-            const tmpKeypair = new YubikeySigner(accountObj[id]['aid'])
+            const tmpKeypair = new YubikeySigner(
+              accountObj[id]['aid'],
+              (isRetry: boolean) => {
+                const promise = new Promise<string>((resolve, reject) => {
+                  context.showModal(
+                    <PinentryModal
+                      title={"Please unlock your YubiKey"}
+                      description={`Enter PIN for YubiKey ${accountObj[id]['aid']}`}
+                      isRetry={isRetry}
+                      onSubmitPin={(pin: string) => {
+                        context.hideModal();
+                        resolve(pin);
+                      }}
+                      onCancel={() => {
+                        context.hideModal();
+                        reject("User cancelled");
+                      }}
+                    ></PinentryModal>
+                  );
+                })
+                return promise;
+              },
+              () => {
+                context.showModal(
+                  <TouchConfirmModal
+                    onCancel={() => {
+                      context.hideModal();
+                      console.log("User cancelled touch");
+                    }}
+                  ></TouchConfirmModal>);
+              },
+              context.hideModal,
+            )
             console.log("Yubikey keypair FOUND!");
             resolve(tmpKeypair);
           }

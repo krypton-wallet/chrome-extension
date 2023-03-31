@@ -6,6 +6,7 @@ import type { AppProps } from "next/app";
 import { GlobalContext } from "../context";
 import Layout from "../components/Layout";
 import { PgpCardInfo } from "bloss-js";
+import { GlobalModal } from "../components/GlobalModal";
 import { Signer } from "../types/account";
 
 function MyApp({ Component, pageProps }: AppProps) {
@@ -50,9 +51,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         setYubikeyInfo,
       }}
     >
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
+      <GlobalModal>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </GlobalModal>
     </GlobalContext.Provider>
   );
 }
