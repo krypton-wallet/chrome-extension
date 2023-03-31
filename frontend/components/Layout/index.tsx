@@ -162,7 +162,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
         setAccountName(name);
       });
     }
-  }, [currId, pda]);
+  }, [currId, pda, router.pathname]);
 
   useEffect(() => {
     chrome.storage.sync.get(["currId", "accounts"]).then(async (res) => {
@@ -203,7 +203,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                     size="small"
                     shape="circle"
                     style={{
-                      marginRight: "0.25rem",
+                      marginRight: "0.5rem",
                       fontSize: "16px",
                     }}
                     onError={() => {
@@ -214,7 +214,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                 ) : (
                   <UserOutlined
                     style={{
-                      marginRight: "0.25rem",
+                      marginRight: "0.5rem",
                       fontSize: "16px",
                     }}
                   />

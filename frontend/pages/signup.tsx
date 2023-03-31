@@ -59,6 +59,16 @@ const Signup: NextPage = () => {
     "Minting to NFT token account...",
     "Disabling future minting...",
   ]);
+  const genSteps = [
+    "Initializing avatar...",
+    "Finding the environment...",
+    "Picking the oufit...",
+    "Fixing the hair...",
+    "Choosing the eyes...",
+    "Perfecting the smile...",
+    "Adding finishing touches...",
+  ];
+  const [gen, setGen] = useState(0);
   const [visible, setVisible] = useState<boolean>(false);
   const [shouldGen, setShouldGen] = useState<boolean>(false);
   const {
@@ -392,7 +402,8 @@ const Signup: NextPage = () => {
       const avatarPK = await generateAvatar(
         connection,
         feePayer,
-        profile_pda[0]
+        profile_pda[0],
+        () => setGen((prev) => prev + 1)
       );
       const avatarData = await getAvatar(connection, avatarPK);
       const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
@@ -431,46 +442,82 @@ const Signup: NextPage = () => {
 
   if (loading) {
     return (
-      <Steps
-        direction="vertical"
-        size="small"
-        current={current}
-        style={{ margin: "auto" }}
-      >
-        {steps.map((item, idx) => {
-          return (
-            <Steps.Step
-              key={item}
-              title={
-                <span
-                  style={{
-                    color:
-                      current === idx
-                        ? "#fff"
-                        : current > idx
-                        ? "#415bf5"
-                        : "#b3b3b3",
-                  }}
-                >
-                  {item}
-                </span>
-              }
-              style={{ width: "fit-content", marginLeft: "2rem" }}
-              icon={
-                current === idx ? (
-                  <LoadingOutlined style={{ color: "#fff" }} spin />
-                ) : current > idx ? (
-                  <div style={{ borderRadius: "50%", backgroundColor: "#fff" }}>
-                    <CheckCircleFilled style={{ color: "#415bf5" }} />
-                  </div>
-                ) : (
-                  <CheckCircleFilled style={{ color: "#b3b3b3" }} />
-                )
-              }
-            />
-          );
-        })}
-      </Steps>
+      <>
+        <Steps
+          direction="vertical"
+          size="small"
+          current={current}
+          style={{ margin: "auto" }}
+        >
+          {steps.map((item, idx) => {
+            return (
+              <Steps.Step
+                key={item}
+                title={
+                  <span
+                    style={{
+                      color:
+                        current === idx
+                          ? "#fff"
+                          : current > idx
+                          ? "#415bf5"
+                          : "#b3b3b3",
+                    }}
+                  >
+                    {item}
+                  </span>
+                }
+                style={{ width: "fit-content", marginLeft: "2rem" }}
+                icon={
+                  current === idx ? (
+                    <LoadingOutlined style={{ color: "#fff" }} spin />
+                  ) : current > idx ? (
+                    <div
+                      style={{ borderRadius: "50%", backgroundColor: "#fff" }}
+                    >
+                      <CheckCircleFilled style={{ color: "#415bf5" }} />
+                    </div>
+                  ) : (
+                    <CheckCircleFilled style={{ color: "#b3b3b3" }} />
+                  )
+                }
+              />
+            );
+          })}
+        </Steps>
+        {shouldGen && current >= steps.length - 1 && (
+          <Steps
+            direction="vertical"
+            size="small"
+            current={gen}
+            progressDot
+            style={{ marginLeft: "20%" }}
+          >
+            {genSteps.map((item, idx) => {
+              return (
+                <Steps.Step
+                  key={item}
+                  title={
+                    <span
+                      style={{
+                        color:
+                          gen === idx
+                            ? "#fff"
+                            : gen > idx
+                            ? "#415bf5"
+                            : "#b3b3b3",
+                      }}
+                    >
+                      {item}
+                    </span>
+                  }
+                  style={{ width: "fit-content", marginLeft: "2rem" }}
+                />
+              );
+            })}
+          </Steps>
+        )}
+      </>
     );
   }
 

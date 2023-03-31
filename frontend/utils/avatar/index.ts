@@ -3,7 +3,7 @@ import BN from "bn.js";
 import { DATA_PROGRAM_ID, PDA_SEED, AVATAR_PROGRAM_ID } from "./constants";
 import { svgPKs } from "./svg-pubkeys";
 
-export const generateAvatar = async (connection: Connection, wallet: Keypair, identity: PublicKey) => {
+export const generateAvatar = async (connection: Connection, wallet: Keypair, identity: PublicKey, update: () => void) => {
     const feePayer = wallet;
   
     // data account of avatar
@@ -35,7 +35,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
       console.log(
         `create: https://explorer.solana.com/tx/${createTxid}?cluster=devnet`
       );
-  
+
       [pdaData] = PublicKey.findProgramAddressSync(
         [Buffer.from(PDA_SEED, "ascii"), dataAccountKP.publicKey.toBuffer()],
         DATA_PROGRAM_ID
@@ -94,6 +94,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
       console.log(
         `init: https://explorer.solana.com/tx/${initializeTxid}?cluster=devnet`
       );
+      update();
       dataAccount = dataAccountKP.publicKey;
   
     const initializeIdentityIx = new TransactionInstruction({
@@ -152,6 +153,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `start: https://explorer.solana.com/tx/${initializeIdentityTxid}?cluster=devnet`
     );
+    update();
   
     const appendIdentityCloIx = new TransactionInstruction({
       keys: [
@@ -206,6 +208,8 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `clo: https://explorer.solana.com/tx/${appendIdentityCloTxid}?cluster=devnet`
     );
+    update();
+
   
     const appendIdentityTopIx = new TransactionInstruction({
       keys: [
@@ -260,6 +264,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `top: https://explorer.solana.com/tx/${appendIdentityTopTxid}?cluster=devnet`
     );
+    update();
   
     const appendIdentityEyesIx = new TransactionInstruction({
       keys: [
@@ -314,6 +319,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `eyes: https://explorer.solana.com/tx/${appendIdentityEyesTxid}?cluster=devnet`
     );
+    update();
   
     const appendIdentityMouthIx = new TransactionInstruction({
       keys: [
@@ -368,6 +374,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `mouth: https://explorer.solana.com/tx/${appendIdentityMouthTxid}?cluster=devnet`
     );
+    update();
   
     const completeIdentityIx = new TransactionInstruction({
       keys: [
@@ -415,7 +422,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     console.log(
       `complete: https://explorer.solana.com/tx/${completeIdentityTxid}?cluster=devnet`
     );
-  
+    update();
     console.log("Data Account: ", dataAccount.toString());
     return dataAccount;
 }
