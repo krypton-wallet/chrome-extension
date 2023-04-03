@@ -19,7 +19,7 @@ const SignTransaction: NextPage = () => {
   const modalContext = useGlobalModalContext();
 
   useEffect(() => {
-    chrome.storage.sync.get(["searchParams", "pk"]).then(async (result) => {
+    chrome.storage.local.get(["searchParams", "pk"]).then(async (result) => {
       if (result.searchParams == undefined || result.pk == undefined) {
         return;
       }

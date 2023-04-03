@@ -96,7 +96,9 @@ const YubikeySignup: NextPage = () => {
         const promise = new Promise<string>((resolve, reject) => {
           showModal(
             <PinentryModal
-              title={`Please unlock YubiKey no. ${(info!.aid as string).substring(20, 28)}`}
+              title={`Please unlock YubiKey no. ${(
+                info!.aid as string
+              ).substring(20, 28)}`}
               isRetry={isRetry}
               onSubmitPin={(pin: string) => {
                 hideModal();
@@ -108,7 +110,7 @@ const YubikeySignup: NextPage = () => {
               }}
             ></PinentryModal>
           );
-        })
+        });
         return promise;
       },
       () => {
@@ -118,9 +120,10 @@ const YubikeySignup: NextPage = () => {
               hideModal();
               console.log("User cancelled touch");
             }}
-          ></TouchConfirmModal>);
+          ></TouchConfirmModal>
+        );
       },
-      hideModal,
+      hideModal
     );
     const ybPublicKey = await feePayer.getPublicKey();
     const profile_pda = PublicKey.findProgramAddressSync(
@@ -128,7 +131,7 @@ const YubikeySignup: NextPage = () => {
       walletProgramId
     );
     const thres = Number(values.thres);
-    console.log("input values: ", values)
+    console.log("input values: ", values);
     console.log("input thres: ", thres);
     setAccount(feePayer);
     setPDA(profile_pda[0]);
@@ -136,11 +139,11 @@ const YubikeySignup: NextPage = () => {
     const connection = new Connection("https://api.devnet.solana.com/");
     var count = 0;
 
-    chrome.storage.sync.get("y_counter", (res) => {
+    chrome.storage.local.get("y_counter", (res) => {
       count = res["y_counter"];
     });
 
-    chrome.storage.sync.get("y_accounts", (res) => {
+    chrome.storage.local.get("y_accounts", (res) => {
       var accountRes = res["y_accounts"];
       if (accountRes != null) {
         var old = JSON.parse(accountRes);
@@ -152,7 +155,7 @@ const YubikeySignup: NextPage = () => {
           pda: profile_pda[0].toBase58(),
         };
         var values = JSON.stringify(old);
-        chrome.storage.sync.set({
+        chrome.storage.local.set({
           y_accounts: values,
           y_counter: count + 1,
           y_id: count,
@@ -162,7 +165,7 @@ const YubikeySignup: NextPage = () => {
       }
     });
 
-    chrome.storage.sync.set({ pk: ybPublicKey.toBase58(), mode: 1 });
+    chrome.storage.local.set({ pk: ybPublicKey.toBase58(), mode: 1 });
 
     console.log("pk: ", ybPublicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());

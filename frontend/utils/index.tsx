@@ -165,7 +165,7 @@ const getSignerFromPkString = async (
   context: GlobalModalContext
 ): Promise<Signer> => {
   const promise = new Promise<Signer>((resolve, reject) => {
-    chrome.storage.sync
+    chrome.storage.local
       .get(["mode", "accounts", "y_accounts"])
       .then(async (result) => {
         // standard

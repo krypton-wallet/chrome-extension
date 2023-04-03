@@ -36,7 +36,7 @@ const Account: NextPage = () => {
 
   const handleNameChange = (newName: string) => {
     console.log(newName);
-    chrome.storage.sync.get(["accounts", "y_accounts"], (res) => {
+    chrome.storage.local.get(["accounts", "y_accounts"], (res) => {
       var accountRes = selectedMode == 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         var old = JSON.parse(accountRes);
@@ -49,9 +49,9 @@ const Account: NextPage = () => {
         }
         var values = JSON.stringify(old);
         if (selectedMode == 0) {
-          chrome.storage.sync.set({ accounts: values });
+          chrome.storage.local.set({ accounts: values });
         } else if (selectedMode == 1) {
-          chrome.storage.sync.set({ y_accounts: values });
+          chrome.storage.local.set({ y_accounts: values });
         }
       } else {
         return false;
@@ -60,7 +60,7 @@ const Account: NextPage = () => {
   };
 
   useEffect(() => {
-    chrome.storage.sync.get(["accounts", "y_accounts"]).then((result) => {
+    chrome.storage.local.get(["accounts", "y_accounts"]).then((result) => {
       if (selectedMode == 0) {
         const accountObj = JSON.parse(result["accounts"]);
         const name = accountObj[selectedId]["name"];

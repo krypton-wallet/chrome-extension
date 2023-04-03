@@ -120,7 +120,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
       router.pathname != "/signup" &&
       router.pathname != "/accounts/yubikey/signup"
     ) {
-      chrome.storage.sync
+      chrome.storage.local
         .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
         .then((result) => {
           if (result["mode"] == 0) {

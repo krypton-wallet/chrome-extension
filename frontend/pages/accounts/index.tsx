@@ -93,7 +93,7 @@ const AccountList: NextPage = () => {
 
   useEffect(() => {
     // Fetching all accounts from chrome storage
-    chrome.storage.sync.get(["accounts", "y_accounts"]).then((result) => {
+    chrome.storage.local.get(["accounts", "y_accounts"]).then((result) => {
       let accountTmp: Array<[number, number, string, string]> = [];
       let yubikeyAccountTmp: Array<[number, number, string, string]> = [];
 
@@ -176,32 +176,37 @@ const AccountList: NextPage = () => {
                 const mode = item[0];
                 const id = item[1];
                 if (mode == 0) {
-                  chrome.storage.sync.set({ currId: id });
+                  chrome.storage.local.set({ currId: id });
                   setCurrId(id);
                 } else if (mode == 1) {
-                  chrome.storage.sync.set({ y_id: id });
+                  chrome.storage.local.set({ y_id: id });
                 }
 
-                chrome.storage.sync
+                chrome.storage.local
                   .get(["accounts", "y_accounts"])
                   .then(async (result) => {
                     let publicKey = "";
-                    if(mode == 0) {
+                    if (mode == 0) {
                       let accountObj = JSON.parse(result["accounts"]);
                       publicKey = accountObj[id]["pk"];
-                      chrome.storage.sync.set({ mode: 0 });
+                      chrome.storage.local.set({ mode: 0 });
                     } else if (mode == 1) {
                       let accountObj = JSON.parse(result["y_accounts"]);
                       publicKey = accountObj[id]["pk"];
-                      chrome.storage.sync.set({ mode: 1 });
+                      chrome.storage.local.set({ mode: 1 });
                     }
-                    chrome.storage.sync.set({ pk: publicKey });
+                    chrome.storage.local.set({ pk: publicKey });
 
                     // TODO: Detoxify this
-                    setAccount(await getSignerFromPkString(publicKey, modalContext));
+                    setAccount(
+                      await getSignerFromPkString(publicKey, modalContext)
+                    );
 
                     const profile_pda = PublicKey.findProgramAddressSync(
-                      [Buffer.from("profile", "utf-8"), new PublicKey(publicKey).toBuffer()],
+                      [
+                        Buffer.from("profile", "utf-8"),
+                        new PublicKey(publicKey).toBuffer(),
+                      ],
                       walletProgramId
                     );
                     setPDA(profile_pda[0]);

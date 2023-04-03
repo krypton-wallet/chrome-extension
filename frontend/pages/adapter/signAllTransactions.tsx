@@ -19,7 +19,7 @@ const SignAllTransactions: NextPage = () => {
   const modalContext = useGlobalModalContext();
 
   useEffect(() => {
-    chrome.storage.sync.get(["searchParams", "pk"]).then(async (result) => {
+    chrome.storage.local.get(["searchParams", "pk"]).then(async (result) => {
       if (result.searchParams == undefined || result.pk == undefined) {
         return;
       }
@@ -54,9 +54,9 @@ const SignAllTransactions: NextPage = () => {
     const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
     let sigs = [];
     for (const payload of payloads) {
-        const sig = await signer.signMessage(bs58.decode(payload));
-        const sigEncoded = bs58.encode(sig);
-        sigs.push(sigEncoded);
+      const sig = await signer.signMessage(bs58.decode(payload));
+      const sigEncoded = bs58.encode(sig);
+      sigs.push(sigEncoded);
     }
 
     postMessage({

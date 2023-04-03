@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 const responseHandlers = new Map();
 
 const handleConnect = async (message, sender, sendResponse) => {
-  chrome.storage.sync.get(["pk"]).then(async (result) => {
+  chrome.storage.local.get(["pk"]).then(async (result) => {
     if (result.pk == undefined) {
       console.log("pk not found");
       return;
@@ -37,7 +37,7 @@ const launchPopup = async (message, sender, sendResponse) => {
   }
 
   chrome.windows.getLastFocused(async (focusedWindow) => {
-    await chrome.storage.sync.set({ searchParams: searchParams });
+    await chrome.storage.local.set({ searchParams: searchParams });
     const popup = await chrome.windows.create({
       url: "adapter/" + message.data.method + ".html",
       type: "popup",
