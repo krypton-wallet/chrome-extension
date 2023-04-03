@@ -1,5 +1,6 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
+import { PublicKey } from "@solana/web3.js";
 
 const responseHandlers = new Map();
 
@@ -9,6 +10,7 @@ const handleConnect = async (message, sender, sendResponse) => {
       console.log("pk not found");
       return;
     }
+    console.log("background PK: ", result.pk);
     const callback = async (data, id) => {
       await sendResponse(data, id);
     };
@@ -80,7 +82,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     // keeps response channel open
     return true;
-  } else if (message.channel === "salmon_extension_background_channel") {
+  } else if (message.channel === "solmate_extension_background_channel") {
+    console.log("message: ", message);
     const responseHandler = responseHandlers.get(message.data.id);
     responseHandlers.delete(message.data.id);
     responseHandler(message.data, message.data.id);

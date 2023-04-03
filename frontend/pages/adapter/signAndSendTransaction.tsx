@@ -1,17 +1,16 @@
 /*global chrome*/
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Form, Input, Button } from "antd";
+import { Button } from "antd";
 import bs58 from "bs58";
-import nacl from "tweetnacl";
-
 import {
   Connection,
-  Keypair,
   PublicKey,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { useGlobalModalContext } from "../../components/GlobalModal";
+import { getSignerFromPkString, partialSign } from "../../utils";
 
 const SignAndSendTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -19,10 +18,13 @@ const SignAndSendTransaction: NextPage = () => {
   const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
+  const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
+  const [options, setOptions] = useState<any>();
+  const modalContext = useGlobalModalContext();
 
   useEffect(() => {
-    chrome.storage.sync.get(["searchParams", "sk"]).then(async (result) => {
-      if (result.searchParams == undefined || result.sk == undefined) {
+    chrome.storage.sync.get(["searchParams", "pk"]).then(async (result) => {
+      if (result.searchParams == undefined || result.pk == undefined) {
         return;
       }
       const search = result.searchParams;
@@ -34,24 +36,11 @@ const SignAndSendTransaction: NextPage = () => {
       const options = request.params.network;
       console.log("options: ", options);
 
-      const connection = new Connection("https://api.devnet.solana.com/");
-      const { blockhash } = await connection.getLatestBlockhash();
-
-      const secretKey = bs58.decode(result.sk);
-      const currKeypair = Keypair.fromSecretKey(secretKey);
-
-      const message = VersionedMessage.deserialize(payload);
-      message.recentBlockhash = blockhash;
-      const transaction = new VersionedTransaction(message);
-      transaction.sign([currKeypair]);
-
-      const signature = await connection.sendTransaction(transaction, options);
-      console.log("sig: ", signature);
-
-      setPk(currKeypair.publicKey);
       setId(request.id);
       setOrigin(origin);
-      setSig(signature);
+      setPk(new PublicKey(result.pk));
+      setPayload(payload);
+      setOptions(options);
     });
   }, []);
 
@@ -62,16 +51,30 @@ const SignAndSendTransaction: NextPage = () => {
   const postMessage = (message: any) => {
     // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
-      channel: "salmon_extension_background_channel",
+      channel: "solmate_extension_background_channel",
       data: message,
     });
   };
 
   const handleSubmit = async () => {
+    const connection = new Connection("https://api.devnet.solana.com/");
+    const { blockhash } = await connection.getLatestBlockhash();
+
+    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    const message = VersionedMessage.deserialize(payload);
+    message.recentBlockhash = blockhash;
+    const transaction = new VersionedTransaction(message);
+    await partialSign(transaction, signer);
+    console.log("tx signatures: ", transaction.signatures);
+
+    const signature = await connection.sendTransaction(transaction, options);
+    console.log("sendTx signature: ", signature);
+    // setSig(signature);
+
     postMessage({
       method: "signAndSendTransaction",
       result: {
-        signature: sig,
+        signature: signature,
         publicKey: pk,
       },
       id: id,

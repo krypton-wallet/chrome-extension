@@ -1,22 +1,26 @@
 /*global chrome*/
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Form, Input, Button } from "antd";
+import { Button } from "antd";
 import bs58 from "bs58";
-import nacl from "tweetnacl";
 
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { useGlobalModalContext } from "../../components/GlobalModal";
+import { getSignerFromPkString } from "../../utils";
 
 const SignTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [origin, setOrigin] = useState<string>("");
   const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
+  const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
 
+  const modalContext = useGlobalModalContext();
+
   useEffect(() => {
-    chrome.storage.sync.get(["searchParams", "sk"]).then(async (result) => {
-      if (result.searchParams == undefined || result.sk == undefined) {
+    chrome.storage.sync.get(["searchParams", "pk"]).then(async (result) => {
+      if (result.searchParams == undefined || result.pk == undefined) {
         return;
       }
       const search = result.searchParams;
@@ -26,13 +30,8 @@ const SignTransaction: NextPage = () => {
       const payload = bs58.decode(request.params.message);
       console.log("payload: ", payload);
 
-      const secretKey = bs58.decode(result.sk);
-      const currKeypair = Keypair.fromSecretKey(secretKey);
-
-      const sig = bs58.encode(nacl.sign.detached(payload, secretKey));
-      console.log("sig: ", sig);
-
-      setPk(currKeypair.publicKey);
+      setPayload(payload);
+      setPk(new PublicKey(result.pk));
       setId(request.id);
       setOrigin(origin);
       setSig(sig);
@@ -46,12 +45,16 @@ const SignTransaction: NextPage = () => {
   const postMessage = (message: any) => {
     // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
-      channel: "salmon_extension_background_channel",
+      channel: "solmate_extension_background_channel",
       data: message,
     });
   };
 
   const handleSubmit = async () => {
+    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    const sig = bs58.encode(await signer.signMessage(payload));
+    console.log("sig: ", sig);
+
     postMessage({
       method: "sign",
       result: {
