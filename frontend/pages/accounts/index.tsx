@@ -202,7 +202,7 @@ const AccountList: NextPage = () => {
         <List
           dataSource={currAccounts}
           locale={{
-            emptyText: spinning ? <Skeleton active={true} /> : <Empty />,
+            emptyText: spinning ? <Skeleton active={true} /> : <Skeleton active={false} />,
           }}
           renderItem={(item) => (
             <List.Item
