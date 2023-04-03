@@ -1,12 +1,4 @@
-import {
-  Badge,
-  Dropdown,
-  Menu,
-  Divider,
-  MenuProps,
-  Button,
-  Avatar,
-} from "antd";
+import { Badge, Dropdown, Menu, Button, Avatar } from "antd";
 import React, {
   BaseSyntheticEvent,
   ReactElement,
@@ -16,9 +8,6 @@ import React, {
 import {
   DownOutlined,
   UserOutlined,
-  ArrowLeftOutlined,
-  LogoutOutlined,
-  CreditCardOutlined,
   WalletOutlined,
   TeamOutlined,
   AppstoreOutlined,
@@ -32,24 +21,22 @@ import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
 import { Cluster, Connection, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../utils/avatar";
+
 type DomEvent = {
   domEvent: BaseSyntheticEvent;
   key: string;
   keyPath: Array<string>;
 };
 
+const PATHS_WITHOUT_HEADER_AND_FOOTER = [
+  "/",
+  "/signup",
+  "/accounts/yubikey/signup",
+];
+
 const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
-  const {
-    network,
-    setNetwork,
-    account,
-    setAccount,
-    setBalance,
-    currId,
-    pda,
-    avatar,
-    setAvatar,
-  } = useGlobalState();
+  const { network, setNetwork, account, currId, pda, avatar, setAvatar } =
+    useGlobalState();
   const [accountName, setAccountName] = useState<string>("");
 
   const router = useRouter();
@@ -109,20 +96,14 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     }
   };
 
-  const handleLogout = () => {
-    setAccount(null);
-    setNetwork("devnet");
-    setBalance(0);
-    router.push("/");
-  };
-
   const handleAccountSwitch = () => {
     router.push("/accounts");
   };
 
+  // Setting Menu not used now
   const settingMenu = (
     <Menu>
-      <Menu.Item key="/account">
+      {/* <Menu.Item key="/account">
         {avatar ? (
           <Avatar
             src={avatar}
@@ -148,17 +129,13 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
         <Link href="/account" passHref>
           Account
         </Link>
-      </Menu.Item>
+      </Menu.Item> */}
     </Menu>
   );
 
   useEffect(() => {
     // Set account name
-    if (
-      router.pathname != "/" &&
-      router.pathname != "/signup" &&
-      router.pathname != "/accounts/yubikey/signup"
-    ) {
+    if (!PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname)) {
       chrome.storage.local
         .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
         .then((result) => {
@@ -179,32 +156,37 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
   }, [currId, pda, router.pathname]);
 
   useEffect(() => {
-    chrome.storage.local.get(["currId", "accounts"]).then(async (res) => {
-      const id = res["currId"];
-      const accountObj = JSON.parse(res["accounts"]);
-      if (accountObj[id]["avatar"]) {
-        const connection = new Connection("https://api.devnet.solana.com/");
-        const avatarData = await getAvatar(
-          connection,
-          new PublicKey(accountObj[id].avatar)
-        );
-        const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-          "base64"
-        )}`;
-        setAvatar(avatarSVG);
-      } else {
-        setAvatar(undefined);
-      }
-    });
-  }, [setAvatar]);
+    if (!PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname)) {
+      chrome.storage.local
+        .get(["currId", "y_id", "accounts", "y_accounts", "mode"])
+        .then(async (res) => {
+          const id = res["mode"] == 0 ? res["currId"] : res["y_id"];
+          const accountObj =
+            res["mode"] == 0
+              ? JSON.parse(res["accounts"])
+              : JSON.parse(res["y_accounts"]);
+          if (accountObj[id]["avatar"]) {
+            const connection = new Connection("https://api.devnet.solana.com/");
+            const avatarData = await getAvatar(
+              connection,
+              new PublicKey(accountObj[id].avatar)
+            );
+            const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+              "base64"
+            )}`;
+            setAvatar(avatarSVG);
+          } else {
+            setAvatar(undefined);
+          }
+        });
+    }
+  }, [router.pathname]);
 
   return (
     <div className={styles.container}>
       <main className={styles.main}>
         {!router.pathname.startsWith("/accounts") &&
-          router.pathname != "/" &&
-          router.pathname != "/signup" &&
-          router.pathname != "/accounts/yubikey/signup" && (
+          !PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname) && (
             <header className={styles.header}>
               <Button
                 shape="round"
@@ -278,9 +260,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
 
         {!router.pathname.startsWith("/adapter") &&
           router.pathname != "/accounts/onboard" &&
-          router.pathname != "/" &&
-          router.pathname != "/signup" &&
-          router.pathname != "/accounts/yubikey/signup" && (
+          !PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname) && (
             <footer className={styles.footerHome}>
               <Menu
                 theme="dark"
