@@ -200,7 +200,6 @@ const getSignerFromPkString = async (
                     context.showModal(
                       <PinentryModal
                         title={"Please unlock your YubiKey"}
-                        description={`Enter PIN for YubiKey ${accountObj[id]["aid"]}`}
                         isRetry={isRetry}
                         onSubmitPin={(pin: string) => {
                           context.hideModal();
