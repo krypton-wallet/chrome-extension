@@ -23,6 +23,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [tokens, setTokens] = useState<Array<[PublicKey, bigint, number]>>([]);
   const [currId, setCurrId] = useState<number | null>(1);
   const [yubikeyInfo, setYubikeyInfo] = useState<PgpCardInfo | null>(null);
+  const [avatar, setAvatar] = useState<string>();
 
   return (
     <GlobalContext.Provider
@@ -49,6 +50,8 @@ function MyApp({ Component, pageProps }: AppProps) {
         setCurrId,
         yubikeyInfo,
         setYubikeyInfo,
+        avatar,
+        setAvatar,
       }}
     >
       <GlobalModal>

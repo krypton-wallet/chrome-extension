@@ -1,4 +1,4 @@
-import { Button, Form, Select, Table } from "antd";
+import { Button, Checkbox, Form, Select, Steps, Table } from "antd";
 import { NextPage } from "next";
 import { useRouter, withRouter } from "next/router";
 import React, { useState } from "react";
@@ -7,8 +7,10 @@ import {
   KeyOutlined,
   ArrowLeftOutlined,
   LoadingOutlined,
+  CheckCircleFilled,
 } from "@ant-design/icons";
 import {
+  generateAvatar,
   refreshBalance,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
@@ -30,6 +32,7 @@ import BN from "bn.js";
 import { useGlobalModalContext } from "../../../components/GlobalModal";
 import PinentryModal from "../../../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
+import { getAvatar } from "../../../utils/avatar";
 
 const YubikeySignup: NextPage = () => {
   const router = useRouter();
@@ -40,8 +43,25 @@ const YubikeySignup: NextPage = () => {
     setBalance,
     setAccount,
     setPDA,
+    setAvatar,
   } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
+  const [current, setCurrent] = useState(0);
+  const [steps, setSteps] = useState([
+    "Confirming your signup...",
+    "Initializing social wallet...",
+  ]);
+  const genSteps = [
+    "Initializing avatar...",
+    "Finding the environment...",
+    "Picking the oufit...",
+    "Fixing the hair...",
+    "Choosing the eyes...",
+    "Perfecting the smile...",
+    "Adding finishing touches...",
+  ];
+  const [gen, setGen] = useState(0);
+  const [shouldGen, setShouldGen] = useState<boolean>(false);
 
   const infoTable = [
     {
@@ -85,9 +105,16 @@ const YubikeySignup: NextPage = () => {
     form.setFieldsValue({ thres: value });
   };
 
+  const handleCheckboxChange = (e: { target: { checked: boolean } }) => {
+    setShouldGen(e.target.checked);
+  };
+
   const { showModal, hideModal } = useGlobalModalContext();
 
   const handleOk = async (values: any) => {
+    if (shouldGen) {
+      setSteps((prev) => [...prev, "Generating unique avatar..."]);
+    }
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
     const feePayer = new YubikeySigner(
@@ -204,8 +231,9 @@ const YubikeySignup: NextPage = () => {
       programId: walletProgramId,
       data: Buffer.concat([idx, acct_len, recovery_threshold]),
     });
-
     console.log("Initializing social wallet...");
+    setCurrent((prev) => prev + 1);
+
     const recentBlockhash = await connection.getLatestBlockhash();
     let tx = new Transaction({
       feePayer: ybPublicKey,
@@ -225,6 +253,39 @@ const YubikeySignup: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
+    // Generating Avatar
+    if (shouldGen) {
+      console.log(`generating avatar for ${profile_pda[0]}...`);
+      setCurrent((prev) => prev + 1);
+      const avatarPK = await generateAvatar(
+        connection,
+        feePayer,
+        profile_pda[0],
+        () => setGen((prev) => prev + 1)
+      );
+      const avatarData = await getAvatar(connection, avatarPK);
+      const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+        "base64"
+      )}`;
+      setAvatar(avatarSVG);
+      chrome.storage.local.get("y_accounts", (res) => {
+        const accountRes = res["y_accounts"];
+        if (accountRes != null) {
+          const old = JSON.parse(accountRes);
+          old[count].avatar = avatarPK.toBase58();
+          const values = JSON.stringify(old);
+          chrome.storage.local.set({
+            y_accounts: values,
+          });
+        } else {
+          return false;
+        }
+      });
+    } else {
+      setAvatar(undefined);
+    }
+    setCurrent((prev) => prev + 1);
+
     refreshBalance(network, feePayer)
       .then((updatedBalance) => {
         console.log("updated balance: ", updatedBalance);
@@ -234,81 +295,89 @@ const YubikeySignup: NextPage = () => {
         console.log(err);
       });
 
-    router.push("/wallet");
+    setTimeout(() => router.push("/wallet"), 1000);
   };
 
-  // Demo code that runs once component is loaded.
-  // Transfer SOL from big yubi to small yubi using yubikey version of sendAndConfirmTransaction.
-  // useEffect(() => {
-  //   const bigYubi = "D2760001240103040006205304730000";
-  //   const smallYubi = "D2760001240103040006223637020000";
-
-  //   const demo = async () => {
-  //     const from = new PublicKey(await getPubkey(bigYubi));
-  //     const to = new PublicKey(await getPubkey(smallYubi));
-
-  //     const connection = new Connection("https://api.devnet.solana.com/");
-
-  //     const recentBlockhash = await connection.getLatestBlockhash();
-  //     let transaction = new Transaction({
-  //       feePayer: from,
-  //       ...recentBlockhash,
-  //     }).add(
-  //       SystemProgram.transfer({
-  //         fromPubkey: from,
-  //         toPubkey: to,
-  //         lamports: 1000,
-  //       })
-  //     );
-
-  // const sig = await sendAndConfirmTransactionWithAccount(
-  //   connection,
-  //   transaction,
-
-  //   /// Example of initializing YubikeySigner with callbacks that open
-  //   /// global modals to collect pin from user and prompt for touch
-  //   /// confirmation. Uses the functions provided in useGlobalModalContext()
-  //   /// to control global modals.
-  //   [new YubikeySigner(
-  //     bigYubi,
-  //     (isRetry: boolean) => {
-  //       const promise = new Promise<string>((resolve, reject) => {
-  //         showModal(
-  //           <PinentryModal
-  //             title={"Please unlock your YubiKey"}
-  //             description={`Enter PIN for YubiKey ${bigYubi}`}
-  //             isRetry={isRetry}
-  //             onSubmitPin={(pin: string) => {
-  //               hideModal();
-  //               resolve(pin);
-  //             }}
-  //             onCancel={() => {
-  //               hideModal();
-  //               reject("User cancelled");
-  //             }}
-  //           ></PinentryModal>
-  //         );
-  //       })
-  //       return promise;
-  //     },
-  //     () => {
-  //       showModal(
-  //         <TouchConfirmModal
-  //           onCancel={() => {
-  //             hideModal();
-  //             console.log("User cancelled touch");
-  //           }}
-  //         ></TouchConfirmModal>);
-  //     },
-  //     hideModal,
-  //   )],
-  // );
-
-  //     return sig;
-  //   };
-
-  //   demo().then((sig) => console.log(`SIGNATURE: ${sig}`));
-  // }, []);
+  if (loading) {
+    return (
+      <>
+        <Steps
+          direction="vertical"
+          size="small"
+          current={current}
+          style={{ margin: "auto" }}
+        >
+          {steps.map((item, idx) => {
+            return (
+              <Steps.Step
+                key={item}
+                title={
+                  <span
+                    style={{
+                      color:
+                        current === idx
+                          ? "#fff"
+                          : current > idx
+                          ? "#415bf5"
+                          : "#b3b3b3",
+                    }}
+                  >
+                    {item}
+                  </span>
+                }
+                style={{ width: "fit-content", marginLeft: "2rem" }}
+                icon={
+                  current === idx ? (
+                    <LoadingOutlined style={{ color: "#fff" }} spin />
+                  ) : current > idx ? (
+                    <div
+                      style={{ borderRadius: "50%", backgroundColor: "#fff" }}
+                    >
+                      <CheckCircleFilled style={{ color: "#415bf5" }} />
+                    </div>
+                  ) : (
+                    <CheckCircleFilled style={{ color: "#b3b3b3" }} />
+                  )
+                }
+              />
+            );
+          })}
+        </Steps>
+        {shouldGen && current >= steps.length - 1 && (
+          <Steps
+            direction="vertical"
+            size="small"
+            current={gen}
+            progressDot
+            style={{ marginLeft: "20%" }}
+          >
+            {genSteps.map((item, idx) => {
+              return (
+                <Steps.Step
+                  key={item}
+                  title={
+                    <span
+                      style={{
+                        color:
+                          gen === idx
+                            ? "#fff"
+                            : gen > idx
+                            ? "#415bf5"
+                            : "#b3b3b3",
+                      }}
+                    >
+                      {item}
+                    </span>
+                  }
+                  style={{ width: "fit-content", marginLeft: "2rem" }}
+                />
+              );
+            })}
+          </Steps>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -322,50 +391,54 @@ const YubikeySignup: NextPage = () => {
           showHeader={false}
         />
       </div>
-      {!loading && (
-        <StyledForm
-          form={form}
-          layout="vertical"
-          autoComplete="off"
-          requiredMark={false}
-          onFinish={handleOk}
-        >
-          <div style={{ overflow: "hidden" }}>
-            <Form.Item name="thres">
-              <Select
-                defaultValue="2"
-                style={{ width: 150 }}
-                onChange={handleChange}
-                options={[
-                  { value: "2", label: "2" },
-                  { value: "3", label: "3" },
-                  { value: "4", label: "4" },
-                  { value: "5", label: "5" },
-                ]}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item shouldUpdate className="submit">
-            {() => (
-              <Button htmlType="submit" type="primary">
-                Generate
-              </Button>
-            )}
+      <p style={{ textAlign: "center" }}>
+        Select how many guardians are required to recover your wallet
+      </p>
+      <StyledForm
+        form={form}
+        layout="vertical"
+        autoComplete="off"
+        requiredMark={false}
+        onFinish={handleOk}
+      >
+        <div style={{ overflow: "hidden" }}>
+          <Form.Item name="thres">
+            <Select
+              defaultValue="2"
+              style={{ width: 150 }}
+              onChange={handleChange}
+              options={[
+                { value: "2", label: "2" },
+                { value: "3", label: "3" },
+                { value: "4", label: "4" },
+                { value: "5", label: "5" },
+              ]}
+            />
           </Form.Item>
-          <Link href="/" passHref>
-            <a className={styles.back}>
-              <ArrowLeftOutlined /> Back Home
-            </a>
-          </Link>
-        </StyledForm>
-      )}
-      {loading && (
-        <LoadingOutlined
-          style={{ fontSize: 24, color: "#fff", marginTop: "25px" }}
-          spin
-        />
-      )}
+        </div>
+        <Form.Item>
+          <Checkbox
+            checked={shouldGen}
+            onChange={handleCheckboxChange}
+            style={{ color: "#fff" }}
+          >
+            <p>Generate unique avatar for your PublicKey?</p>
+          </Checkbox>
+        </Form.Item>
+
+        <Form.Item shouldUpdate className="submit">
+          {() => (
+            <Button htmlType="submit" type="primary">
+              Generate
+            </Button>
+          )}
+        </Form.Item>
+        <Link href="/" passHref>
+          <a className={styles.back}>
+            <ArrowLeftOutlined /> Back Home
+          </a>
+        </Link>
+      </StyledForm>
     </>
   );
 };

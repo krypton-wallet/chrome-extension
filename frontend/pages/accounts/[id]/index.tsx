@@ -6,13 +6,17 @@ import { displayAddress } from "../../../utils";
 import styles from "../../../components/Layout/index.module.css";
 import Link from "next/link";
 import Paragraph from "antd/lib/typography/Paragraph";
+import { Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
 import { Box } from "../../../styles/StyledComponents.styles";
 import EditableBox from "../../../components/EditableBox";
+import { useGlobalState } from "../../../context";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { getAvatar } from "../../../utils/avatar";
 
 const Account: NextPage = () => {
   const router = useRouter();
-  //const { pda } = useGlobalState();
+  const { avatar, setAvatar } = useGlobalState();
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
@@ -60,26 +64,36 @@ const Account: NextPage = () => {
   };
 
   useEffect(() => {
-    chrome.storage.local.get(["accounts", "y_accounts"]).then((result) => {
-      if (selectedMode == 0) {
-        const accountObj = JSON.parse(result["accounts"]);
+    chrome.storage.local
+      .get(["accounts", "y_accounts"])
+      .then(async (result) => {
+        let accountObj: any = {};
+        if (selectedMode == 0) {
+          accountObj = JSON.parse(result["accounts"]);
+        } else if (selectedMode == 1) {
+          accountObj = JSON.parse(result["y_accounts"]);
+        }
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
         setAccountName(name);
         setPk(pk);
         setPda(pda);
-      } else if (selectedMode == 1) {
-        const accountObj = JSON.parse(result["y_accounts"]);
-        const name = accountObj[selectedId]["name"];
-        const pk = accountObj[selectedId]["pk"];
-        const pda = accountObj[selectedId]["pda"];
-        setAccountName(name);
-        setPk(pk);
-        setPda(pda);
-      }
-    });
-  }, []);
+        if (accountObj[selectedId]["avatar"]) {
+          const connection = new Connection("https://api.devnet.solana.com/");
+          const avatarData = await getAvatar(
+            connection,
+            new PublicKey(accountObj[selectedId]["avatar"])
+          );
+          const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+            "base64"
+          )}`;
+          setAvatar(avatarSVG);
+        } else {
+          setAvatar(undefined);
+        }
+      });
+  }, [selectedId, selectedMode, setAvatar]);
 
   return (
     <>
@@ -117,15 +131,15 @@ const Account: NextPage = () => {
         value={displayAddress(pk)}
         copyableValue={pk}
       />
-      <img
+      <Image
+        width={"23%"}
         style={{
           alignItems: "center",
-          width: "23%",
-          height: "20%",
           marginTop: "15px",
         }}
-        src="/static/images/profile.png"
-      ></img>
+        alt="profile avatar"
+        src={avatar ? avatar : "/static/images/profile.png"}
+      />
     </>
   );
 };

@@ -11,7 +11,15 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import { message } from "antd";
+import BN from "bn.js";
 import bs58 from "bs58";
+import { generateAvatar } from "./avatar";
+import {
+  AVATAR_PROGRAM_ID,
+  DATA_PROGRAM_ID,
+  PDA_SEED,
+} from "./avatar/constants";
+import { svgPKs } from "./avatar/svg-pubkeys";
 import { KeypairSigner, Signer, YubikeySigner } from "../types/account";
 import {
   GlobalModalContext,
@@ -246,4 +254,5 @@ export {
   sendAndConfirmTransactionWithAccount,
   partialSign,
   getSignerFromPkString,
+  generateAvatar,
 };

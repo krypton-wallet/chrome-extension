@@ -29,6 +29,9 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import Link from "next/link";
+import styles from "../../components/Layout/index.module.css";
+import { KeypairSigner } from "../../types/account";
+import { getAvatar } from "../../utils/avatar";
 import { useGlobalModalContext } from "../../components/GlobalModal";
 
 const AccountList: NextPage = () => {
@@ -44,19 +47,20 @@ const AccountList: NextPage = () => {
     setTokens,
     currId,
     setCurrId,
+    setAvatar,
   } = useGlobalState();
 
   const [allAccounts, setAllAccounts] = useState<
-    Array<[number, number, string, string]>
+    Array<[number, number, string, string, string?]>
   >([]);
   const [standardAccounts, setStandardAccounts] = useState<
-    Array<[number, number, string, string]>
+    Array<[number, number, string, string, string?]>
   >([]);
   const [yubikeyAccounts, setYubikeyAccounts] = useState<
-    Array<[number, number, string, string]>
+    Array<[number, number, string, string, string?]>
   >([]);
   const [currAccounts, setCurrAccounts] = useState<
-    Array<[number, number, string, string]>
+    Array<[number, number, string, string, string?]>
   >([]);
   const [filter, setFilter] = useState<string>("All");
 
@@ -93,37 +97,69 @@ const AccountList: NextPage = () => {
 
   useEffect(() => {
     // Fetching all accounts from chrome storage
-    chrome.storage.local.get(["accounts", "y_accounts"]).then((result) => {
-      let accountTmp: Array<[number, number, string, string]> = [];
-      let yubikeyAccountTmp: Array<[number, number, string, string]> = [];
+    chrome.storage.local
+      .get(["accounts", "y_accounts"])
+      .then(async (result) => {
+        let accountTmp: Array<[number, number, string, string, string?]> = [];
+        let yubikeyAccountTmp: Array<
+          [number, number, string, string, string?]
+        > = [];
 
-      if (result["accounts"] != undefined) {
-        const accountObj = JSON.parse(result["accounts"]);
+        if (result["accounts"] != undefined) {
+          const accountObj = JSON.parse(result["accounts"]);
 
-        for (var id in accountObj) {
-          const name = accountObj[id].name;
-          const pda = accountObj[id].pda;
-          accountTmp.push([0, Number(id), name, pda]);
+          for (var id in accountObj) {
+            const name = accountObj[id].name;
+            const pda = accountObj[id].pda;
+            if (accountObj[id].avatar) {
+              const connection = new Connection(
+                "https://api.devnet.solana.com/"
+              );
+              const avatarData = await getAvatar(
+                connection,
+                new PublicKey(accountObj[id].avatar)
+              );
+              const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+                "base64"
+              )}`;
+              accountTmp.push([0, Number(id), name, pda, avatarSVG]);
+            } else {
+              accountTmp.push([0, Number(id), name, pda]);
+            }
+          }
+          setStandardAccounts(accountTmp);
+          setSpinning(false);
         }
-        setStandardAccounts(accountTmp);
-        setSpinning(false);
-      }
 
-      if (result["y_accounts"] != undefined) {
-        console.log(result["y_accounts"]);
-        const accountObj = JSON.parse(result["y_accounts"]);
-        for (var id in accountObj) {
-          const name = accountObj[id].name;
-          const pda = accountObj[id].pda;
-          yubikeyAccountTmp.push([1, Number(id), name, pda]);
+        if (result["y_accounts"] != undefined) {
+          console.log(result["y_accounts"]);
+          const accountObj = JSON.parse(result["y_accounts"]);
+          for (var id in accountObj) {
+            const name = accountObj[id].name;
+            const pda = accountObj[id].pda;
+            if (accountObj[id].avatar) {
+              const connection = new Connection(
+                "https://api.devnet.solana.com/"
+              );
+              const avatarData = await getAvatar(
+                connection,
+                new PublicKey(accountObj[id].avatar)
+              );
+              const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+                "base64"
+              )}`;
+              yubikeyAccountTmp.push([1, Number(id), name, pda, avatarSVG]);
+            } else {
+              yubikeyAccountTmp.push([1, Number(id), name, pda]);
+            }
+          }
+          setYubikeyAccounts(yubikeyAccountTmp);
+          setSpinning(false);
         }
-        setYubikeyAccounts(yubikeyAccountTmp);
-        setSpinning(false);
-      }
-      const allAccountsTmp = [...accountTmp, ...yubikeyAccountTmp];
-      setAllAccounts(allAccountsTmp);
-      setCurrAccounts(allAccountsTmp);
-    });
+        const allAccountsTmp = [...accountTmp, ...yubikeyAccountTmp];
+        setAllAccounts(allAccountsTmp);
+        setCurrAccounts(allAccountsTmp);
+      });
   }, []);
 
   const handleAddAccount = () => {
@@ -181,7 +217,11 @@ const AccountList: NextPage = () => {
                 } else if (mode == 1) {
                   chrome.storage.local.set({ y_id: id });
                 }
-
+                if (item.length > 4) {
+                  setAvatar(item[4]);
+                } else {
+                  setAvatar(undefined);
+                }
                 chrome.storage.local
                   .get(["accounts", "y_accounts"])
                   .then(async (result) => {
@@ -226,7 +266,13 @@ const AccountList: NextPage = () => {
               }}
             >
               <List.Item.Meta
-                avatar={<Avatar src={"/static/images/profile.png"} />}
+                avatar={
+                  <Avatar
+                    src={
+                      item.length > 4 ? item[4] : "/static/images/profile.png"
+                    }
+                  />
+                }
                 title={item[2]}
                 description={displayAddress(item[3])}
               />
