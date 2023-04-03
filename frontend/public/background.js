@@ -1,14 +1,16 @@
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
+import { PublicKey } from "@solana/web3.js";
 
 const responseHandlers = new Map();
 
 const handleConnect = async (message, sender, sendResponse) => {
-  chrome.storage.sync.get(["pk"]).then(async (result) => {
+  chrome.storage.local.get(["pk"]).then(async (result) => {
     if (result.pk == undefined) {
       console.log("pk not found");
       return;
     }
+    console.log("background PK: ", result.pk);
     const callback = async (data, id) => {
       await sendResponse(data, id);
     };
@@ -35,7 +37,7 @@ const launchPopup = async (message, sender, sendResponse) => {
   }
 
   chrome.windows.getLastFocused(async (focusedWindow) => {
-    await chrome.storage.sync.set({ searchParams: searchParams });
+    await chrome.storage.local.set({ searchParams: searchParams });
     const popup = await chrome.windows.create({
       url: "adapter/" + message.data.method + ".html",
       type: "popup",
@@ -80,7 +82,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     // keeps response channel open
     return true;
-  } else if (message.channel === "salmon_extension_background_channel") {
+  } else if (message.channel === "solmate_extension_background_channel") {
+    console.log("message: ", message);
     const responseHandler = responseHandlers.get(message.data.id);
     responseHandlers.delete(message.data.id);
     responseHandler(message.data, message.data.id);

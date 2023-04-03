@@ -22,7 +22,7 @@ Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installi
 
 ```
 git clone https://github.com/kevinxyc1/solmate-extension.git
-cd solmate-extension
+cd solmate-extension/frontend
 yarn && npm install && nvm use 16
 ```
 

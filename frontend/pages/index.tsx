@@ -17,20 +17,25 @@ const Home: NextPage = () => {
   const modalContext = useGlobalModalContext();
 
   useEffect(() => {
-    chrome.storage.sync.get(["pk", "mode"]).then(async (result) => {
+    chrome.storage.local.get(["pk", "mode"]).then(async (result) => {
       if (result.pk == undefined) {
-        chrome.storage.sync.set({ counter: 1, currId: 1, accounts: "{}", y_counter: 1, y_id: 1, y_accounts: "{}", mode: 0 });
+        chrome.storage.local.set({
+          counter: 1,
+          currId: 1,
+          accounts: "{}",
+          y_counter: 1,
+          y_id: 1,
+          y_accounts: "{}",
+          mode: 0,
+        });
         setVisible(true);
         return;
       }
 
       // TODO: Detoxify this
-      const currKeypair = await getSignerFromPkString(
-        result.pk,
-        modalContext,
-      );
+      const currKeypair = await getSignerFromPkString(result.pk, modalContext);
       setAccount(currKeypair);
-    
+
       const profile_pda = PublicKey.findProgramAddressSync(
         [Buffer.from("profile", "utf-8"), new PublicKey(result.pk).toBuffer()],
         walletProgramId

@@ -3,23 +3,19 @@ import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
-import {
-  Connection,
-  PublicKey,
-  VersionedMessage,
-  VersionedTransaction,
-} from "@solana/web3.js";
-import { useGlobalModalContext } from "../../components/GlobalModal";
-import { getSignerFromPkString, partialSign } from "../../utils";
 
-const SignAndSendTransaction: NextPage = () => {
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { useGlobalModalContext } from "../../components/GlobalModal";
+import { getSignerFromPkString } from "../../utils";
+
+const SignAllTransactions: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [origin, setOrigin] = useState<string>("");
   const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
+  const [payloads, setPayloads] = useState<Array<string>>([]);
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
-  const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
-  const [options, setOptions] = useState<any>();
+
   const modalContext = useGlobalModalContext();
 
   useEffect(() => {
@@ -31,16 +27,14 @@ const SignAndSendTransaction: NextPage = () => {
       const origin = search.origin;
       const request = JSON.parse(search.request);
       console.log("request: ", request);
-      const payload = bs58.decode(request.params.message);
-      console.log("payload: ", payload);
-      const options = request.params.network;
-      console.log("options: ", options);
+      const payloads = request.params.messages;
+      console.log("payload: ", payloads);
 
+      setPayloads(payloads);
+      setPk(new PublicKey(result.pk));
       setId(request.id);
       setOrigin(origin);
-      setPk(new PublicKey(result.pk));
-      setPayload(payload);
-      setOptions(options);
+      setSig(sig);
     });
   }, []);
 
@@ -57,35 +51,29 @@ const SignAndSendTransaction: NextPage = () => {
   };
 
   const handleSubmit = async () => {
-    const connection = new Connection("https://api.devnet.solana.com/");
-    const { blockhash } = await connection.getLatestBlockhash();
-
     const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
-    const message = VersionedMessage.deserialize(payload);
-    message.recentBlockhash = blockhash;
-    const transaction = new VersionedTransaction(message);
-    await partialSign(transaction, signer);
-    console.log("tx signatures: ", transaction.signatures);
-
-    const signature = await connection.sendTransaction(transaction, options);
-    console.log("sendTx signature: ", signature);
-    // setSig(signature);
+    let sigs = [];
+    for (const payload of payloads) {
+      const sig = await signer.signMessage(bs58.decode(payload));
+      const sigEncoded = bs58.encode(sig);
+      sigs.push(sigEncoded);
+    }
 
     postMessage({
-      method: "signAndSendTransaction",
+      method: "signAllTransactions",
       result: {
-        signature: signature,
+        signatures: sigs,
         publicKey: pk,
       },
       id: id,
     });
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     window.close();
   };
 
   return (
     <>
-      <h1 className={"title"}>Approve Transaction</h1>
+      <h1 className={"title"}>Approve Transactions</h1>
       <p>{origin}</p>
       <p style={{ marginTop: "20px", textAlign: "left", width: "75%" }}>
         Estimated Changes:
@@ -137,4 +125,4 @@ const SignAndSendTransaction: NextPage = () => {
   );
 };
 
-export default SignAndSendTransaction;
+export default SignAllTransactions;

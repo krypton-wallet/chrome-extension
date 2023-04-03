@@ -159,7 +159,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
       router.pathname != "/signup" &&
       router.pathname != "/accounts/yubikey/signup"
     ) {
-      chrome.storage.sync
+      chrome.storage.local
         .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
         .then((result) => {
           if (result["mode"] == 0) {
@@ -179,7 +179,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
   }, [currId, pda, router.pathname]);
 
   useEffect(() => {
-    chrome.storage.sync.get(["currId", "accounts"]).then(async (res) => {
+    chrome.storage.local.get(["currId", "accounts"]).then(async (res) => {
       const id = res["currId"];
       const accountObj = JSON.parse(res["accounts"]);
       if (accountObj[id]["avatar"]) {

@@ -40,7 +40,7 @@ const Account: NextPage = () => {
 
   const handleNameChange = (newName: string) => {
     console.log(newName);
-    chrome.storage.sync.get(["accounts", "y_accounts"], (res) => {
+    chrome.storage.local.get(["accounts", "y_accounts"], (res) => {
       var accountRes = selectedMode == 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         var old = JSON.parse(accountRes);
@@ -53,9 +53,9 @@ const Account: NextPage = () => {
         }
         var values = JSON.stringify(old);
         if (selectedMode == 0) {
-          chrome.storage.sync.set({ accounts: values });
+          chrome.storage.local.set({ accounts: values });
         } else if (selectedMode == 1) {
-          chrome.storage.sync.set({ y_accounts: values });
+          chrome.storage.local.set({ y_accounts: values });
         }
       } else {
         return false;
@@ -64,33 +64,35 @@ const Account: NextPage = () => {
   };
 
   useEffect(() => {
-    chrome.storage.sync.get(["accounts", "y_accounts"]).then(async (result) => {
-      let accountObj: any = {};
-      if (selectedMode == 0) {
-        accountObj = JSON.parse(result["accounts"]);
-      } else if (selectedMode == 1) {
-        accountObj = JSON.parse(result["y_accounts"]);
-      }
-      const name = accountObj[selectedId]["name"];
-      const pk = accountObj[selectedId]["pk"];
-      const pda = accountObj[selectedId]["pda"];
-      setAccountName(name);
-      setPk(pk);
-      setPda(pda);
-      if (accountObj[selectedId]["avatar"]) {
-        const connection = new Connection("https://api.devnet.solana.com/");
-        const avatarData = await getAvatar(
-          connection,
-          new PublicKey(accountObj[selectedId]["avatar"])
-        );
-        const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-          "base64"
-        )}`;
-        setAvatar(avatarSVG);
-      } else {
-        setAvatar(undefined);
-      }
-    });
+    chrome.storage.local
+      .get(["accounts", "y_accounts"])
+      .then(async (result) => {
+        let accountObj: any = {};
+        if (selectedMode == 0) {
+          accountObj = JSON.parse(result["accounts"]);
+        } else if (selectedMode == 1) {
+          accountObj = JSON.parse(result["y_accounts"]);
+        }
+        const name = accountObj[selectedId]["name"];
+        const pk = accountObj[selectedId]["pk"];
+        const pda = accountObj[selectedId]["pda"];
+        setAccountName(name);
+        setPk(pk);
+        setPda(pda);
+        if (accountObj[selectedId]["avatar"]) {
+          const connection = new Connection("https://api.devnet.solana.com/");
+          const avatarData = await getAvatar(
+            connection,
+            new PublicKey(accountObj[selectedId]["avatar"])
+          );
+          const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+            "base64"
+          )}`;
+          setAvatar(avatarSVG);
+        } else {
+          setAvatar(undefined);
+        }
+      });
   }, [selectedId, selectedMode, setAvatar]);
 
   return (

@@ -97,62 +97,69 @@ const AccountList: NextPage = () => {
 
   useEffect(() => {
     // Fetching all accounts from chrome storage
-    chrome.storage.sync.get(["accounts", "y_accounts"]).then(async (result) => {
-      let accountTmp: Array<[number, number, string, string, string?]> = [];
-      let yubikeyAccountTmp: Array<[number, number, string, string, string?]> =
-        [];
+    chrome.storage.local
+      .get(["accounts", "y_accounts"])
+      .then(async (result) => {
+        let accountTmp: Array<[number, number, string, string, string?]> = [];
+        let yubikeyAccountTmp: Array<
+          [number, number, string, string, string?]
+        > = [];
 
-      if (result["accounts"] != undefined) {
-        const accountObj = JSON.parse(result["accounts"]);
+        if (result["accounts"] != undefined) {
+          const accountObj = JSON.parse(result["accounts"]);
 
-        for (var id in accountObj) {
-          const name = accountObj[id].name;
-          const pda = accountObj[id].pda;
-          if (accountObj[id].avatar) {
-            const connection = new Connection("https://api.devnet.solana.com/");
-            const avatarData = await getAvatar(
-              connection,
-              new PublicKey(accountObj[id].avatar)
-            );
-            const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-              "base64"
-            )}`;
-            accountTmp.push([0, Number(id), name, pda, avatarSVG]);
-          } else {
-            accountTmp.push([0, Number(id), name, pda]);
+          for (var id in accountObj) {
+            const name = accountObj[id].name;
+            const pda = accountObj[id].pda;
+            if (accountObj[id].avatar) {
+              const connection = new Connection(
+                "https://api.devnet.solana.com/"
+              );
+              const avatarData = await getAvatar(
+                connection,
+                new PublicKey(accountObj[id].avatar)
+              );
+              const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+                "base64"
+              )}`;
+              accountTmp.push([0, Number(id), name, pda, avatarSVG]);
+            } else {
+              accountTmp.push([0, Number(id), name, pda]);
+            }
           }
+          setStandardAccounts(accountTmp);
+          setSpinning(false);
         }
-        setStandardAccounts(accountTmp);
-        setSpinning(false);
-      }
 
-      if (result["y_accounts"] != undefined) {
-        console.log(result["y_accounts"]);
-        const accountObj = JSON.parse(result["y_accounts"]);
-        for (var id in accountObj) {
-          const name = accountObj[id].name;
-          const pda = accountObj[id].pda;
-          if (accountObj[id].avatar) {
-            const connection = new Connection("https://api.devnet.solana.com/");
-            const avatarData = await getAvatar(
-              connection,
-              new PublicKey(accountObj[id].avatar)
-            );
-            const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-              "base64"
-            )}`;
-            yubikeyAccountTmp.push([1, Number(id), name, pda, avatarSVG]);
-          } else {
-            yubikeyAccountTmp.push([1, Number(id), name, pda]);
+        if (result["y_accounts"] != undefined) {
+          console.log(result["y_accounts"]);
+          const accountObj = JSON.parse(result["y_accounts"]);
+          for (var id in accountObj) {
+            const name = accountObj[id].name;
+            const pda = accountObj[id].pda;
+            if (accountObj[id].avatar) {
+              const connection = new Connection(
+                "https://api.devnet.solana.com/"
+              );
+              const avatarData = await getAvatar(
+                connection,
+                new PublicKey(accountObj[id].avatar)
+              );
+              const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+                "base64"
+              )}`;
+              yubikeyAccountTmp.push([1, Number(id), name, pda, avatarSVG]);
+            } else {
+              yubikeyAccountTmp.push([1, Number(id), name, pda]);
+            }
           }
+          setYubikeyAccounts(yubikeyAccountTmp);
+          setSpinning(false);
         }
-        setYubikeyAccounts(yubikeyAccountTmp);
-        setSpinning(false);
-      }
-      const allAccountsTmp = [...accountTmp, ...yubikeyAccountTmp];
-      setAllAccounts(allAccountsTmp);
-      setCurrAccounts(allAccountsTmp);
-    });
+        const allAccountsTmp = [...accountTmp, ...yubikeyAccountTmp];
+        setAllAccounts(allAccountsTmp);
+        setCurrAccounts(allAccountsTmp);
+      });
   }, []);
 
   const handleAddAccount = () => {
@@ -205,30 +212,30 @@ const AccountList: NextPage = () => {
                 const mode = item[0];
                 const id = item[1];
                 if (mode == 0) {
-                  chrome.storage.sync.set({ currId: id });
+                  chrome.storage.local.set({ currId: id });
                   setCurrId(id);
                 } else if (mode == 1) {
-                  chrome.storage.sync.set({ y_id: id });
+                  chrome.storage.local.set({ y_id: id });
                 }
                 if (item.length > 4) {
                   setAvatar(item[4]);
                 } else {
                   setAvatar(undefined);
                 }
-                chrome.storage.sync
+                chrome.storage.local
                   .get(["accounts", "y_accounts"])
                   .then(async (result) => {
                     let publicKey = "";
                     if (mode == 0) {
                       let accountObj = JSON.parse(result["accounts"]);
                       publicKey = accountObj[id]["pk"];
-                      chrome.storage.sync.set({ mode: 0 });
+                      chrome.storage.local.set({ mode: 0 });
                     } else if (mode == 1) {
                       let accountObj = JSON.parse(result["y_accounts"]);
                       publicKey = accountObj[id]["pk"];
-                      chrome.storage.sync.set({ mode: 1 });
+                      chrome.storage.local.set({ mode: 1 });
                     }
-                    chrome.storage.sync.set({ pk: publicKey });
+                    chrome.storage.local.set({ pk: publicKey });
 
                     // TODO: Detoxify this
                     setAccount(

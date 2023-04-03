@@ -7,10 +7,8 @@ import {
   LAMPORTS_PER_SOL,
   PublicKey,
   sendAndConfirmRawTransaction,
-  sendAndConfirmTransaction,
-  SystemProgram,
   Transaction,
-  TransactionInstruction,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import { message } from "antd";
 import BN from "bn.js";
@@ -156,8 +154,16 @@ const sendAndConfirmTransactionWithAccount = async (
   return txid;
 };
 
-const partialSign = async (tx: Transaction, signer: Signer) => {
-  const transactionBuffer = tx.serializeMessage();
+const partialSign = async (
+  tx: Transaction | VersionedTransaction,
+  signer: Signer
+) => {
+  let transactionBuffer;
+  if (typeof (tx as any).serializeMessage === "function") {
+    transactionBuffer = (tx as any).serializeMessage();
+  } else {
+    transactionBuffer = (tx as any).message.serialize();
+  }
   const signature = await signer.signMessage(transactionBuffer);
   tx.addSignature(await signer.getPublicKey(), Buffer.from(signature));
 };
@@ -167,7 +173,7 @@ const getSignerFromPkString = async (
   context: GlobalModalContext
 ): Promise<Signer> => {
   const promise = new Promise<Signer>((resolve, reject) => {
-    chrome.storage.sync
+    chrome.storage.local
       .get(["mode", "accounts", "y_accounts"])
       .then(async (result) => {
         // standard
@@ -202,7 +208,6 @@ const getSignerFromPkString = async (
                     context.showModal(
                       <PinentryModal
                         title={"Please unlock your YubiKey"}
-                        description={`Enter PIN for YubiKey ${accountObj[id]["aid"]}`}
                         isRetry={isRetry}
                         onSubmitPin={(pin: string) => {
                           context.hideModal();

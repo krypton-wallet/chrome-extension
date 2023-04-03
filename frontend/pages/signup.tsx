@@ -114,11 +114,11 @@ const Signup: NextPage = () => {
     const publicKey = feePayer.publicKey.toBase58();
     var count = 0;
 
-    chrome.storage.sync.get("counter", (res) => {
+    chrome.storage.local.get("counter", (res) => {
       count = res["counter"];
     });
 
-    chrome.storage.sync.get("accounts", (res) => {
+    chrome.storage.local.get("accounts", (res) => {
       var accountRes = res["accounts"];
       if (accountRes != null) {
         var old = JSON.parse(accountRes);
@@ -129,7 +129,7 @@ const Signup: NextPage = () => {
           pda: profile_pda[0].toBase58(),
         };
         var values = JSON.stringify(old);
-        chrome.storage.sync.set({
+        chrome.storage.local.set({
           accounts: values,
           counter: count + 1,
           currId: count,
@@ -139,7 +139,7 @@ const Signup: NextPage = () => {
       }
     });
 
-    chrome.storage.sync.set({ pk: feePayer.publicKey.toBase58(), mode: 0 });
+    chrome.storage.local.set({ pk: feePayer.publicKey.toBase58(), mode: 0 });
 
     console.log("pk: ", feePayer.publicKey.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
@@ -410,13 +410,13 @@ const Signup: NextPage = () => {
         "base64"
       )}`;
       setAvatar(avatarSVG);
-      chrome.storage.sync.get("accounts", (res) => {
+      chrome.storage.local.get("accounts", (res) => {
         const accountRes = res["accounts"];
         if (accountRes != null) {
           const old = JSON.parse(accountRes);
           old[count].avatar = avatarPK.toBase58();
           const values = JSON.stringify(old);
-          chrome.storage.sync.set({
+          chrome.storage.local.set({
             accounts: values,
           });
         } else {
