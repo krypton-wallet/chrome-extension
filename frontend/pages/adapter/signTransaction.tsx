@@ -56,7 +56,7 @@ const SignTransaction: NextPage = () => {
     console.log("sig: ", sig);
 
     postMessage({
-      method: "sign",
+      method: "signTransaction",
       result: {
         signature: sig,
         publicKey: pk,
