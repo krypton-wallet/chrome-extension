@@ -401,7 +401,7 @@ const Signup: NextPage = () => {
       setCurrent((prev) => prev + 1);
       const avatarPK = await generateAvatar(
         connection,
-        feePayer,
+        new KeypairSigner(feePayer),
         profile_pda[0],
         () => setGen((prev) => prev + 1)
       );

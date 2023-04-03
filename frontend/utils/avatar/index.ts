@@ -2,30 +2,42 @@ import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConf
 import BN from "bn.js";
 import { DATA_PROGRAM_ID, PDA_SEED, AVATAR_PROGRAM_ID } from "./constants";
 import { svgPKs } from "./svg-pubkeys";
+import { YubikeySigner, KeypairSigner, Signer } from "../../types/account";
+import { sendAndConfirmTransactionWithAccount } from "..";
+import nacl from "tweetnacl";
 
-export const generateAvatar = async (connection: Connection, wallet: Keypair, identity: PublicKey, update: () => void) => {
-    const feePayer = wallet;
+export const generateAvatar = async (connection: Connection, wallet: Signer, identity: PublicKey, update: () => void) => {
+    const feePayerPK = await wallet.getPublicKey();
+    let recentBlockhash: Readonly<{
+      blockhash: string;
+      lastValidBlockHeight: number;
+  }>;
   
     // data account of avatar
     let dataAccount: PublicKey;
     let pdaData: PublicKey;
       const dataAccountKP = new Keypair();
+      const dataAccountSigner = new KeypairSigner(dataAccountKP);
       const rentExemptAmount = await connection.getMinimumBalanceForRentExemption(
         200
       );
       const createIx = SystemProgram.createAccount({
-        fromPubkey: feePayer.publicKey,
+        fromPubkey: await wallet.getPublicKey(),
         newAccountPubkey: dataAccountKP.publicKey,
         lamports: rentExemptAmount,
         space: 200,
         programId: DATA_PROGRAM_ID,
       });
-      const createTx = new Transaction();
+      recentBlockhash = await connection.getLatestBlockhash();
+      const createTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
       createTx.add(createIx);
-      const createTxid = await sendAndConfirmTransaction(
+      const createTxid = await sendAndConfirmTransactionWithAccount(
         connection,
         createTx,
-        [feePayer, dataAccountKP],
+        [wallet, dataAccountSigner],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -43,13 +55,13 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
       const idx0 = Buffer.from(new Uint8Array([0]));
       const space = new BN(200).toArrayLike(Buffer, "le", 8);
       const dynamic = Buffer.from(new Uint8Array([1]));
-      const authority = wallet.publicKey.toBuffer();
+      const authority = feePayerPK.toBuffer();
       const is_created = Buffer.from(new Uint8Array([1]));
       const false_flag = Buffer.from(new Uint8Array([0]));
       const initializeIx = new TransactionInstruction({
         keys: [
           {
-            pubkey: wallet.publicKey,
+            pubkey: feePayerPK,
             isSigner: true,
             isWritable: true,
           },
@@ -79,12 +91,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
           false_flag,
         ]),
       });
-      const initializeTx = new Transaction();
+      recentBlockhash = await connection.getLatestBlockhash();
+      const initializeTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
       initializeTx.add(initializeIx);
-      const initializeTxid = await sendAndConfirmTransaction(
+      const initializeTxid = await sendAndConfirmTransactionWithAccount(
         connection,
         initializeTx,
-        [feePayer, dataAccountKP],
+        [wallet, dataAccountSigner],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -100,7 +116,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const initializeIdentityIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -138,12 +154,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
       isSigner: false,
       isWritable: false,
     });
-    const initializeIdentityTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const initializeIdentityTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     initializeIdentityTx.add(initializeIdentityIx);
-    const initializeIdentityTxid = await sendAndConfirmTransaction(
+    const initializeIdentityTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       initializeIdentityTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -158,7 +178,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const appendIdentityCloIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -193,12 +213,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
         isWritable: false,
       });
     });
-    const appendIdentityCloTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const appendIdentityCloTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     appendIdentityCloTx.add(appendIdentityCloIx);
-    const appendIdentityCloTxid = await sendAndConfirmTransaction(
+    const appendIdentityCloTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       appendIdentityCloTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -214,7 +238,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const appendIdentityTopIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -249,12 +273,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
         isWritable: false,
       });
     });
-    const appendIdentityTopTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const appendIdentityTopTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     appendIdentityTopTx.add(appendIdentityTopIx);
-    const appendIdentityTopTxid = await sendAndConfirmTransaction(
+    const appendIdentityTopTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       appendIdentityTopTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -269,7 +297,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const appendIdentityEyesIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -304,12 +332,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
         isWritable: false,
       });
     });
-    const appendIdentityEyesTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const appendIdentityEyesTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     appendIdentityEyesTx.add(appendIdentityEyesIx);
-    const appendIdentityEyesTxid = await sendAndConfirmTransaction(
+    const appendIdentityEyesTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       appendIdentityEyesTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -324,7 +356,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const appendIdentityMouthIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -359,12 +391,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
         isWritable: false,
       });
     });
-    const appendIdentityMouthTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const appendIdentityMouthTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     appendIdentityMouthTx.add(appendIdentityMouthIx);
-    const appendIdentityMouthTxid = await sendAndConfirmTransaction(
+    const appendIdentityMouthTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       appendIdentityMouthTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -379,7 +415,7 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
     const completeIdentityIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: feePayer.publicKey,
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -407,12 +443,16 @@ export const generateAvatar = async (connection: Connection, wallet: Keypair, id
       programId: AVATAR_PROGRAM_ID,
       data: Buffer.concat([Buffer.from(new Uint8Array([5]))]),
     });
-    const completeIdentityTx = new Transaction();
+    recentBlockhash = await connection.getLatestBlockhash();
+    const completeIdentityTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
     completeIdentityTx.add(completeIdentityIx);
-    const completeIdentityTxid = await sendAndConfirmTransaction(
+    const completeIdentityTxid = await sendAndConfirmTransactionWithAccount(
       connection,
       completeIdentityTx,
-      [feePayer],
+      [wallet],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
