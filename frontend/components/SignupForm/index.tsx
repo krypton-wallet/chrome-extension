@@ -136,6 +136,17 @@ const SignupForm = ({
     });
     tx.add(initializeSocialWalletIx);
 
+    /* Versioned TX
+    const recentBlockhash = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+      payerKey: feePayer.publicKey,
+      recentBlockhash: recentBlockhash.blockhash,
+      instructions: [initializeSocialWalletIx],
+    }).compileToV0Message();
+    const tx = new VersionedTransaction(messageV0);
+    tx.sign([feePayer]);
+    */
+
     let txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
@@ -343,7 +354,6 @@ const SignupForm = ({
     );
     console.log("Disabled!");
     // END TESTING
-
 
     // Generating Avatar
     if (genStep === 0) {
