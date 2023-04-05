@@ -13,7 +13,7 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import BN from "bn.js";
-import { Signer } from "../../types/account";
+import { KeypairSigner, Signer } from "../../types/account";
 import { generateAvatar, getAvatar } from "../../utils/avatar";
 import { useGlobalState } from "../../context";
 import { StyledForm } from "../../styles/StyledComponents.styles";
@@ -22,15 +22,31 @@ import {
   refreshBalance,
 } from "../../utils";
 import OnboardingSteps from "../OnboardingSteps";
+import {
+  REFILL_TO_BALANCE,
+  TEST_INITIAL_BALANCE_FAILURE,
+} from "../../utils/constants";
+import {
+  createMint,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  mintTo,
+  setAuthority,
+  AuthorityType,
+} from "@solana/spl-token";
 
 const SignupForm = ({
   feePayer,
   handleStorage,
   children,
+  testing,
 }: {
   feePayer: Signer;
   handleStorage: (feePayerPK: string, pda: string, avatarPK?: string) => void;
   children: ReactNode;
+  testing?: boolean;
 }) => {
   const {
     walletProgramId,
@@ -76,7 +92,10 @@ const SignupForm = ({
     console.log("program id: ", walletProgramId.toBase58());
 
     console.log("Requesting Airdrop of 0.2 SOL...");
-    const signature = await connection.requestAirdrop(feePayerPK, 2e8);
+    const signature = await connection.requestAirdrop(
+      feePayerPK,
+      REFILL_TO_BALANCE
+    );
     await connection.confirmTransaction(signature, "finalized");
     console.log("Airdrop received");
 
@@ -118,6 +137,17 @@ const SignupForm = ({
     });
     tx.add(initializeSocialWalletIx);
 
+    /* Versioned TX
+    const recentBlockhash = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+      payerKey: feePayer.publicKey,
+      recentBlockhash: recentBlockhash.blockhash,
+      instructions: [initializeSocialWalletIx],
+    }).compileToV0Message();
+    const tx = new VersionedTransaction(messageV0);
+    tx.sign([feePayer]);
+    */
+
     let txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
@@ -129,6 +159,205 @@ const SignupForm = ({
       }
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
+
+    // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
+
+    if (testing) {
+      const keypairFeePayer = (feePayer as KeypairSigner).keypair;
+      console.log("Creating mint account...");
+      setCurrStep((prev) => prev + 1);
+      const customMint = await createMint(
+        connection,
+        keypairFeePayer,
+        feePayerPK,
+        null,
+        9
+      );
+      console.log("Mint created: ", customMint.toBase58());
+
+      // Create Token Account for custom mint
+      // console.log("Creating token account for mint...");
+      // const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
+      //   connection,
+      //   feePayer,
+      //   customMint,
+      //   profile_pda[0],
+      //   true
+      // );
+      // console.log(
+      //   "token account created: " + senderTokenAccount.address.toBase58() + "\n"
+      // );
+
+      console.log(profile_pda);
+
+      console.log("Getting associated token address...");
+      const associatedToken = await getAssociatedTokenAddress(
+        customMint,
+        profile_pda[0],
+        true,
+        TOKEN_PROGRAM_ID
+      );
+
+      console.log("Creating token account for mint...");
+      setCurrStep((prev) => prev + 1);
+      const recentBlockhash1 = await connection.getLatestBlockhash();
+      const createTA_tx = new Transaction({
+        feePayer: feePayerPK,
+        ...recentBlockhash1,
+      });
+      createTA_tx.add(
+        createAssociatedTokenAccountInstruction(
+          feePayerPK,
+          associatedToken,
+          profile_pda[0],
+          customMint,
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      await sendAndConfirmTransactionWithAccount(
+        connection,
+        createTA_tx,
+        [feePayer],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        }
+      );
+
+      console.log("Getting sender token account...");
+      const senderTokenAccount = await getAccount(
+        connection,
+        associatedToken,
+        "confirmed",
+        TOKEN_PROGRAM_ID
+      );
+
+      console.log(
+        "token account created: " + senderTokenAccount.address.toBase58() + "\n"
+      );
+
+      // Mint to token account (MINTING)
+      console.log("Minting to token account...");
+      await mintTo(
+        connection,
+        keypairFeePayer,
+        customMint,
+        associatedToken,
+        keypairFeePayer,
+        6e9,
+        [],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        },
+        TOKEN_PROGRAM_ID
+      );
+      console.log("Minted!\n");
+
+      // CREATING NFT
+
+      console.log("Creating nft mint account...");
+      const nftMint = await createMint(
+        connection,
+        keypairFeePayer,
+        feePayerPK,
+        null,
+        0
+      );
+      console.log("NFT created: ", nftMint.toBase58());
+
+      console.log("Getting associated token address...");
+      const associatedNFTToken = await getAssociatedTokenAddress(
+        nftMint,
+        profile_pda[0],
+        true,
+        TOKEN_PROGRAM_ID
+      );
+
+      console.log("Creating token account for NFT...");
+      const recentBlockhash2 = await connection.getLatestBlockhash();
+      const createNFT_TA_tx = new Transaction({
+        feePayer: feePayerPK,
+        ...recentBlockhash2,
+      });
+      createNFT_TA_tx.add(
+        createAssociatedTokenAccountInstruction(
+          feePayerPK,
+          associatedNFTToken,
+          profile_pda[0],
+          nftMint,
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      await sendAndConfirmTransactionWithAccount(
+        connection,
+        createNFT_TA_tx,
+        [feePayer],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        }
+      );
+
+      console.log("Getting sender token account...");
+      const senderNFTTokenAccount = await getAccount(
+        connection,
+        associatedNFTToken,
+        "confirmed",
+        TOKEN_PROGRAM_ID
+      );
+
+      console.log(
+        "NFT token account created: " +
+          senderNFTTokenAccount.address.toBase58() +
+          "\n"
+      );
+
+      // Mint to NFT token account (MINTING)
+      console.log("Minting to NFT token account...");
+      setCurrStep((prev) => prev + 1);
+      await mintTo(
+        connection,
+        keypairFeePayer,
+        nftMint,
+        associatedNFTToken,
+        keypairFeePayer,
+        1,
+        [],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        },
+        TOKEN_PROGRAM_ID
+      );
+      console.log("Minted!\n");
+
+      console.log("Disabling future minting...");
+      setCurrStep((prev) => prev + 1);
+      await setAuthority(
+        connection,
+        keypairFeePayer,
+        nftMint,
+        keypairFeePayer,
+        AuthorityType.MintTokens,
+        null,
+        [],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        },
+        TOKEN_PROGRAM_ID
+      );
+      console.log("Disabled!");
+    }
+    // END TESTING
 
     // Generating Avatar
     if (genStep === 0) {
@@ -174,6 +403,7 @@ const SignupForm = ({
         currStep={currStep}
         shouldGen={genStep != -1}
         genStep={genStep}
+        testing={testing}
       />
     );
   }

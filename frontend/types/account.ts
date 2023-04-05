@@ -9,7 +9,7 @@ interface Signer {
 }
 
 export class KeypairSigner implements Signer {
-    private keypair: Keypair;
+    public keypair: Keypair;
 
     constructor(keypair: Keypair) {
         this.keypair = keypair;
