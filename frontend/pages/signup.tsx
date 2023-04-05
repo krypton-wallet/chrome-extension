@@ -85,6 +85,7 @@ const Signup: NextPage = () => {
           sk: secretKey,
           pk: publicKey,
           pda: profile_pda[0].toBase58(),
+          stealth_accounts: [],
         };
         var values = JSON.stringify(old);
         chrome.storage.local.set({

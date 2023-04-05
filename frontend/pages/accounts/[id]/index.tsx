@@ -16,6 +16,7 @@ const Account: NextPage = () => {
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
+  const [stealthAccounts, setStealthAccounts] = useState<string>("");
 
   let { id, mode } = router.query;
   if (!id) {
@@ -66,6 +67,7 @@ const Account: NextPage = () => {
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
+        const stealthAccounts = accountObj[selectedId]["s_accounts"];
         setAccountName(name);
         setPk(pk);
         setPda(pda);
