@@ -6,6 +6,7 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import styles from "../../../components/Layout/index.module.css";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -33,12 +34,12 @@ import {
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, balance } =
+  const { walletProgramId, account, network, pda, balance } =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
   const [form] = Form.useForm();
-  const connection = new Connection("https://api.devnet.solana.com/");
+  const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   const router = useRouter();
   let { pk } = router.query;
@@ -186,7 +187,7 @@ const Send: NextPage = () => {
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     setLoading(false);
     setFinished(true);

@@ -17,7 +17,7 @@ import {
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
-import { Cluster, Connection, PublicKey } from "@solana/web3.js";
+import { Cluster, clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../utils/avatar";
 
 type DomEvent = {
@@ -162,7 +162,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
               ? [res["currId"], JSON.parse(res["accounts"])]
               : [res["y_id"], JSON.parse(res["y_accounts"])];
           if (accountObj[id]["avatar"]) {
-            const connection = new Connection("https://api.devnet.solana.com/");
+            const connection = new Connection(clusterApiUrl(network), "confirmed");
             const avatarData = await getAvatar(
               connection,
               new PublicKey(accountObj[id].avatar)

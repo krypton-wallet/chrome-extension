@@ -8,13 +8,13 @@ import { Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
 import EditableBox from "../../../components/EditableBox";
 import { useGlobalState } from "../../../context";
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../../utils/avatar";
 import InfoBox from "../../../components/InfoBox";
 
 const Account: NextPage = () => {
   const router = useRouter();
-  const { avatar, setAvatar } = useGlobalState();
+  const { avatar, setAvatar, network } = useGlobalState();
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
@@ -76,14 +76,14 @@ const Account: NextPage = () => {
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
-        const connection = new Connection("https://api.devnet.solana.com/");
+        const connection = new Connection(clusterApiUrl(network), "confirmed");
         const keypairBalance = await connection.getBalance(new PublicKey(pk));
         setAccountName(name);
         setPk(pk);
         setPda(pda);
         setKeypairBalance(keypairBalance / LAMPORTS_PER_SOL);
         if (accountObj[selectedId]["avatar"]) {
-          const connection = new Connection("https://api.devnet.solana.com/");
+          const connection = new Connection(clusterApiUrl(network), "confirmed");
           const avatarData = await getAvatar(
             connection,
             new PublicKey(accountObj[selectedId]["avatar"])

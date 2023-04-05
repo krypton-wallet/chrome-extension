@@ -6,6 +6,7 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../styles/StyledComponents.styles";
 import styles from "../components/Layout/index.module.css";
 import {
+  clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -22,10 +23,10 @@ import { KeypairSigner } from "../types/account";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, balance } =
+  const { walletProgramId, account, network, pda, balance } =
     useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
-  const connection = new Connection("https://api.devnet.solana.com/");
+  const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   const [form] = Form.useForm();
   const router = useRouter();
@@ -39,7 +40,7 @@ const Transfer: NextPage = () => {
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
 
     /* TRANSACTION: Transfer Native SOL */
     const idx = Buffer.from(new Uint8Array([7]));
@@ -97,7 +98,7 @@ const Transfer: NextPage = () => {
       }
     );
     console.log(
-      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
     );
 
     setLoading(false);

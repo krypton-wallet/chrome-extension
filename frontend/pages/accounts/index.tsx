@@ -107,7 +107,8 @@ const AccountList: NextPage = () => {
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
               const connection = new Connection(
-                "https://api.devnet.solana.com/"
+                clusterApiUrl(network),
+                "confirmed"
               );
               const avatarData = await getAvatar(
                 connection,
@@ -133,7 +134,8 @@ const AccountList: NextPage = () => {
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
               const connection = new Connection(
-                "https://api.devnet.solana.com/"
+                clusterApiUrl(network),
+                "confirmed"
               );
               const avatarData = await getAvatar(
                 connection,

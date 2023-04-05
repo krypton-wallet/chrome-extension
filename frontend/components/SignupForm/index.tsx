@@ -6,6 +6,7 @@ import styles from "../Layout/index.module.css";
 
 import Link from "next/link";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   SystemProgram,
@@ -85,7 +86,7 @@ const SignupForm = ({
     setAccount(feePayer);
     setPDA(profile_pda[0]);
 
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
 
     console.log("pk: ", feePayerPK.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
@@ -158,7 +159,7 @@ const SignupForm = ({
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
 

@@ -19,9 +19,7 @@ import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
 } from "../utils";
-import {
-  Dashboard,
-} from "../styles/StyledComponents.styles";
+import { Dashboard } from "../styles/StyledComponents.styles";
 import {
   clusterApiUrl,
   Connection,
@@ -81,7 +79,7 @@ const Wallet: NextPage = () => {
 
     // Fetching all tokens from PDA and filter out fungible tokens
     const getTokens = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
       const publicKey = await account!.getPublicKey();
       console.log("account pk: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
@@ -122,7 +120,7 @@ const Wallet: NextPage = () => {
 
   useEffect(() => {
     const checkReimburse = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
       const keypairPK = await account!.getPublicKey();
       const keypairBalance = await connection.getBalance(keypairPK);
       if (keypairBalance < MIN_KEYPAIR_BALANCE) {
@@ -188,11 +186,11 @@ const Wallet: NextPage = () => {
           }
         );
         console.log(
-          `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+          `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
         );
 
         const msg = (
-          <p style={{color: "black"}}>
+          <p style={{ color: "black" }}>
             Keypair balance was insufficient for signing. <br />
             {`Transfered
         ${(reimbursementAmount / LAMPORTS_PER_SOL).toString()} `}

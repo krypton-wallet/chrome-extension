@@ -3,6 +3,7 @@ import { Button, Typography } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -25,13 +26,13 @@ const GuardianBox = ({
   guardian: PublicKey;
   editMode: boolean;
 }): ReactElement => {
-  const { setGuardians, guardians, walletProgramId, pda, account } =
+  const { setGuardians, guardians, walletProgramId, pda, account, network } =
     useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
 
   const onDelete = async () => {
     setLoading(true);
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const defaultpk = PublicKey.default;
 
     const idx3 = Buffer.from(new Uint8Array([3]));
@@ -78,7 +79,7 @@ const GuardianBox = ({
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
     var newGuard = guardians.filter((g) => {
       return g.toBase58() !== guardian.toBase58();

@@ -3,6 +3,7 @@ import { Button, Result, Typography } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -30,7 +31,8 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
   const [finished, setFinished] = useState<boolean>(false);
   const [succeeded, setSucceeded] = useState<boolean>(false);
   const [msg, setMsg] = useState<any>("");
-  const connection = new Connection("https://api.devnet.solana.com/");
+  const { network } = useGlobalState();
+  const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   const onRecover = async () => {
     try {
@@ -211,7 +213,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       );
       console.log("Recovering Wallet: ");
       console.log(
-        `https://explorer.solana.com/tx/${signature}?cluster=devnet\n`
+        `https://explorer.solana.com/tx/${signature}?cluster=${network}\n`
       );
 
       // Wait for it to finish
@@ -266,7 +268,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         }
       );
       console.log(
-        `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+        `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
       );
 
       /* TRANSACTION: Transfer and close all token accounts */
@@ -282,7 +284,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         }
       );
       console.log(
-        `https://explorer.solana.com/tx/${transfer_txid}?cluster=devnet\n`
+        `https://explorer.solana.com/tx/${transfer_txid}?cluster=${network}\n`
       );
 
       await Axios.delete("http://localhost:5000/api/delete/" + old_pk);

@@ -6,7 +6,7 @@ import { useGlobalState } from "../../../context";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { displayAddress } from "../../../utils";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import styles from "../../../components/Layout/index.module.css";
 import {
   getOrCreateAssociatedTokenAccount,
@@ -25,7 +25,7 @@ import Link from "next/link";
 
 const Token: NextPage = () => {
   const router = useRouter();
-  const { pda } = useGlobalState();
+  const { pda, network } = useGlobalState();
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const [decimals, setDecimals] = useState<number>(1);
   let { pk } = router.query;
@@ -36,7 +36,7 @@ const Token: NextPage = () => {
     pk = pk[0];
   }
   const mint_pk = pk ? new PublicKey(pk) : PublicKey.default;
-  const connection = new Connection("https://api.devnet.solana.com/");
+  const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   useEffect(() => {
     const getMintInfo = async () => {

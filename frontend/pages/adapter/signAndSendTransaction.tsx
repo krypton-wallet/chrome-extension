@@ -4,6 +4,7 @@ import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   VersionedMessage,
@@ -11,6 +12,7 @@ import {
 } from "@solana/web3.js";
 import { useGlobalModalContext } from "../../components/GlobalModal";
 import { getSignerFromPkString, partialSign } from "../../utils";
+import { useGlobalState } from "../../context";
 
 const SignAndSendTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,6 +23,7 @@ const SignAndSendTransaction: NextPage = () => {
   const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
   const [options, setOptions] = useState<any>();
   const modalContext = useGlobalModalContext();
+  const { network } = useGlobalState();
 
   useEffect(() => {
     chrome.storage.local.get(["searchParams", "pk"]).then(async (result) => {
@@ -57,7 +60,7 @@ const SignAndSendTransaction: NextPage = () => {
   };
 
   const handleSubmit = async () => {
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const { blockhash } = await connection.getLatestBlockhash();
 
     const signer = await getSignerFromPkString(pk.toBase58(), modalContext);

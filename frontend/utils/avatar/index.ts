@@ -4,8 +4,10 @@ import { DATA_PROGRAM_ID, PDA_SEED, AVATAR_PROGRAM_ID } from "./constants";
 import { svgPKs } from "./svg-pubkeys";
 import { KeypairSigner, Signer } from "../../types/account";
 import { sendAndConfirmTransactionWithAccount } from "..";
+import { useGlobalState } from "../../context";
 
 export const generateAvatar = async (connection: Connection, wallet: Signer, identity: PublicKey, update: () => void) => {
+    const { network } = useGlobalState();
     const feePayerPK = await wallet.getPublicKey();
     let recentBlockhash: Readonly<{
       blockhash: string;
@@ -78,7 +80,7 @@ export const generateAvatar = async (connection: Connection, wallet: Signer, ide
         } as ConfirmOptions
       );
       console.log(
-        `init: https://explorer.solana.com/tx/${initializeTxid}?cluster=devnet`
+        `init: https://explorer.solana.com/tx/${initializeTxid}?cluster=${network}`
       );
       update();
       dataAccount = dataAccountKP.publicKey;
@@ -346,7 +348,7 @@ export const generateAvatar = async (connection: Connection, wallet: Signer, ide
           confirmation: "confirmed",
         } as ConfirmOptions
       );
-      console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet`);
+      console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
       update();
     }
 

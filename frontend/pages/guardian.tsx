@@ -23,7 +23,7 @@ const Guardian: NextPage = () => {
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
-  const { setGuardians, guardians, walletProgramId, pda, account, setPDA } =
+  const { setGuardians, guardians, walletProgramId, pda, account, setPDA, network } =
     useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -33,7 +33,7 @@ const Guardian: NextPage = () => {
   useEffect(() => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
       const publicKey = await account!.getPublicKey();
       console.log("account pk: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
@@ -80,7 +80,7 @@ const Guardian: NextPage = () => {
     // Instr Add
     const publicKey = await account!.getPublicKey();
     console.log("Adding guardian for account " + publicKey + "...");
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
@@ -125,7 +125,7 @@ const Guardian: NextPage = () => {
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
     setLoading(false);
     setIsModalOpen(false);
@@ -253,7 +253,7 @@ const Guardian: NextPage = () => {
                       );
                     }
 
-                    const connection = new Connection(clusterApiUrl("devnet"));
+                    const connection = new Connection(clusterApiUrl(network), "confirmed");
                     const pda_account = await connection.getAccountInfo(
                       new PublicKey(value)
                     );

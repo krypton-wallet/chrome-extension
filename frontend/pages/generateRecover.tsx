@@ -34,7 +34,7 @@ const GenerateRecover: NextPage = () => {
   const [form] = Form.useForm();
   const router = useRouter();
 
-  const { account, setAccount, walletProgramId } = useGlobalState();
+  const { account, network, walletProgramId } = useGlobalState();
 
   useInterval(async () => {
     const res = await Axios.get(
@@ -61,7 +61,7 @@ const GenerateRecover: NextPage = () => {
     const pk = new PublicKey(values.pk);
     setRecoverPk(pk);
 
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const newFeePayer = account!;
     const newPublicKey = await newFeePayer.getPublicKey();
     const nonceAccount = new Keypair();
@@ -140,7 +140,7 @@ const GenerateRecover: NextPage = () => {
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     // Transaction 2: recover wallet
     const idx1 = Buffer.from(new Uint8Array([5]));

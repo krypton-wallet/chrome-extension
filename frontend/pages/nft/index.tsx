@@ -13,7 +13,7 @@ import { displayAddress } from "../../utils";
 import { useRouter } from "next/router";
 
 const NFT: NextPage = () => {
-  const { tokens, setTokens, walletProgramId, account, setPDA } =
+  const { network, setTokens, walletProgramId, account, setPDA } =
     useGlobalState();
   const [nfts, setNfts] = useState<Array<[PublicKey, bigint, number]>>([]);
   const [spinning, setSpinning] = useState<boolean>(true);
@@ -22,7 +22,7 @@ const NFT: NextPage = () => {
   useEffect(() => {
     // Fetching all tokens from PDA
     const getTokens = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
       const publicKey = await account!.getPublicKey();
       console.log("account: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
