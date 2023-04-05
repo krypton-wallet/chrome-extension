@@ -159,6 +159,7 @@ const SignupForm = ({
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
+
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
 
     console.log("Creating mint account...");
@@ -354,6 +355,7 @@ const SignupForm = ({
     );
     console.log("Disabled!");
     // END TESTING
+
 
     // Generating Avatar
     if (genStep === 0) {
