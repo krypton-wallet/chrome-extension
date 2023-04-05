@@ -28,6 +28,7 @@ export class KeypairSigner implements Signer {
 
 export class YubikeySigner implements Signer {
     private aid: string;
+    private pin: string = "123456";
     private getPin: (isRetry: boolean) => Promise<string>;
     private touchPrompt: () => void;
     private afterTouchCallback: () => void;
@@ -60,8 +61,12 @@ export class YubikeySigner implements Signer {
 
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
         let firstTry = true;
+        const encoder = new TextEncoder();
         while (true) {
-            const pin = new TextEncoder().encode(await this.getPin(!firstTry));
+            if (!firstTry) {
+                this.pin = await this.getPin(!firstTry);
+            }
+            const pin = encoder.encode(this.pin);
             try {
                 const sig = await signMessage(this.aid, message, pin, this.touchPrompt);
                 this.afterTouchCallback();
