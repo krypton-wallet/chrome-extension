@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import {
   DownOutlined,
-  UserOutlined,
   WalletOutlined,
   TeamOutlined,
   AppstoreOutlined,
@@ -15,7 +14,6 @@ import {
   MedicineBoxOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import Link from "next/link";
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
@@ -138,33 +136,31 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     if (!PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname)) {
       chrome.storage.local
         .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
-        .then((result) => {
-          if (result["mode"] == 0) {
-            const id = result["currId"];
-            const accountObj = JSON.parse(result["accounts"]);
-            const name = accountObj[id]["name"];
-            setAccountName(name);
-          } else if (result["mode"] == 1) {
-            const y_id = result["y_id"];
-            const accountObj = JSON.parse(result["y_accounts"]);
-            console.log("yid: ", y_id);
-            const name = accountObj[y_id]["name"];
-            setAccountName(name);
-          }
+        .then((res) => {
+          const [id, accountObj] =
+            res["mode"] == 0
+              ? [res["currId"], JSON.parse(res["accounts"])]
+              : [res["y_id"], JSON.parse(res["y_accounts"])];
+          const name = accountObj[id]["name"];
+          setAccountName(name);
         });
     }
   }, [currId, pda, router.pathname]);
 
   useEffect(() => {
-    if (!PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname)) {
+    // Set avatar SVG
+    if (
+      ![...PATHS_WITHOUT_HEADER_AND_FOOTER, "/accounts/[id]"].includes(
+        router.pathname
+      )
+    ) {
       chrome.storage.local
         .get(["currId", "y_id", "accounts", "y_accounts", "mode"])
         .then(async (res) => {
-          const id = res["mode"] == 0 ? res["currId"] : res["y_id"];
-          const accountObj =
+          const [id, accountObj] =
             res["mode"] == 0
-              ? JSON.parse(res["accounts"])
-              : JSON.parse(res["y_accounts"]);
+              ? [res["currId"], JSON.parse(res["accounts"])]
+              : [res["y_id"], JSON.parse(res["y_accounts"])];
           if (accountObj[id]["avatar"]) {
             const connection = new Connection("https://api.devnet.solana.com/");
             const avatarData = await getAvatar(
@@ -180,7 +176,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
           }
         });
     }
-  }, [router.pathname]);
+  }, [router.pathname, setAvatar]);
 
   return (
     <div className={styles.container}>
@@ -194,28 +190,20 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                 size="middle"
                 style={{ marginLeft: "10px", paddingLeft: "1rem" }}
               >
-                {avatar ? (
-                  <Avatar
-                    src={avatar}
-                    size="small"
-                    shape="circle"
-                    style={{
-                      marginRight: "0.5rem",
-                      fontSize: "16px",
-                    }}
-                    onError={() => {
-                      console.log("error");
-                      return false;
-                    }}
-                  />
-                ) : (
-                  <UserOutlined
-                    style={{
-                      marginRight: "0.5rem",
-                      fontSize: "16px",
-                    }}
-                  />
-                )}
+                <Avatar
+                  src={avatar ? avatar : "/static/images/profile.png"}
+                  size="small"
+                  shape="circle"
+                  style={{
+                    marginRight: "0.5rem",
+                    fontSize: "16px",
+                  }}
+                  onError={() => {
+                    console.log("error");
+                    setAvatar(undefined);
+                    return false;
+                  }}
+                />
                 {accountName}
               </Button>
 

@@ -3,12 +3,9 @@ import { NextPage } from "next";
 import { useRouter } from "next/router";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { displayAddress } from "../../../utils";
-import styles from "../../../components/Layout/index.module.css";
 import Link from "next/link";
-import Paragraph from "antd/lib/typography/Paragraph";
 import { Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
-import { Box } from "../../../styles/StyledComponents.styles";
 import EditableBox from "../../../components/EditableBox";
 import { useGlobalState } from "../../../context";
 import { Connection, PublicKey } from "@solana/web3.js";
@@ -67,10 +64,11 @@ const Account: NextPage = () => {
     chrome.storage.local
       .get(["accounts", "y_accounts"])
       .then(async (result) => {
+        setAvatar(undefined);
         let accountObj: any = {};
-        if (selectedMode == 0) {
+        if (selectedMode === 0) {
           accountObj = JSON.parse(result["accounts"]);
-        } else if (selectedMode == 1) {
+        } else if (selectedMode === 1) {
           accountObj = JSON.parse(result["y_accounts"]);
         }
         const name = accountObj[selectedId]["name"];
@@ -89,8 +87,6 @@ const Account: NextPage = () => {
             "base64"
           )}`;
           setAvatar(avatarSVG);
-        } else {
-          setAvatar(undefined);
         }
       });
   }, [selectedId, selectedMode, setAvatar]);
@@ -139,6 +135,10 @@ const Account: NextPage = () => {
         }}
         alt="profile avatar"
         src={avatar ? avatar : "/static/images/profile.png"}
+        onError={() => {
+          console.log("error");
+          setAvatar(undefined);
+        }}
       />
     </>
   );
