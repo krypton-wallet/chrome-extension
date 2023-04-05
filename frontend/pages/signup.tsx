@@ -14,13 +14,14 @@ import {
   Keypair,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
+  sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
   TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
-import Paragraph from "antd/lib/skeleton/Paragraph";
-import { Box, StyledForm } from "../styles/StyledComponents.styles";
-import form from "antd/lib/form";
+import { StyledForm } from "../styles/StyledComponents.styles";
 
 import {
   getOrCreateAssociatedTokenAccount,
@@ -47,6 +48,7 @@ import styles from "../components/Layout/index.module.css";
 import { KeypairSigner } from "../types/account";
 import BN from "bn.js";
 import { getAvatar } from "../utils/avatar";
+import { REFILL_TO_BALANCE, TEST_INITIAL_BALANCE_FAILURE } from "../utils/constants";
 
 const Signup: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -145,11 +147,6 @@ const Signup: NextPage = () => {
     console.log("PDA: ", profile_pda[0].toBase58());
     console.log("program id: ", walletProgramId.toBase58());
 
-    console.log("Requesting Airdrop of 0.2 SOL...");
-    const signature = await connection.requestAirdrop(feePayer.publicKey, 2e8);
-    await connection.confirmTransaction(signature, "finalized");
-    console.log("Airdrop received");
-
     // instr 1: initialize social recovery wallet
     const idx = Buffer.from(new Uint8Array([0]));
     const acct_len = Buffer.from(new Uint8Array(new BN(0).toArray("le", 1)));
@@ -182,22 +179,47 @@ const Signup: NextPage = () => {
     console.log("Initializing social wallet...");
     setCurrent((prev) => prev + 1);
     const recentBlockhash = await connection.getLatestBlockhash();
-    let tx = new Transaction({
-      feePayer: feePayer.publicKey,
-      ...recentBlockhash,
-    });
-    tx.add(initializeSocialWalletIx);
+    const messageV0 = new TransactionMessage({
+      payerKey: feePayer.publicKey,
+      recentBlockhash: recentBlockhash.blockhash,
+      instructions: [initializeSocialWalletIx],
+    }).compileToV0Message();
+    const tx = new VersionedTransaction(messageV0);
+    tx.sign([feePayer]);
 
-    let txid = await sendAndConfirmTransactionWithAccount(
-      connection,
-      tx,
-      [new KeypairSigner(feePayer)],
-      {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        commitment: "confirmed",
-      }
+    // const fee = (await connection.getFeeForMessage(messageV0)).value;
+    // console.log("txFEE: ", fee)
+    // const rent_exempt_fee = await connection.getMinimumBalanceForRentExemption(0);
+    // console.log("rent exempt FEE: ", rent_exempt_fee);
+    // const rent_exempt_fee_PDA = await connection.getMinimumBalanceForRentExemption(325);
+    // console.log("rent exempt PDA FEE: ", rent_exempt_fee_PDA);
+
+    console.log("Requesting Airdrop of 0.2 SOL...");
+    const signature = await connection.requestAirdrop(
+      feePayer.publicKey,
+      REFILL_TO_BALANCE
     );
+    await connection.confirmTransaction(signature, "finalized");
+    console.log("Airdrop received");
+
+    let txid = await connection.sendTransaction(tx);
+
+    // let tx = new Transaction({
+    //   feePayer: feePayer.publicKey,
+    //   ...recentBlockhash,
+    // });
+    // tx.add(initializeSocialWalletIx);
+
+    // let txid = await sendAndConfirmTransactionWithAccount(
+    //   connection,
+    //   tx,
+    //   [new KeypairSigner(feePayer)],
+    //   {
+    //     skipPreflight: true,
+    //     preflightCommitment: "confirmed",
+    //     commitment: "confirmed",
+    //   }
+    // );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!

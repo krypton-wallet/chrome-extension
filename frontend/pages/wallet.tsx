@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { NextPage } from "next";
 import {
   Button,
@@ -8,15 +8,19 @@ import {
   Avatar,
   Skeleton,
   Empty,
+  Alert,
+  Space,
 } from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
-import { refreshBalance, handleAirdrop, displayAddress } from "../utils";
-import { ArrowRightOutlined, LoadingOutlined } from "@ant-design/icons";
+import {
+  refreshBalance,
+  handleAirdrop,
+  displayAddress,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
 import {
   Dashboard,
-  Airdrop,
-  Question,
 } from "../styles/StyledComponents.styles";
 import {
   clusterApiUrl,
@@ -24,8 +28,13 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { MIN_KEYPAIR_BALANCE, REFILL_TO_BALANCE } from "../utils/constants";
+import BN from "bn.js";
+import { KeypairSigner } from "../types/account";
 
 const { Paragraph } = Typography;
 
@@ -44,6 +53,9 @@ const Wallet: NextPage = () => {
     setCurrId,
   } = useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
+  const [reimbursed, setReimbursed] = useState<boolean>(false);
+  const [canReimburse, setCanReimburse] = useState<boolean>(true);
+  const [reimburseMsg, setReimburseMsg] = useState<ReactNode>("");
   const [fungibleTokens, setFungibleTokens] = useState<
     Array<[PublicKey, bigint, number]>
   >([]);
@@ -73,10 +85,7 @@ const Wallet: NextPage = () => {
       const publicKey = await account!.getPublicKey();
       console.log("account pk: ", publicKey.toBase58());
       const profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          publicKey.toBuffer(),
-        ],
+        [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
         walletProgramId
       );
       setPDA(profile_pda[0]);
@@ -109,7 +118,97 @@ const Wallet: NextPage = () => {
       setSpinning(false);
     };
     getTokens();
-  }, [balance, router, network, currId]);
+  }, [router, network, currId, reimbursed]);
+
+  useEffect(() => {
+    const checkReimburse = async () => {
+      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+      const keypairPK = await account!.getPublicKey();
+      const keypairBalance = await connection.getBalance(keypairPK);
+      if (keypairBalance < MIN_KEYPAIR_BALANCE) {
+        console.log("REFILL NEEEDED!");
+        const reimbursementAmount = REFILL_TO_BALANCE - keypairBalance + 5000;
+        console.log("reimbursement amount: ", reimbursementAmount);
+        const pdaBalance = await connection.getBalance(pda!);
+        console.log("balance: ", pdaBalance);
+        if (pdaBalance < reimbursementAmount) {
+          setCanReimburse(false);
+          return;
+        }
+
+        /* TRANSACTION: Transfer Native SOL */
+        const idx = Buffer.from(new Uint8Array([7]));
+        const amountBuf = Buffer.from(
+          new Uint8Array(new BN(reimbursementAmount).toArray("le", 8))
+        );
+        const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
+
+        const recentBlockhash = await connection.getLatestBlockhash();
+        const transferSOLTx = new Transaction({
+          feePayer: await account!.getPublicKey(),
+          ...recentBlockhash,
+        });
+        let newaccount = account;
+        if (!newaccount) {
+          newaccount = new KeypairSigner(new Keypair());
+        }
+        transferSOLTx.add(
+          new TransactionInstruction({
+            keys: [
+              {
+                pubkey: pda ?? PublicKey.default,
+                isSigner: false,
+                isWritable: true,
+              },
+              {
+                pubkey: keypairPK,
+                isSigner: false,
+                isWritable: true,
+              },
+              {
+                pubkey: keypairPK,
+                isSigner: true,
+                isWritable: true,
+              },
+            ],
+            programId: walletProgramId,
+            data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
+          })
+        );
+
+        console.log("Transfering native SOL...");
+        let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+          connection,
+          transferSOLTx,
+          [newaccount],
+          {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+            commitment: "confirmed",
+          }
+        );
+        console.log(
+          `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+        );
+
+        const msg = (
+          <p style={{color: "black"}}>
+            Keypair balance was insufficient for signing. <br />
+            {`Transfered
+        ${(reimbursementAmount / LAMPORTS_PER_SOL).toString()} `}
+            SOL from wallet to keypair and new keypair balance is 0.2 SOL.
+            <br />
+            <b>Note:</b> Krypton will automatically refill your keypair to 0.2
+            SOL when its balance is below 0.1 SOL.
+          </p>
+        );
+
+        setReimbursed(true);
+        setReimburseMsg(msg);
+      }
+    };
+    checkReimburse();
+  }, [balance]);
 
   const airdrop = async () => {
     setAirdropLoading(true);
@@ -129,6 +228,46 @@ const Wallet: NextPage = () => {
       {account && (
         <Dashboard>
           <h1 style={{ marginBottom: 0, color: "#fff" }}>Dashboard</h1>
+
+          {reimbursed && (
+            <Space
+              direction="vertical"
+              style={{
+                width: "82%",
+                position: "absolute",
+                top: "-30px",
+                zIndex: "3",
+              }}
+            >
+              <Alert
+                message="Automatic Refill Success"
+                description={reimburseMsg}
+                type="success"
+                showIcon
+                closable
+              />
+            </Space>
+          )}
+
+          {!canReimburse && (
+            <Space
+              direction="vertical"
+              style={{
+                width: "80%",
+                position: "absolute",
+                top: "-30px",
+                zIndex: "3",
+              }}
+            >
+              <Alert
+                message="Automatic Refill Failed"
+                description="Please deposit SOL into your wallet so you can sign for transactions"
+                type="error"
+                showIcon
+                closable
+              />
+            </Space>
+          )}
 
           <Paragraph
             copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}

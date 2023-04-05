@@ -11,8 +11,9 @@ import CopyableBox from "../../../components/CopyableBox";
 import { Box } from "../../../styles/StyledComponents.styles";
 import EditableBox from "../../../components/EditableBox";
 import { useGlobalState } from "../../../context";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../../utils/avatar";
+import InfoBox from "../../../components/InfoBox";
 
 const Account: NextPage = () => {
   const router = useRouter();
@@ -20,6 +21,7 @@ const Account: NextPage = () => {
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
+  const [keypairBalance, setKeypairBalance] = useState<number>(0);
 
   let { id, mode } = router.query;
   if (!id) {
@@ -76,9 +78,12 @@ const Account: NextPage = () => {
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
+        const connection = new Connection("https://api.devnet.solana.com/");
+        const keypairBalance = await connection.getBalance(new PublicKey(pk));
         setAccountName(name);
         setPk(pk);
         setPda(pda);
+        setKeypairBalance(keypairBalance / LAMPORTS_PER_SOL);
         if (accountObj[selectedId]["avatar"]) {
           const connection = new Connection("https://api.devnet.solana.com/");
           const avatarData = await getAvatar(
@@ -131,6 +136,7 @@ const Account: NextPage = () => {
         value={displayAddress(pk)}
         copyableValue={pk}
       />
+      <InfoBox fieldName="Keypair Balance" value={`${keypairBalance} SOL`} />
       <Image
         width={"23%"}
         style={{

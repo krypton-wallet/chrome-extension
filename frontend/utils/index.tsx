@@ -27,6 +27,7 @@ import {
 } from "../components/GlobalModal";
 import PinentryModal from "../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
+import { PDA_RENT_EXEMPT_FEE } from "./constants";
 
 const programId = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 
@@ -46,7 +47,7 @@ const refreshBalance = async (
       programId
     );
     const balance = await connection.getBalance(profile_pda[0]);
-    return balance / LAMPORTS_PER_SOL;
+    return (balance - PDA_RENT_EXEMPT_FEE) / LAMPORTS_PER_SOL;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown Error";
