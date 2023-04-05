@@ -5,7 +5,6 @@ import {
   Avatar,
   Button,
   Skeleton,
-  Empty,
   Dropdown,
   Space,
   MenuProps,
@@ -13,24 +12,19 @@ import {
 import { useGlobalState } from "../../context";
 import {
   UserAddOutlined,
-  ArrowLeftOutlined,
   MoreOutlined,
   CloseOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { displayAddress, getSignerFromPkString } from "../../utils";
 import { useRouter } from "next/router";
 import {
   clusterApiUrl,
   Connection,
-  Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
 } from "@solana/web3.js";
 import Link from "next/link";
-import styles from "../../components/Layout/index.module.css";
-import { KeypairSigner } from "../../types/account";
 import { getAvatar } from "../../utils/avatar";
 import { useGlobalModalContext } from "../../components/GlobalModal";
 
@@ -202,7 +196,11 @@ const AccountList: NextPage = () => {
         <List
           dataSource={currAccounts}
           locale={{
-            emptyText: spinning ? <Skeleton active={true} /> : <Skeleton active={false} />,
+            emptyText: spinning ? (
+              <Skeleton active={true} />
+            ) : (
+              <Skeleton active={false} />
+            ),
           }}
           renderItem={(item) => (
             <List.Item
