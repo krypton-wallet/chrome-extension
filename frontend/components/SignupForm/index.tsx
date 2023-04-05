@@ -365,6 +365,7 @@ const SignupForm = ({
       console.log(`generating avatar for ${profile_pda[0]}...`);
       setCurrStep((prev) => prev + 1);
       const avatarPK = await generateAvatar(
+        network ?? "devnet",
         connection,
         feePayer,
         profile_pda[0],

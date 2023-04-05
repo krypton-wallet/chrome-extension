@@ -1,4 +1,4 @@
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, ConfirmOptions, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction, ConfirmOptions, TransactionInstruction, Cluster } from "@solana/web3.js";
 import BN from "bn.js";
 import { DATA_PROGRAM_ID, PDA_SEED, AVATAR_PROGRAM_ID } from "./constants";
 import { svgPKs } from "./svg-pubkeys";
@@ -6,8 +6,7 @@ import { KeypairSigner, Signer } from "../../types/account";
 import { sendAndConfirmTransactionWithAccount } from "..";
 import { useGlobalState } from "../../context";
 
-export const generateAvatar = async (connection: Connection, wallet: Signer, identity: PublicKey, update: () => void) => {
-    const { network } = useGlobalState();
+export const generateAvatar = async (network: Cluster, connection: Connection, wallet: Signer, identity: PublicKey, update: () => void) => {
     const feePayerPK = await wallet.getPublicKey();
     let recentBlockhash: Readonly<{
       blockhash: string;
