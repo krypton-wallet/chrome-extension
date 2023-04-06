@@ -1,5 +1,5 @@
 {
-    "name": "SolMate",
+    "name": "Krypton",
     "description": "Next generation smart contract wallet",
     "version": "0.0.1",
     "manifest_version": 3,
@@ -9,12 +9,12 @@
       "nativeMessaging"
     ],
     "action": {
-      "default_title": "SolMate app",
+      "default_title": "Krypton Wallet",
       "default_popup": "index.html"
     },
     "icons": {
-      "48": "./static/icons/solmate_logo.png",
-      "128": "./static/icons/solmate_logo.png"
+      "48": "./static/icons/krypton_logo.png",
+      "128": "./static/icons/krypton_logo.png"
     },
     "content_scripts": [
       {

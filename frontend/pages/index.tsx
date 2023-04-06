@@ -50,12 +50,12 @@ const Home: NextPage = () => {
       <Head>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
         <meta charSet="utf-8" />
-        <title>SolMate</title>
+        <title>Krypton</title>
         <meta
           name="description"
-          content="Web3 tutorial for Solana crypto wallet."
+          content="Next-gen social recovery non-custodial wallet."
         />
-        <link rel="icon" href="/solmate_logo.ico" />
+        <link rel="icon" href="/static/icons/krypton_logo.ico" />
       </Head>
       {!visible && (
         <div style={{ minWidth: "600px", minHeight: "500px" }}></div>

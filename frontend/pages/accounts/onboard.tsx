@@ -32,7 +32,7 @@ const Onboard: NextPage = () => {
                 <WalletOutlined style={{ fontSize: "25px", color: "#fff" }} />
               }
               title="Standard Account"
-              description={"Create a new SolMate wallet"}
+              description={"Create a Krypton wallet"}
             />
           </List.Item>
 
