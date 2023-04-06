@@ -40,6 +40,7 @@
     "react-dom": "17.0.2",
     "react-scripts": "^5.0.1",
     "salmon-wallet-standard": "^0.0.6",
+    "solana-stealth": "^1.0.18",
     "solmate-wallet-standard": "^0.0.4",
     "styled-components": "^5.3.1",
     "tweetnacl": "^1.0.3"

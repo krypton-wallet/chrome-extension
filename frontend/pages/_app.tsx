@@ -16,6 +16,10 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [balance, setBalance] = useState<number | null>(null);
   const [guardians, setGuardians] = useState<Array<PublicKey>>([]);
   const [pda, setPDA] = useState<PublicKey | null>(null);
+  const [stealth, setStealth] = useState<string | null>(null);
+  const [stealthBalance, setStealthBalance] = useState<number | null>(null);
+  const [privScan, setPrivScan] = useState<string | null>(null);
+  const [privSpend, setPrivSpend] = useState<string | null>(null);
   const [walletProgramId, setWalletProgramId] = useState<PublicKey>(
     new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL")
   );
@@ -49,6 +53,14 @@ function MyApp({ Component, pageProps }: AppProps) {
         setCurrId,
         yubikeyInfo,
         setYubikeyInfo,
+        stealth,
+        setStealth,
+        stealthBalance,
+        setStealthBalance,
+        privScan,
+        setPrivScan,
+        privSpend,
+        setPrivSpend
       }}
     >
       <GlobalModal>

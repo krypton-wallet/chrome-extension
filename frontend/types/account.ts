@@ -1,7 +1,10 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Ed25519Program, Keypair, Message, PublicKey } from "@solana/web3.js";
 import { getPubkey, signMessage } from "bloss-js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
+import {genFullSignature} from "solana-stealth";
+import {Point} from "@noble/ed25519"
+import BN from "bn.js";
 
 interface Signer {
     getPublicKey(): Promise<PublicKey>,
@@ -22,6 +25,26 @@ export class KeypairSigner implements Signer {
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
       const secretKey = this.keypair.secretKey;
       const sig = nacl.sign.detached(message, secretKey);
+      return sig;
+    }
+}
+
+export class StealthSigner implements Signer {
+    private scalarKey: string;
+
+    constructor(scalarKey: string) {
+        this.scalarKey = scalarKey;
+    }
+
+    async getPublicKey(): Promise<PublicKey> {
+        const sc = new BN(bs58.decode(this.scalarKey), 10, 'le');
+        let s = BigInt(sc.toString());
+        return new PublicKey(Point.BASE.multiply(s).toRawBytes());
+    }
+
+    async signMessage(message: Uint8Array): Promise<Uint8Array> {
+      
+      const sig = genFullSignature(Message.from(message), this.scalarKey);
       return sig;
     }
 }
