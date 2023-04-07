@@ -1,11 +1,7 @@
-import React, { ReactElement } from "react";
-import { Typography } from "antd";
+import Paragraph from "antd/lib/typography/Paragraph";
 import { Box } from "../../styles/StyledComponents.styles";
 
-const { Paragraph } = Typography;
-
-
-const UrlBox = ({ url }: { url: string | undefined }): ReactElement => {
+const UrlBox = ({ url }: { url: string | undefined }) => {
   return (
     <Box>
       <Paragraph copyable={{ text: `${url}`, tooltips: `Copy` }}>

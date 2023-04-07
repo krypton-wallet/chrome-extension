@@ -19,12 +19,12 @@ import { useGlobalState } from "../context";
 import BN from "bn.js";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
-import { KeypairSigner } from "../types/account";
+import { KeypairSigner, Signer } from "../types/account";
+import { WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, network, pda, balance } =
-    useGlobalState();
+  const { account, network, balance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const connection = new Connection(clusterApiUrl(network), "confirmed");
 
@@ -36,6 +36,11 @@ const Transfer: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
+    console.log("ok2", account);
+    if (!account) {
+      return;
+    }
+
     setLoading(true);
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
@@ -45,8 +50,8 @@ const Transfer: NextPage = () => {
     /* TRANSACTION: Transfer Native SOL */
     const idx = Buffer.from(new Uint8Array([7]));
     console.log("amt: ", amount);
-    console.log("pda: ", pda?.toBase58());
-    console.log("account: ", (await account!.getPublicKey()).toBase58());
+    console.log("pda: ", account.pda);
+    console.log("account: ", account.pk);
     const amountBuf = Buffer.from(
       new Uint8Array(new BN(amount).toArray("le", 8))
     );
@@ -54,11 +59,12 @@ const Transfer: NextPage = () => {
     const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
 
     const recentBlockhash = await connection.getLatestBlockhash();
+    // TODO:  Check if Yubikey is connected
     const transferSOLTx = new Transaction({
-      feePayer: await account!.getPublicKey(),
+      feePayer: await account.getPublicKey(),
       ...recentBlockhash,
     });
-    let newaccount = account;
+    let newaccount = account as Signer;
     if (!newaccount) {
       newaccount = new KeypairSigner(new Keypair());
     }
@@ -66,7 +72,7 @@ const Transfer: NextPage = () => {
       new TransactionInstruction({
         keys: [
           {
-            pubkey: pda ?? PublicKey.default,
+            pubkey: new PublicKey(account.pda) ?? PublicKey.default,
             isSigner: false,
             isWritable: true,
           },
@@ -76,18 +82,18 @@ const Transfer: NextPage = () => {
             isWritable: true,
           },
           {
-            pubkey: await account!.getPublicKey(),
+            pubkey: new PublicKey(account.pk),
             isSigner: true,
             isWritable: true,
           },
         ],
-        programId: walletProgramId,
+        programId: WALLET_PROGRAM_ID,
         data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
       })
     );
 
     console.log("Transfering native SOL...");
-    let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+    const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferSOLTx,
       [newaccount],

@@ -1,33 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { NextPage } from "next";
 import { useRouter } from "next/router";
-import { Form, Input, Button } from "antd";
+import { Button } from "antd";
 import { useGlobalState } from "../../../context";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import styled from "styled-components";
 import { displayAddress } from "../../../utils";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import styles from "../../../components/Layout/index.module.css";
 import {
-  getOrCreateAssociatedTokenAccount,
-  AccountLayout,
   TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
   getAssociatedTokenAddress,
   getAccount,
-  transferChecked,
   getMint,
 } from "@solana/spl-token";
 import Link from "next/link";
 
-// Import the Keypair class from Solana's web3.js library:
-
 const Token: NextPage = () => {
   const router = useRouter();
-  const { pda, network } = useGlobalState();
+  const { account, network } = useGlobalState();
   const [tokenBalance, setTokenBalance] = useState<number>(0);
-  const [decimals, setDecimals] = useState<number>(1);
   let { pk } = router.query;
   if (!pk) {
     pk = "";
@@ -35,15 +26,24 @@ const Token: NextPage = () => {
   if (Array.isArray(pk)) {
     pk = pk[0];
   }
-  const mint_pk = pk ? new PublicKey(pk) : PublicKey.default;
-  const connection = new Connection(clusterApiUrl(network), "confirmed");
+  const mint_pk = useMemo(
+    () => (pk ? new PublicKey(pk) : PublicKey.default),
+    [pk]
+  );
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl(network), "confirmed"),
+    [network]
+  );
 
   useEffect(() => {
+    if (!account) {
+      return;
+    }
     const getMintInfo = async () => {
       console.log("Getting src token account...");
       const srcAssociatedToken = await getAssociatedTokenAddress(
         mint_pk,
-        pda ?? PublicKey.default,
+        new PublicKey(account.pda) ?? PublicKey.default,
         true,
         TOKEN_PROGRAM_ID
       );
@@ -63,12 +63,11 @@ const Token: NextPage = () => {
       const mintData = await getMint(connection, mint_pk);
       const decimals = Number(mintData.decimals);
       setTokenBalance(balance);
-      setDecimals(decimals);
-      console.log("DESIRED BALANCE: ", balance)
-      console.log("CURRENT BALANCE: ", tokenBalance)
+      console.log("DESIRED BALANCE: ", balance);
+      console.log("CURRENT BALANCE: ", tokenBalance);
     };
     getMintInfo();
-  }, [router]);
+  }, [connection, mint_pk, account, router, tokenBalance]);
 
   const handleClick = () => {
     router.push({
@@ -88,6 +87,7 @@ const Token: NextPage = () => {
           margin: "20px 20px",
         }}
         src="/static/images/token.png"
+        alt="token image"
       ></img>
       {/* <p>{tokenBalance / Math.pow(10, decimals)} tokens</p> */}
       <Button

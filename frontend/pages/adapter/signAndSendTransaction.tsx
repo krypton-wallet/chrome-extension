@@ -11,13 +11,13 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { getSignerFromPkString, partialSign } from "../../utils";
+import { getAccountFromPkString, partialSign } from "../../utils";
 import { useGlobalState } from "../../context";
+import { Signer } from "../../types/account";
 
 const SignAndSendTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [origin, setOrigin] = useState<string>("");
-  const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
   const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
@@ -60,10 +60,14 @@ const SignAndSendTransaction: NextPage = () => {
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const { blockhash } = await connection.getLatestBlockhash();
 
-    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    const signer = (await getAccountFromPkString(
+      pk.toBase58(),
+      modalContext
+    )) as Signer;
     const message = VersionedMessage.deserialize(payload);
     message.recentBlockhash = blockhash;
     const transaction = new VersionedTransaction(message);
@@ -82,8 +86,7 @@ const SignAndSendTransaction: NextPage = () => {
       },
       id: id,
     });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    window.close();
+    setTimeout(() => window.close(), 300);
   };
 
   return (

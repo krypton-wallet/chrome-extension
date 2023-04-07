@@ -1,5 +1,5 @@
-import React, { ReactElement, useEffect, useState } from "react";
-import { Button, Result, Typography } from "antd";
+import React, { useState } from "react";
+import { Button, Result } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
@@ -10,7 +10,6 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
-  getOrCreateAssociatedTokenAccount,
   AccountLayout,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
@@ -19,14 +18,17 @@ import {
 } from "@solana/spl-token";
 import { useGlobalState } from "../../context";
 import Axios from "axios";
-import { sendAndConfirmTransactionWithAccount } from "../../utils";
+import {
+  getProfilePDA,
+  sendAndConfirmTransactionWithAccount,
+} from "../../utils";
+import BN from "bn.js";
+import Paragraph from "antd/lib/typography/Paragraph";
+import Text from "antd/lib/typography/Text";
+import { WALLET_PROGRAM_ID } from "../../utils/constants";
 
-const BN = require("bn.js");
-
-const { Paragraph, Text } = Typography;
-
-const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
-  const { account, walletProgramId } = useGlobalState();
+const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
+  const { account } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
   const [succeeded, setSucceeded] = useState<boolean>(false);
@@ -34,10 +36,15 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
   const { network } = useGlobalState();
   const connection = new Connection(clusterApiUrl(network), "confirmed");
 
+  if (!account) {
+    return <></>;
+  }
+
   const onRecover = async () => {
     try {
       console.log("\n=====RECOVERING======");
-      console.log("Signer: ", (await account!.getPublicKey()).toBase58());
+      const feePayerPK = new PublicKey(account.pk);
+      console.log("Signer: ", account.pk);
       setLoading(true);
       const res = await Axios.get(
         "http://localhost:5000/api/getFromPk/" + old_pk
@@ -47,12 +54,12 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         throw new Error("Invalid signing request!");
       }
 
-      let transactionBased64 = res_data.transaction;
-      let transaction = Transaction.from(
+      const transactionBased64 = res_data.transaction;
+      const transaction = Transaction.from(
         Buffer.from(transactionBased64, "base64")
       );
       console.log("SIGNATURES");
-      for (var i = 0; i < transaction.signatures.length; i++) {
+      for (let i = 0; i < transaction.signatures.length; i++) {
         console.log(
           `pk ${i}: ${transaction.signatures[
             i
@@ -74,27 +81,19 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       console.log("Transaction serialized!");
 
       /* TRANSACTION: Transfer and close all token accounts */
-      const profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          new PublicKey(res_data.pk).toBuffer(),
-        ],
-        walletProgramId
+      const profile_pda = getProfilePDA(new PublicKey(res_data.pk));
+      const new_profile_pda = getProfilePDA(new PublicKey(res_data.new_pk));
+      const allTA_res = await connection.getTokenAccountsByOwner(
+        profile_pda[0],
+        {
+          programId: TOKEN_PROGRAM_ID,
+        }
       );
-      const new_profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          new PublicKey(res_data.new_pk).toBuffer(),
-        ],
-        walletProgramId
-      );
-      let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
-        programId: TOKEN_PROGRAM_ID,
-      });
 
       const recentBlockhash0 = await connection.getLatestBlockhash();
+      // TODO: Check if Yubikey is connected
       const transferCloseTx = new Transaction({
-        feePayer: await account!.getPublicKey(),
+        feePayer: feePayerPK,
         ...recentBlockhash0,
       });
 
@@ -121,12 +120,13 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
 
         console.log("Creating token account for mint...");
         const recentBlockhash = await connection.getLatestBlockhash();
+        // TODO: Check if Yubikey is connected
         const createTA_tx = new Transaction({
-          feePayer: await account!.getPublicKey(),
+          feePayer: feePayerPK,
           ...recentBlockhash,
         }).add(
           createAssociatedTokenAccountInstruction(
-            await account!.getPublicKey(),
+            new PublicKey(account.pk),
             associatedToken,
             new_profile_pda[0],
             mint,
@@ -137,7 +137,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
         await sendAndConfirmTransactionWithAccount(
           connection,
           createTA_tx,
-          [account!],
+          [account],
           {
             skipPreflight: true,
             preflightCommitment: "confirmed",
@@ -179,7 +179,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: true,
             },
             {
-              pubkey: await account!.getPublicKey(),
+              pubkey: feePayerPK,
               isSigner: true,
               isWritable: true,
             },
@@ -199,7 +199,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: false,
             },
           ],
-          programId: walletProgramId,
+          programId: WALLET_PROGRAM_ID,
           data: Buffer.concat([idx2, amountBuf, recoveryModeBuf]),
         });
 
@@ -217,7 +217,15 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       );
 
       // Wait for it to finish
-      await connection.confirmTransaction(signature, "confirmed");
+      let recentBlockhash = await connection.getLatestBlockhash();
+      await connection.confirmTransaction(
+        {
+          blockhash: recentBlockhash.blockhash,
+          lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+          signature,
+        },
+        "confirmed"
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 7000));
 
@@ -228,9 +236,10 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
       );
       const recoveryModeBuf1 = Buffer.from(new Uint8Array([1]));
 
-      const recentBlockhash = await connection.getLatestBlockhash();
+      recentBlockhash = await connection.getLatestBlockhash();
+      // TODO: Check if Yubikey is connected
       const transferSOLTx = new Transaction({
-        feePayer: await account!.getPublicKey(),
+        feePayer: feePayerPK,
         ...recentBlockhash,
       }).add(
         new TransactionInstruction({
@@ -246,21 +255,21 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
               isWritable: true,
             },
             {
-              pubkey: await account!.getPublicKey(),
+              pubkey: feePayerPK,
               isSigner: true,
               isWritable: true,
             },
           ],
-          programId: walletProgramId,
+          programId: WALLET_PROGRAM_ID,
           data: Buffer.concat([idx3, amountBuf1, recoveryModeBuf1]),
         })
       );
 
       console.log("Transfering native SOL...");
-      let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+      const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
         connection,
         transferSOLTx,
-        [account!],
+        [account],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -273,10 +282,10 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }): ReactElement => {
 
       /* TRANSACTION: Transfer and close all token accounts */
       console.log("Transfering and closing...");
-      let transfer_txid = await sendAndConfirmTransactionWithAccount(
+      const transfer_txid = await sendAndConfirmTransactionWithAccount(
         connection,
         transferCloseTx,
-        [account!],
+        [account],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",

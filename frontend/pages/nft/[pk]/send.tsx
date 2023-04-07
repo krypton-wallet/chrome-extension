@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
@@ -13,29 +13,23 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
-  getOrCreateAssociatedTokenAccount,
-  AccountLayout,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
   getAssociatedTokenAddress,
   getAccount,
-  transferChecked,
-  getMint,
 } from "@solana/spl-token";
 import { useGlobalState } from "../../../context";
-
 import BN from "bn.js";
 import { useRouter } from "next/router";
 import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
+import { WALLET_PROGRAM_ID } from "../../../utils/constants";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, network, pda, balance } =
-    useGlobalState();
+  const { account, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
   const [form] = Form.useForm();
@@ -56,16 +50,19 @@ const Send: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
+    if (!account) {
+      return;
+    }
     setLoading(true);
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
-    const feePayerPk = await account!.getPublicKey();
-    let amount = 1;
+    const feePayerPk = new PublicKey(account.pk);
+    const amount = 1;
 
     console.log("Getting src token account...");
     const srcAssociatedToken = await getAssociatedTokenAddress(
       mint_pk,
-      pda ?? PublicKey.default,
+      new PublicKey(account.pda) ?? PublicKey.default,
       true,
       TOKEN_PROGRAM_ID
     );
@@ -90,13 +87,14 @@ const Send: NextPage = () => {
     if (!destTAInfo) {
       console.log("Creating token account for mint...");
       const recentBlockhash = await connection.getLatestBlockhash();
+      // TODO: Check if Yubikey is connected
       const createTA_tx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
       });
       createTA_tx.add(
         createAssociatedTokenAccountInstruction(
-          await account!.getPublicKey(),
+          new PublicKey(account.pk),
           associatedToken,
           dest_pda,
           mint_pk,
@@ -107,7 +105,7 @@ const Send: NextPage = () => {
       await sendAndConfirmTransactionWithAccount(
         connection,
         createTA_tx,
-        [account!],
+        [account],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -127,6 +125,7 @@ const Send: NextPage = () => {
 
     /* TRANSACTION: Transfer Token */
     const recentBlockhash = await connection.getLatestBlockhash();
+    // TODO: Check if Yubikey is connected
     const transferTokenTx = new Transaction({
       feePayer: feePayerPk,
       ...recentBlockhash,
@@ -140,7 +139,7 @@ const Send: NextPage = () => {
     const transferAndCloseIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: pda ?? PublicKey.default,
+          pubkey: new PublicKey(account.pda) ?? PublicKey.default,
           isSigner: false,
           isWritable: true,
         },
@@ -170,17 +169,17 @@ const Send: NextPage = () => {
           isWritable: false,
         },
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx2, amountBuf, recoveryModeBuf]),
     });
 
     transferTokenTx.add(transferAndCloseIx);
 
     console.log("Transfering token...");
-    let txid = await sendAndConfirmTransactionWithAccount(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferTokenTx,
-      [account!],
+      [account],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",

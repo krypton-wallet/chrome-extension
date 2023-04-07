@@ -5,26 +5,31 @@ import { displayAddress } from "../../utils";
 
 const YubikeyTable = () => {
   const { yubikeyInfo: info } = useGlobalState();
+
+  if (!info) {
+    return null;
+  }
+
   const infoTable = [
     {
       key: "1",
       name: "Manufacturer",
-      value: info?.manufacturer,
+      value: info.manufacturer,
     },
     {
       key: "2",
       name: "Serial",
-      value: info?.serialNumber,
+      value: info.serialNumber,
     },
     {
       key: "3",
       name: "Signing Algorithm",
-      value: info?.signingAlgo,
+      value: info.signingAlgo,
     },
     {
       key: "4",
       name: "Public Key",
-      value: displayAddress(bs58.encode(info?.pubkeyBytes ?? [])),
+      value: displayAddress(bs58.encode(info.pubkeyBytes)),
     },
   ];
   const render = (text: string) => {

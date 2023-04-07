@@ -1,36 +1,38 @@
 import { NextPage } from "next";
 import { Keypair } from "@solana/web3.js";
 import base58 from "bs58";
-import { KeypairSigner } from "../types/account";
+import {
+  KeypairSigner,
+  KryptonAccount,
+  StandardAccount,
+} from "../types/account";
 import SignupForm from "../components/SignupForm";
 
 const Signup: NextPage = () => {
   const feePayer = new Keypair();
   const feePayerSigner = new KeypairSigner(feePayer);
 
-  const handleStorage = (
-    feePayerPK: string,
-    pda: string,
-    avatarPK?: string
-  ) => {
+  const handleStorage = (feePayerAccount: Omit<KryptonAccount, "name">) => {
     chrome.storage.local.get(["counter", "accounts"], (res) => {
       const count = res["counter"];
       const accountRes = res["accounts"];
       if (accountRes != null) {
-        var old = JSON.parse(accountRes);
-        old[count] = {
+        const old = JSON.parse(accountRes);
+        const account = {
           name: "Account " + count.toString(),
+          ...feePayerAccount,
+          keypair: feePayer,
+        } as StandardAccount;
+        old[count] = {
           sk: base58.encode(feePayer.secretKey),
-          pk: feePayerPK,
-          pda: pda,
-          ...(avatarPK && { avatar: avatarPK }),
+          ...account,
         };
         const values = JSON.stringify(old);
         chrome.storage.local.set({
           accounts: values,
           counter: count + 1,
           currId: count,
-          pk: feePayerPK,
+          pk: feePayerAccount.pk,
           mode: 0,
         });
       } else {

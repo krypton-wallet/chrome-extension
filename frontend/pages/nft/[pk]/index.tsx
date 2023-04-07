@@ -1,27 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NextPage } from "next";
 import { useRouter } from "next/router";
-import { Form, Input, Button } from "antd";
-import { useGlobalState } from "../../../context";
+import { Button } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import styled from "styled-components";
 import { displayAddress } from "../../../utils";
-import { Connection, PublicKey } from "@solana/web3.js";
 import styles from "../../../components/Layout/index.module.css";
-import {
-  getOrCreateAssociatedTokenAccount,
-  AccountLayout,
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
-  getAssociatedTokenAddress,
-  getAccount,
-  transferChecked,
-  getMint,
-} from "@solana/spl-token";
 import Link from "next/link";
-
-// Import the Keypair class from Solana's web3.js library:
 
 const Token: NextPage = () => {
   const router = useRouter();
@@ -51,6 +35,7 @@ const Token: NextPage = () => {
           margin: "20px 20px",
         }}
         src="/static/images/token.png"
+        alt="nft image"
       ></img>
       <Button
         type="primary"

@@ -1,6 +1,5 @@
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { getPubkey, signMessage } from "bloss-js";
-import bs58 from "bs58";
 import nacl from "tweetnacl";
 
 interface Signer {
@@ -81,5 +80,22 @@ export class YubikeySigner implements Signer {
         }
     }
 }
+
+export type StandardAccount = KeypairSigner & {
+    name: string;
+    pk: string;
+    pda: string;
+    avatar?: string;
+};
+
+export type YubikeyAccount = YubikeySigner & {
+    name: string;
+    pk: string;
+    pda: string;
+    avatar?: string;
+    manufacturer: string;
+}
+
+export type KryptonAccount = StandardAccount | YubikeyAccount;
 
 export type {Signer}

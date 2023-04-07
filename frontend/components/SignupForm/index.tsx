@@ -14,18 +14,20 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import BN from "bn.js";
-import { KeypairSigner, Signer } from "../../types/account";
+import { KeypairSigner, KryptonAccount, Signer } from "../../types/account";
 import { generateAvatar, getAvatar } from "../../utils/avatar";
 import { useGlobalState } from "../../context";
 import { StyledForm } from "../../styles/StyledComponents.styles";
 import {
   sendAndConfirmTransactionWithAccount,
   refreshBalance,
+  getProfilePDA,
 } from "../../utils";
 import OnboardingSteps from "../OnboardingSteps";
 import {
   REFILL_TO_BALANCE,
   TEST_INITIAL_BALANCE_FAILURE,
+  WALLET_PROGRAM_ID,
 } from "../../utils/constants";
 import {
   createMint,
@@ -45,18 +47,11 @@ const SignupForm = ({
   testing,
 }: {
   feePayer: Signer;
-  handleStorage: (feePayerPK: string, pda: string, avatarPK?: string) => void;
+  handleStorage: (feePayerSigner: Omit<KryptonAccount, "name">) => void;
   children: ReactNode;
   testing?: boolean;
 }) => {
-  const {
-    walletProgramId,
-    network,
-    setBalance,
-    setAccount,
-    setPDA,
-    setAvatar,
-  } = useGlobalState();
+  const { network, setBalance } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [currStep, setCurrStep] = useState(0);
   const [genStep, setGenStep] = useState(-1);
@@ -77,28 +72,36 @@ const SignupForm = ({
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
     const feePayerPK = await feePayer.getPublicKey();
-    const profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), feePayerPK.toBuffer()],
-      walletProgramId
-    );
+    const profile_pda = getProfilePDA(feePayerPK);
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
-    setAccount(feePayer);
-    setPDA(profile_pda[0]);
+    const feePayerAccount: Omit<KryptonAccount, "name"> = {
+      ...feePayer,
+      pk: feePayerPK.toBase58(),
+      pda: profile_pda[0].toBase58(),
+    };
+    console.log(feePayerAccount);
 
     const connection = new Connection(clusterApiUrl(network), "confirmed");
 
     console.log("pk: ", feePayerPK.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
-    console.log("program id: ", walletProgramId.toBase58());
+    console.log("program id: ", WALLET_PROGRAM_ID.toBase58());
 
     console.log("Requesting Airdrop of 0.2 SOL...");
-    const signature = await connection.requestAirdrop(
-      feePayerPK,
-      REFILL_TO_BALANCE
-    );
-    await connection.confirmTransaction(signature, "finalized");
-    console.log("Airdrop received");
+    // const signature = await connection.requestAirdrop(
+    //   feePayerPK,
+    //   REFILL_TO_BALANCE
+    // );
+    let recentBlockhash = await connection.getLatestBlockhash();
+    // await connection.confirmTransaction(
+    //   {
+    //     blockhash: recentBlockhash.blockhash,
+    //     lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+    //     signature,
+    //   },
+    //   "confirmed"
+    // );
 
     // instr 1: initialize social recovery wallet
     const idx = Buffer.from(new Uint8Array([0]));
@@ -125,19 +128,18 @@ const SignupForm = ({
           isWritable: false,
         },
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx, acct_len, recovery_threshold]),
     });
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);
 
-    const recentBlockhash = await connection.getLatestBlockhash();
-    let tx = new Transaction({
+    recentBlockhash = await connection.getLatestBlockhash();
+    const tx = new Transaction({
       feePayer: feePayerPK,
       ...recentBlockhash,
     });
     tx.add(initializeSocialWalletIx);
-
     /* Versioned TX
     const recentBlockhash = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
@@ -149,7 +151,7 @@ const SignupForm = ({
     tx.sign([feePayer]);
     */
 
-    let txid = await sendAndConfirmTransactionWithAccount(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
       [feePayer],
@@ -371,23 +373,12 @@ const SignupForm = ({
         profile_pda[0],
         () => setGenStep((prev) => prev + 1)
       );
-      const avatarData = await getAvatar(connection, avatarPK);
-      const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-        "base64"
-      )}`;
-      setAvatar(avatarSVG);
-      handleStorage(
-        feePayerPK.toBase58(),
-        profile_pda[0].toBase58(),
-        avatarPK.toBase58()
-      );
-    } else {
-      setAvatar(undefined);
-      handleStorage(feePayerPK.toBase58(), profile_pda[0].toBase58());
+      feePayerAccount.avatar = avatarPK.toBase58();
     }
+    handleStorage(feePayerAccount);
     setCurrStep((prev) => prev + 1);
 
-    refreshBalance(network, feePayer)
+    refreshBalance(network, feePayerPK)
       .then((updatedBalance) => {
         console.log("updated balance: ", updatedBalance);
         setBalance(updatedBalance);
