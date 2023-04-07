@@ -20,7 +20,7 @@ const CreateAccount = () => {
       <BankOutlined
         style={{ fontSize: "2rem", margin: "0.5rem 0", display: "block" }}
       />
-      <h2>New to SolMate?</h2>
+      <h2>New to Krypton?</h2>
       <p>
         Create a new wallet to send, receive and swap Solana digital assets.
       </p>

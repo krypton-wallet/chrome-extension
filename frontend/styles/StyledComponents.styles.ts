@@ -84,7 +84,7 @@ export const Box = styled.div`
   border-radius: 4px;
   transition: color 0.15s ease, border-color 0.15s ease,
     background-color 0.15s ease;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 `;
 
 export const CheckContainer = styled.div`
@@ -158,4 +158,5 @@ export const StyledForm = styled(Form)`
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-width: 300px;
 `;

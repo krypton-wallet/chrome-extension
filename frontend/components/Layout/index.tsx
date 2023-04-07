@@ -142,7 +142,16 @@ const Layout = ({ children }: { children: JSX.Element }) => {
                 shape="round"
                 onClick={handleAccountSwitch}
                 size="middle"
-                style={{ marginLeft: "10px", paddingLeft: "1rem" }}
+                style={{
+                  marginLeft: "10px",
+                  paddingLeft: "0.9rem",
+                  paddingRight: "0.6rem",
+                  height: "35px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  display: "flex",
+                  border: "0.3px solid rgba(255,255,255,0.4)",
+                }}
               >
                 <Avatar
                   src={avatar ? avatar : "/static/images/profile.png"}
@@ -159,7 +168,48 @@ const Layout = ({ children }: { children: JSX.Element }) => {
                   }}
                 />
                 {account?.name}
+                <DownOutlined style={{ fontSize: "10px" }} />
               </Button>
+              {/* <div>
+                <Button
+                  shape="round"
+                  onClick={handleAccountSwitch}
+                  size="middle"
+                  style={{
+                    marginLeft: "10px",
+                    paddingLeft: "0.9rem",
+                    paddingRight: "0.6rem",
+                    height: "35px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    display: "flex",
+                    borderRadius: "40% 0% 0% 40%",
+                    border: "none",
+                    borderRight: "1px solid #fff",
+                  }}
+                >
+                  <Avatar
+                    src={avatar ? avatar : "/static/images/profile.png"}
+                    size="small"
+                    shape="circle"
+                    style={{
+                      marginRight: "0.5rem",
+                      fontSize: "16px",
+                    }}
+                    onError={() => {
+                      console.log("error");
+                      setAvatar(undefined);
+                      return false;
+                    }}
+                  />
+                  {accountName}
+                </Button>
+                <Button
+                  style={{ borderRadius: "0% 40% 40% 0%", border: "none" }}
+                >
+                  <DownOutlined style={{ fontSize: "10px" }} />
+                </Button>
+              </div> */}
 
               <Menu
                 mode="horizontal"
