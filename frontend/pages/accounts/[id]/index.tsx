@@ -4,21 +4,28 @@ import { useRouter } from "next/router";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { displayAddress } from "../../../utils";
 import Link from "next/link";
-import { Image } from "antd";
+import { Button, Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
 import EditableBox from "../../../components/EditableBox";
 import { useGlobalState } from "../../../context";
-import { clusterApiUrl, Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import { getAvatar } from "../../../utils/avatar";
 import InfoBox from "../../../components/InfoBox";
 
 const Account: NextPage = () => {
   const router = useRouter();
+  const { setCurrId } = useGlobalState();
   const { avatar, setAvatar, network } = useGlobalState();
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
   const [keypairBalance, setKeypairBalance] = useState<number>(0);
+  const [oneAccountLeft, setOneAccountLeft] = useState<boolean>(false);
 
   let { id, mode } = router.query;
   if (!id) {
@@ -62,6 +69,53 @@ const Account: NextPage = () => {
     });
   };
 
+  const handleDelete = () => {
+    chrome.storage.local.get(["accounts", "y_accounts"], (res) => {
+      var accountRes = selectedMode == 0 ? res["accounts"] : res["y_accounts"];
+      if (accountRes != null) {
+        var old = JSON.parse(accountRes);
+
+        for (var key in old) {
+          if (key == id) {
+            delete old[id];
+            const standardAccountRes = JSON.parse(res["accounts"]);
+            const standardAccountFirstId = Number(
+              Object.keys(standardAccountRes)[0]
+            );
+            // const firstAccountId = selectedMode === 0 ? Number(Object.keys(old)[0]) : standardAccountFirstId;
+            chrome.storage.local.set({
+              currId: standardAccountFirstId,
+              pk: standardAccountRes[standardAccountFirstId]["pk"],
+              mode: 0,
+            });
+            var values = JSON.stringify(old);
+            if (selectedMode == 0) {
+              chrome.storage.local.set({ accounts: values });
+            } else if (selectedMode == 1) {
+              chrome.storage.local.set({ y_accounts: values });
+            }
+            setCurrId(standardAccountFirstId);
+            router.push("/accounts");
+            break;
+          }
+        }
+      } else {
+        return false;
+      }
+    });
+  };
+
+  // check if there is only one standard account left
+  useEffect(() => {
+    if (selectedMode == 0) {
+      chrome.storage.local.get(["accounts"], (res) => {
+        const accountRes = JSON.parse(res["accounts"]);
+        const count = Object.keys(accountRes).length;
+        setOneAccountLeft(count === 1);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     chrome.storage.local
       .get(["accounts", "y_accounts"])
@@ -83,7 +137,10 @@ const Account: NextPage = () => {
         setPda(pda);
         setKeypairBalance(keypairBalance / LAMPORTS_PER_SOL);
         if (accountObj[selectedId]["avatar"]) {
-          const connection = new Connection(clusterApiUrl(network), "confirmed");
+          const connection = new Connection(
+            clusterApiUrl(network),
+            "confirmed"
+          );
           const avatarData = await getAvatar(
             connection,
             new PublicKey(accountObj[selectedId]["avatar"])
@@ -98,9 +155,7 @@ const Account: NextPage = () => {
 
   return (
     <>
-      <div
-        style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
-      >
+      <div style={{ display: "flex", alignItems: "center" }}>
         <Link href="/accounts" passHref>
           <a
             style={{
@@ -146,6 +201,16 @@ const Account: NextPage = () => {
           setAvatar(undefined);
         }}
       />
+      {!oneAccountLeft && (
+        <Button
+          type="primary"
+          onClick={handleDelete}
+          style={{ marginTop: "20px" }}
+          danger
+        >
+          Delete
+        </Button>
+      )}
     </>
   );
 };

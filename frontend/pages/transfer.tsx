@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
@@ -23,8 +23,7 @@ import { KeypairSigner } from "../types/account";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, network, pda, balance } =
-    useGlobalState();
+  const { walletProgramId, account, network, pda, balance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const connection = new Connection(clusterApiUrl(network), "confirmed");
 
@@ -158,8 +157,9 @@ const Transfer: NextPage = () => {
                 validator(_, value) {
                   if (!isNumber(value)) {
                     return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > (balance ?? 0)) {
+                  } else if (Number(value) <= 0) {
+                    return Promise.reject(new Error("Amount must be positive"));
+                  } else if (Number(value) > (balance ?? 0)) {
                     return Promise.reject(
                       new Error("Cannot transfer more SOL than balance")
                     );
@@ -179,6 +179,17 @@ const Transfer: NextPage = () => {
               }}
             />
           </Form.Item>
+
+          <span
+            style={{
+              opacity: "60%",
+              color: "white",
+              marginTop: "2px",
+              marginLeft: "220px",
+            }}
+          >
+            balance: {balance!}
+          </span>
 
           <div
             style={{
