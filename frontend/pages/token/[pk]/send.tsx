@@ -293,11 +293,12 @@ const Send: NextPage = () => {
                 async validator(_, value) {
                   if (!isNumber(value)) {
                     return Promise.reject(new Error("Not a number"));
-                  }
-                  else if (Number(value) <= 0) {
+                  } else if (Number(value) <= 0) {
                     return Promise.reject(new Error("Amount must be positive"));
-                  }
-                  else if (Number(value) > tokenBalance / Math.pow(10, decimals)) {
+                  } else if (
+                    Number(value) >
+                    tokenBalance / Math.pow(10, decimals)
+                  ) {
                     return Promise.reject(
                       new Error("Cannot transfer more than balance")
                     );
@@ -322,7 +323,7 @@ const Send: NextPage = () => {
               opacity: "60%",
               color: "white",
               marginTop: "2px",
-              marginLeft: "210px",
+              alignSelf: "flex-end",
             }}
           >
             balance: {tokenBalance / Math.pow(10, decimals)}

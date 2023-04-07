@@ -113,7 +113,7 @@ const Account: NextPage = () => {
         setOneAccountLeft(count === 1);
       });
     }
-  }, []);
+  }, [selectedMode]);
 
   useEffect(() => {
     chrome.storage.local

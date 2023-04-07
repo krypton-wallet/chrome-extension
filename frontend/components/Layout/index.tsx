@@ -126,6 +126,8 @@ const Layout = ({ children }: { children: JSX.Element }) => {
             "base64"
           )}`;
           setAvatar(avatarSVG);
+        } else {
+          setAvatar(undefined);
         }
       };
       handleCurrAccount();

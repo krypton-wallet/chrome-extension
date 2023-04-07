@@ -136,11 +136,6 @@ const Guardian: NextPage = () => {
     form.resetFields();
   };
 
-  const handleOk = () => {
-    setLoading(true);
-    form.submit();
-  };
-
   const toggleEditmode = () => {
     setEditmode(!editmode);
   };
@@ -225,7 +220,7 @@ const Guardian: NextPage = () => {
       <Modal
         title="Add New Guardian"
         open={isModalOpen}
-        onOk={handleOk}
+        onOk={form.submit}
         onCancel={handleModalCancel}
         confirmLoading={loading}
         okButtonProps={{ disabled: !isPkValid }}

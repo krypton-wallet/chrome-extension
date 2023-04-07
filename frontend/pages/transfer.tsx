@@ -192,7 +192,7 @@ const Transfer: NextPage = () => {
               opacity: "60%",
               color: "white",
               marginTop: "2px",
-              marginLeft: "220px",
+              alignSelf: "flex-end",
             }}
           >
             balance: {balance!}
