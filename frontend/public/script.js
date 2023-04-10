@@ -1,12 +1,12 @@
-import { initialize } from "solmate-wallet-standard";
-import { SolanaProvider } from './provider';
+import { initialize } from "krypton-wallet-standard";
+import { SolanaProvider } from "./provider";
 
-const solmate = new SolanaProvider();
+const krypton = new SolanaProvider();
 
-initialize(solmate);
+initialize(krypton);
 
 try {
-  Object.defineProperty(window, 'solmate', { value: solmate });
+  Object.defineProperty(window, "krypton", { value: krypton });
 } catch (error) {
   console.error(error);
 }

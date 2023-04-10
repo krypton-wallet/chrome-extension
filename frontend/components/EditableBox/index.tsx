@@ -1,6 +1,7 @@
 import React from "react";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { Box } from "../../styles/StyledComponents.styles";
+import { EnterOutlined } from "@ant-design/icons";
 
 const EditableBox = ({
   fieldName,
@@ -16,7 +17,11 @@ const EditableBox = ({
       <Paragraph>{fieldName}</Paragraph>
       <Paragraph
         style={{ position: "absolute", right: "55px" }}
-        editable={{ onChange: handleChange, autoSize: true }}
+        editable={{
+          onChange: handleChange,
+          autoSize: true,
+          enterIcon: <EnterOutlined style={{ color: "#fff" }} />,
+        }}
       >
         {value}
       </Paragraph>

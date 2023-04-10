@@ -50,7 +50,7 @@ const Sign: NextPage = () => {
   const postMessage = (message: any) => {
     // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
-      channel: "solmate_extension_background_channel",
+      channel: "krypton_extension_background_channel",
       data: message,
     });
   };
