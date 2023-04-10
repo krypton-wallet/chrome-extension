@@ -97,7 +97,7 @@ const GuardianBox = ({
       style={{
         display: "flex",
         width: "350px",
-        justifyContent: "center",
+        justifyContent: "space-evenly",
         marginTop: "10px",
       }}
     >
@@ -107,7 +107,6 @@ const GuardianBox = ({
 
       {!loading && editMode && (
         <Button
-          style={{ marginLeft: "140px" }}
           type="primary"
           onClick={onDelete}
           danger
@@ -118,7 +117,7 @@ const GuardianBox = ({
 
       {loading && editMode && (
         <LoadingOutlined
-          style={{ fontSize: 24, color: "#fff", marginLeft: "190px" }}
+          style={{ fontSize: 24, color: "#fff" }}
           spin
         />
       )}
