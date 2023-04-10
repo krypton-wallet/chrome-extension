@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../styles/StyledComponents.styles";
-import styles from "../components/Layout/index.module.css";
+
+import styles from "../../components/Layout/index.module.css";
 import {
   Connection,
   Keypair,
@@ -12,69 +12,68 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
+  clusterApiUrl,
 } from "@solana/web3.js";
-import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
-import { KeypairSigner, StealthSigner } from "../types/account";
+import { useGlobalState } from "../../context";
+import { StyledForm } from "../../styles/StyledComponents.styles";
+import { StealthSigner, KeypairSigner, Signer } from "../../types/account";
+import { sendAndConfirmTransactionWithAccount, isNumber } from "../../utils";
 
-const Transfer: NextPage = () => {
+const FromStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, stealth, stealthBalance } =
-    useGlobalState();
+  const { network, account, stealth, stealthBalance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
-  const connection = new Connection("https://api.devnet.solana.com/");
 
   const [form] = Form.useForm();
   const router = useRouter();
+
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl(network), "confirmed"),
+    [network]
+  );
 
   const handleCancel = () => {
     router.push("/stealth");
   };
 
   const handleOk = async (values: any) => {
+    if (!account || !stealth) {
+      return;
+    }
+
     setLoading(true);
     console.log(values);
-    const dest_pda = new PublicKey(values.pk);
+    const dest = new PublicKey(values.pk);
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
-    const connection = new Connection("https://api.devnet.solana.com/");
 
-
-    let stealthsig = new StealthSigner(stealth!);
+    let stealthsig = new StealthSigner(stealth);
     /* TRANSACTION: Transfer Native SOL */
-    const idx = Buffer.from(new Uint8Array([7]));
     console.log("amt: ", amount);
-    console.log("stealth: ", stealth!);
-    console.log("account: ", (await account!.getPublicKey()).toBase58());
-    const amountBuf = Buffer.from(
-      new Uint8Array(new BN(amount).toArray("le", 8))
-    );
-    //console.log("amt bn: ", new BN(amount))
-    const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
+    console.log("stealth: ", stealth);
+    console.log("account: ", account.pk);
 
     const pk = await stealthsig.getPublicKey();
     const recentBlockhash = await connection.getLatestBlockhash();
     const transferSOLTx = new Transaction({
-      feePayer: await stealthsig!.getPublicKey(), 
+      feePayer: pk,
       ...recentBlockhash,
     });
-    let newaccount = account;
+    let newaccount = account as Signer;
     if (!newaccount) {
       newaccount = new KeypairSigner(new Keypair());
     }
     transferSOLTx.add(
       SystemProgram.transfer({
-        fromPubkey: await stealthsig.getPublicKey(),
-        toPubkey: dest_pda,
-        lamports: amount
-      }
-      )
+        fromPubkey: pk,
+        toPubkey: dest,
+        lamports: amount,
+      })
     );
 
     console.log("Transfering native SOL...");
-    
 
     let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
       connection,
@@ -87,7 +86,7 @@ const Transfer: NextPage = () => {
       }
     );
     console.log(
-      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
+      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
     );
 
     setLoading(false);
@@ -114,10 +113,10 @@ const Transfer: NextPage = () => {
               },
               {
                 async validator(_, value) {
-                  const pdaInfo = await connection.getAccountInfo(
+                  const pkInfo = await connection.getAccountInfo(
                     new PublicKey(value)
                   );
-                  if (pdaInfo) {
+                  if (pkInfo) {
                     return Promise.resolve();
                   }
                   return Promise.reject(new Error("Invalid public key"));
@@ -216,4 +215,4 @@ const Transfer: NextPage = () => {
   );
 };
 
-export default Transfer;
+export default FromStealth;

@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../styles/StyledComponents.styles";
-import styles from "../components/Layout/index.module.css";
+import { StyledForm } from "../../styles/StyledComponents.styles";
+import styles from "../../components/Layout/index.module.css";
 import {
+  clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -15,59 +16,76 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { useGlobalState } from "../context";
+import { useGlobalState } from "../../context";
 
 import { useRouter } from "next/router";
-import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
-import { KeypairSigner, StealthSigner } from "../types/account";
+import { isNumber, sendAndConfirmTransactionWithAccount } from "../../utils";
+import { KeypairSigner, StealthSigner } from "../../types/account";
 
-const Transfer: NextPage = () => {
+const AddStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, balance } =
-    useGlobalState();
+  const { account, setAccount, balance, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const [failed, setFailed] = useState<boolean>(false);
-  const connection = new Connection("https://api.devnet.solana.com/");
 
   const [form] = Form.useForm();
   const router = useRouter();
+
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl(network), "confirmed"),
+    [network]
+  );
 
   const handleCancel = () => {
     router.push("/stealth");
   };
 
   const handleOk = async (values: any) => {
-    let ss = new StealthSigner(values.sk);
+    if (!account || !account.stealth) {
+      router.push("/");
+      return;
+    }
 
-    chrome.storage.local
-    .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
-    .then(async (result) => {
-      if (result["mode"] == 0) {
-        const id = result["currId"];
-        const old = JSON.parse(result["accounts"]);
-        const s_accs = old[id]["stealth_accounts"];
-        console.log("sacs ",s_accs);
-
-
+    await chrome.storage.local
+      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+      .then(async (result) => {
+        const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
+        const old =
+          result["mode"] === 0
+            ? JSON.parse(result["accounts"])
+            : JSON.parse(result["y_accounts"]);
+        let stealth_accs: string[] = [];
+        if (account.stealth_accounts && account.stealth_accounts.length > 0) {
+          stealth_accs = account.stealth_accounts;
+        }
         try {
-          let ss = new StealthSigner(values.sk);
-          let res = await connection.getAccountInfo(await ss.getPublicKey());
+          const signer = new StealthSigner(values.sk);
+          await connection.getAccountInfo(await signer.getPublicKey());
+          stealth_accs.push(values.sk);
         } catch (error) {
           console.log("error");
-          setFinished(true); 
-          setFailed(true); 
+          setFinished(true);
+          setFailed(true);
           return;
         }
+        const { stealth_accounts: _, ...rest } = old[id];
+        old[id] = {
+          stealth_accounts: stealth_accs,
+          ...rest,
+        };
+        const accs = JSON.stringify(old);
 
-        s_accs.push(values.sk);
-        var accs = JSON.stringify(old);
-        chrome.storage.local.set({
-          accounts: accs,
-        });
-      }
-    })
-
-
+        if (result["mode"] === 0) {
+          chrome.storage.local.set({
+            accounts: accs,
+          });
+        } else if (result["mode"] === 1) {
+          chrome.storage.local.set({
+            y_accounts: accs,
+          });
+        }
+      });
+    // TODO: maybe setAccount
     console.log(values);
     setFinished(true);
   };
@@ -114,8 +132,6 @@ const Transfer: NextPage = () => {
             />
           </Form.Item>
 
-          
-
           <div
             style={{
               display: "flex",
@@ -149,7 +165,7 @@ const Transfer: NextPage = () => {
           </div>
         </StyledForm>
       )}
-      {(finished && !failed) && (
+      {finished && !failed && (
         <>
           <Result status="success" title="Added!" />
           <Link href="/stealth" passHref>
@@ -159,7 +175,7 @@ const Transfer: NextPage = () => {
           </Link>
         </>
       )}
-      {(finished && failed) && (
+      {finished && failed && (
         <>
           <Result status="error" title="Invalid key" />
           <Link href="/stealth" passHref>
@@ -173,4 +189,4 @@ const Transfer: NextPage = () => {
   );
 };
 
-export default Transfer;
+export default AddStealth;

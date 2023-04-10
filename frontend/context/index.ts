@@ -24,8 +24,8 @@ export type GlobalContextType = {
   setYubikeyInfo: React.Dispatch<React.SetStateAction<PgpCardInfo | null>>;
   stealth: string | null;
   setStealth: React.Dispatch<React.SetStateAction<string | null>>;
-  stealthBalance: number | null;
-  setStealthBalance: React.Dispatch<React.SetStateAction<number | null>>;
+  stealthBalance: number | undefined;
+  setStealthBalance: React.Dispatch<React.SetStateAction<number | undefined>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -49,8 +49,8 @@ export const GlobalContext = createContext<GlobalContextType>({
   setYubikeyInfo: () => null,
   stealth: null,
   setStealth: () => null,
-  stealthBalance: null,
-  setStealthBalance: () => null,
+  stealthBalance: undefined,
+  setStealthBalance: () => undefined,
 });
 
 export const useGlobalState = () => useContext(GlobalContext);

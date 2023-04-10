@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { ReactNode, useState } from "react";
 import { ArrowLeftOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import styles from "../Layout/index.module.css";
+import { genKeys, StealthKeys } from "solana-stealth";
 
 import Link from "next/link";
 import {
@@ -375,6 +376,19 @@ const SignupForm = ({
       );
       feePayerAccount.avatar = avatarPK.toBase58();
     }
+
+    // Generating Stealth
+    const utf8 = new TextEncoder();
+    const message = utf8.encode(
+      "Signing this message is equivalent to generating your private keys. Do not sign this once you have already generated your private keys."
+    );
+    const sig = await feePayer.signMessage(message);
+    const keys: StealthKeys = await genKeys(sig);
+    feePayerAccount.stealth = {
+      priv_scan: keys.privScan,
+      priv_spend: keys.privSpend,
+    };
+
     handleStorage(feePayerAccount);
     setCurrStep((prev) => prev + 1);
 

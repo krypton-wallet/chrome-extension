@@ -43,7 +43,6 @@ export class StealthSigner implements Signer {
     }
 
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
-      
       const sig = genFullSignature(Message.from(message), this.scalarKey);
       return sig;
     }
@@ -105,7 +104,7 @@ export class YubikeySigner implements Signer {
     }
 }
 
-type StealthInfo = {
+export type StealthInfo = {
     priv_scan: string;
     priv_spend: string;
 }

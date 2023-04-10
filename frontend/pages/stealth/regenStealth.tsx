@@ -3,8 +3,7 @@ import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../styles/StyledComponents.styles";
-import styles from "../components/Layout/index.module.css";
+import styles from "../../components/Layout/index.module.css";
 import {
   Connection,
   Keypair,
@@ -12,105 +11,60 @@ import {
   PublicKey,
   Transaction,
   TransactionInstruction,
+  clusterApiUrl,
 } from "@solana/web3.js";
-import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
-import { KeypairSigner } from "../types/account";
-import { senderGenAddress, stealthTransferIx } from "solana-stealth";
+import { useGlobalState } from "../../context";
+import { StyledForm } from "../../styles/StyledComponents.styles";
+import { isNumber } from "../../utils";
 
-const Transfer: NextPage = () => {
+//import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
+
+const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, balance } =
-    useGlobalState();
+  const { account, setAccount, balance, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
-  const connection = new Connection("https://api.devnet.solana.com/");
+  const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   const [form] = Form.useForm();
   const router = useRouter();
 
   const handleCancel = () => {
-    router.push("/regenStealth");
+    router.push("/stealth");
   };
 
   const handleOk = async (values: any) => {
     setLoading(true);
+    console.log("WTFFFF");
     console.log(values);
     const scankey = new PublicKey(values.scankey);
     const spendkey = new PublicKey(values.spendkey);
-    
-    let notifyix = await stealthTransferIx(await account!.getPublicKey(),scankey.toBase58(),spendkey.toBase58(),0);
-    let dest = notifyix.keys[1].pubkey;
 
-    const amount = Number(values.amount) * LAMPORTS_PER_SOL;
-    const connection = new Connection("https://api.devnet.solana.com/");
+    console.log("trying to set rng");
+    // setRNG("nodeCryptoRandomBytes");
 
-    /* TRANSACTION: Transfer Native SOL */
-    const idx = Buffer.from(new Uint8Array([7]));
-    console.log("amt: ", amount);
-    console.log("pda: ", pda?.toBase58());
-    console.log("account: ", (await account!.getPublicKey()).toBase58());
-    const amountBuf = Buffer.from(
-      new Uint8Array(new BN(amount).toArray("le", 8))
-    );
-    //console.log("amt bn: ", new BN(amount))
-    const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
+    scankey.toString();
+    //init(8,"nodeCryptoRandomBytes");
+    console.log("before  str2hex");
+    // let secret = str2hex(scankey.toString());
+    // //let secret = privScan!;
 
-    const recentBlockhash = await connection.getLatestBlockhash();
-    const transferSOLTx = new Transaction({
-      feePayer: await account!.getPublicKey(),
-      ...recentBlockhash,
-    });
-    let newaccount = account;
-    if (!newaccount) {
-      newaccount = new KeypairSigner(new Keypair());
-    }
+    // setRNG("browserCryptoGetRandomValues");
 
+    // console.log(getConfig());
 
-    
-    transferSOLTx.add(
-      new TransactionInstruction({
-        keys: [
-          {
-            pubkey: pda ?? PublicKey.default,
-            isSigner: false,
-            isWritable: true,
-          },
-          {
-            pubkey: dest,
-            isSigner: false,
-            isWritable: true,
-          },
-          {
-            pubkey: await account!.getPublicKey(),
-            isSigner: true,
-            isWritable: true,
-          },
-        ],
-        programId: walletProgramId,
-        data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
-      })
-    );
-    transferSOLTx.add(notifyix);
+    const myArray = new Uint32Array(10);
+    console.log(crypto.getRandomValues(myArray));
+    console.log(myArray);
 
+    console.log("waiting");
+    // await new Promise((r) => setTimeout(r, 30000));
 
-
-    console.log("Transfering native SOL...");
-    let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
-      connection,
-      transferSOLTx,
-      [newaccount],
-      {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        commitment: "confirmed",
-      }
-    );
-    console.log(
-      `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=devnet\n`
-    );
+    console.log("before shares");
+    // let shares = share(secret, 3, 2);
+    // console.log(shares);
 
     setLoading(false);
     setFinished(true);
@@ -118,7 +72,7 @@ const Transfer: NextPage = () => {
 
   return (
     <>
-      <h1 className={"title"}>Send SOL</h1>
+      <h1 className={"title"}>RegenStealth</h1>
 
       {!finished && (
         <StyledForm
@@ -268,4 +222,4 @@ const Transfer: NextPage = () => {
   );
 };
 
-export default Transfer;
+export default RegenStealth;
