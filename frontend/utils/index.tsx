@@ -36,6 +36,7 @@ const refreshBalance = async (
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const profile_pda = getProfilePDA(publicKey);
     const balance = await connection.getBalance(profile_pda[0]);
+    if (balance - PDA_RENT_EXEMPT_FEE <= 0) return 0;
     return (balance - PDA_RENT_EXEMPT_FEE) / LAMPORTS_PER_SOL;
   } catch (error) {
     const errorMessage =

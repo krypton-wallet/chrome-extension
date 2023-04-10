@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { useRouter } from "next/router";
-import { Form, Input, Button } from "antd";
+import { Form, Input, Button, Alert } from "antd";
 import { useGlobalState } from "../context";
 import { LoadingOutlined } from "@ant-design/icons";
 import Axios from "axios";
@@ -35,6 +34,8 @@ const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [generated, setGenerated] = useState<boolean>(false);
   const [allSigned, setAllSigned] = useState<boolean>(false);
+  const [canGenerate, setCanGenerate] = useState<boolean>(true);
+  const [err, setErr] = useState<string>("");
   const { recoverPk, setRecoverPk } = useGlobalState();
   const [form] = Form.useForm();
 
@@ -67,9 +68,20 @@ const GenerateRecover: NextPage = () => {
       return;
     }
 
+    const pk = new PublicKey(values.pk);
+    const res = await Axios.get(
+      "http://localhost:5000/api/getFromPk/" + pk.toBase58()
+    );
+    const res_data = res.data[0];
+    console.log("RESSL ", res_data);
+    if (res_data !== undefined && res_data["pk"] === pk.toBase58()) {
+      setCanGenerate(false);
+      setErr("Duplicate recovery request! Please enter a different public key to recover");
+      return;
+    }
+
     console.log("=====GENERATING======");
     setLoading(true);
-    const pk = new PublicKey(values.pk);
     setRecoverPk(pk);
 
     const connection = new Connection(clusterApiUrl(network), "confirmed");
@@ -254,7 +266,10 @@ const GenerateRecover: NextPage = () => {
       {!allSigned && (
         <>
           {!generated && (
-            <p>Enter your old public key to get a unique recovery link</p>
+            <>
+              <p>Enter your old public key to get a unique recovery link</p>
+              {!canGenerate && <Alert message={err} type="error" />}
+            </>
           )}
           {generated && (
             <p style={{ textAlign: "center" }}>
@@ -321,7 +336,10 @@ const GenerateRecover: NextPage = () => {
               )}
 
               {loading && (
-                <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
+                <LoadingOutlined
+                  style={{ fontSize: 24, color: "#fff", marginTop: "36px" }}
+                  spin
+                />
               )}
             </StyledForm>
           )}

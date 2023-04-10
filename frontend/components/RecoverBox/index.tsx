@@ -311,7 +311,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
   };
 
   return (
-    <Box>
+    <Box style={{ width: "100%" }}>
       {!finished && (
         <>
           <Paragraph
