@@ -138,6 +138,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
     <div className={styles.container}>
       <main className={styles.main}>
         {!router.pathname.startsWith("/accounts") &&
+          !router.pathname.startsWith("/adapter") &&
           !PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname) && (
             <header className={styles.header}>
               <Button
