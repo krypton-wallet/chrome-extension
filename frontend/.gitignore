@@ -37,3 +37,5 @@ yarn.lock
 .vercel
 
 .yarn
+
+package-lock.json
