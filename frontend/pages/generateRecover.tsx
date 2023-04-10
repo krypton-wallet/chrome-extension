@@ -80,14 +80,6 @@ const GenerateRecover: NextPage = () => {
     console.log("curr new pk: ", newPublicKey.toBase58());
     console.log("nonce pk: ", nonceAccount.publicKey.toBase58());
 
-    // console.log("Requesting Airdrop of 1 SOL to newFeePayer...");
-    // const signature = await connection.requestAirdrop(
-    //   newFeePayer.publicKey,
-    //   1e9
-    // );
-    // await connection.confirmTransaction(signature, "finalized");
-    // console.log("Airdrop received");
-
     const profile_pda = getProfilePDA(pk);
     const new_profile_pda = getProfilePDA(newPublicKey);
 

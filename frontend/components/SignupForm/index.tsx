@@ -1,7 +1,7 @@
 import { Button, Checkbox, Form, Select, Tooltip } from "antd";
 import { useRouter } from "next/router";
 import { ReactNode, useState } from "react";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import styles from "../Layout/index.module.css";
 
 import Link from "next/link";
@@ -89,19 +89,19 @@ const SignupForm = ({
     console.log("program id: ", WALLET_PROGRAM_ID.toBase58());
 
     console.log("Requesting Airdrop of 0.2 SOL...");
-    // const signature = await connection.requestAirdrop(
-    //   feePayerPK,
-    //   REFILL_TO_BALANCE
-    // );
+    const signature = await connection.requestAirdrop(
+      feePayerPK,
+      REFILL_TO_BALANCE
+    );
     let recentBlockhash = await connection.getLatestBlockhash();
-    // await connection.confirmTransaction(
-    //   {
-    //     blockhash: recentBlockhash.blockhash,
-    //     lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
-    //     signature,
-    //   },
-    //   "confirmed"
-    // );
+    await connection.confirmTransaction(
+      {
+        blockhash: recentBlockhash.blockhash,
+        lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+        signature,
+      },
+      "confirmed"
+    );
 
     // instr 1: initialize social recovery wallet
     const idx = Buffer.from(new Uint8Array([0]));
@@ -414,18 +414,22 @@ const SignupForm = ({
         <Form.Item name="thres" noStyle>
           <div
             style={{
+              width: "100%",
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "space-between",
               marginTop: "2rem",
             }}
           >
-            <Tooltip title="Select how many Guardians are required to recover your wallet">
-              <p style={{ marginBottom: 0, marginRight: "1rem" }}>
-                Set Recovery Guardian Threshold:
-              </p>
-            </Tooltip>
+            <p style={{ marginBottom: 0 }}>
+              Set Guardian Threshold:
+              <Tooltip title="Select how many Guardians are required to recover your wallet">
+                <InfoCircleOutlined
+                  style={{ marginLeft: "0.5rem", cursor: "pointer" }}
+                />
+              </Tooltip>
+            </p>
             <Select
               size="middle"
               defaultValue="2"
@@ -451,7 +455,7 @@ const SignupForm = ({
             }}
           >
             <p style={{ marginBottom: 0, marginRight: "1rem" }}>
-              Generate unique avatar for your PublicKey?
+              Generate unique avatar for your wallet?
             </p>
             <Checkbox
               checked={genStep === 0}
