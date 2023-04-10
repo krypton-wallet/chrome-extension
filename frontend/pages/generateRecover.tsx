@@ -73,7 +73,6 @@ const GenerateRecover: NextPage = () => {
       "http://localhost:5000/api/getFromPk/" + pk.toBase58()
     );
     const res_data = res.data[0];
-    console.log("RESSL ", res_data);
     if (res_data !== undefined && res_data["pk"] === pk.toBase58()) {
       setCanGenerate(false);
       setErr("Duplicate recovery request! Please enter a different public key to recover");
