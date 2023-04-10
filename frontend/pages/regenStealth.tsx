@@ -19,6 +19,9 @@ import BN from "bn.js";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 
+import {str2hex, share, setRNG,init, _isSetRNG , _getRNG, getConfig,} from "secret-sharing.js"
+//import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
+
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { walletProgramId, account, setAccount, pda, balance, privScan,privSpend, setPrivScan, setPrivSpend } =
@@ -31,7 +34,6 @@ const RegenStealth: NextPage = () => {
 
   const handleCancel = () => {
 
-    
     router.push("/stealth");
   };
 
@@ -42,12 +44,31 @@ const RegenStealth: NextPage = () => {
     const scankey = new PublicKey(values.scankey);
     const spendkey = new PublicKey(values.spendkey);
     
+    console.log("trying to set rng");
+   // setRNG("nodeCryptoRandomBytes");
 
-     //let secret = str2hex("privScan!");
-     //let secret = privScan!;
+    scankey.toString()
+    //init(8,"nodeCryptoRandomBytes");
+    console.log("before  str2hex");
+    let secret = str2hex(scankey.toString());
+    //let secret = privScan!;
 
-     //let shares = share(secret,3,2);
-     //console.log(secret);
+    setRNG("browserCryptoGetRandomValues");
+
+
+    console.log(getConfig());
+
+    const myArray = new Uint32Array(10);
+    console.log(crypto.getRandomValues(myArray));
+    console.log(myArray);
+
+    
+    console.log("waiting");
+    await new Promise(r => setTimeout(r, 30000));
+
+    console.log("before shares");
+     let shares = share(secret,3,2);
+     console.log(shares);
 
 
     
