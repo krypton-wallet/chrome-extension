@@ -10,10 +10,10 @@ const head =
 head.insertBefore(script, head.lastChild);
 head.removeChild(script);
 
-window.addEventListener("solmate_injected_script_message", (event) => {
+window.addEventListener("krypton_injected_script_message", (event) => {
   chrome.runtime.sendMessage(
     {
-      channel: "solmate_contentscript_background_channel",
+      channel: "krypton_contentscript_background_channel",
       data: event.detail,
     },
     (response) => {
@@ -22,7 +22,7 @@ window.addEventListener("solmate_injected_script_message", (event) => {
         return;
       }
       window.dispatchEvent(
-        new CustomEvent("solmate_contentscript_message", { detail: response })
+        new CustomEvent("krypton_contentscript_message", { detail: response })
       );
     }
   );

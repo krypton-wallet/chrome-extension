@@ -72,7 +72,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.channel === "solmate_contentscript_background_channel") {
+  if (message.channel === "krypton_contentscript_background_channel") {
     if (message.data.method === "connect") {
       handleConnect(message, sender, sendResponse);
     } else if (message.data.method === "disconnect") {
@@ -82,7 +82,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     // keeps response channel open
     return true;
-  } else if (message.channel === "solmate_extension_background_channel") {
+  } else if (message.channel === "krypton_extension_background_channel") {
     console.log("message: ", message);
     const responseHandler = responseHandlers.get(message.data.id);
     responseHandlers.delete(message.data.id);

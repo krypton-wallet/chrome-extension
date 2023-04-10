@@ -34,7 +34,7 @@ export class SolanaProvider extends EventEmitter {
     return new Promise((resolve, reject) => {
       const listener = (event) => {
         if (event.detail.id === message.id) {
-          window.removeEventListener("solmate_contentscript_message", listener);
+          window.removeEventListener("krypton_contentscript_message", listener);
 
           if (event.detail.error) {
             reject(event.detail);
@@ -43,11 +43,11 @@ export class SolanaProvider extends EventEmitter {
           }
         }
       };
-      window.addEventListener("solmate_contentscript_message", listener);
+      window.addEventListener("krypton_contentscript_message", listener);
 
       window.dispatchEvent(
         // eslint-disable-next-line no-undef
-        new CustomEvent("solmate_injected_script_message", { detail: message })
+        new CustomEvent("krypton_injected_script_message", { detail: message })
       );
     });
   };
