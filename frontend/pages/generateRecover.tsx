@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { useRouter } from "next/router";
-import { Form, Input, Button } from "antd";
+import { Form, Input, Button, Alert } from "antd";
 import { useGlobalState } from "../context";
 import { LoadingOutlined } from "@ant-design/icons";
-import styled from "styled-components";
 import Axios from "axios";
 import useInterval from "@use-it/interval";
-
 import {
+  AccountMeta,
   clusterApiUrl,
   Connection,
   Keypair,
   NONCE_ACCOUNT_LENGTH,
   PublicKey,
+  SignaturePubkeyPair,
   SystemProgram,
   Transaction,
   TransactionInstruction,
@@ -23,29 +22,38 @@ import BN from "bn.js";
 import base58 from "bs58";
 import RecoverBox from "../components/RecoverBox";
 import { StyledForm } from "../styles/StyledComponents.styles";
-import { partialSign, sendAndConfirmTransactionWithAccount } from "../utils";
+import {
+  getProfilePDA,
+  partialSign,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
 import { KeypairSigner } from "../types/account";
+import { WALLET_PROGRAM_ID } from "../utils/constants";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [generated, setGenerated] = useState<boolean>(false);
   const [allSigned, setAllSigned] = useState<boolean>(false);
+  const [canGenerate, setCanGenerate] = useState<boolean>(true);
+  const [err, setErr] = useState<string>("");
   const { recoverPk, setRecoverPk } = useGlobalState();
   const [form] = Form.useForm();
-  const router = useRouter();
 
-  const { account, network, walletProgramId } = useGlobalState();
+  const { account, network } = useGlobalState();
 
   useInterval(async () => {
+    if (!account) {
+      return;
+    }
     const res = await Axios.get(
-      "http://localhost:5000/api/getFromNewPk/" + await account!.getPublicKey()
+      "http://localhost:5000/api/getFromNewPk/" + account.pk
     );
     const res_data = res.data[0];
     if (res_data == undefined) {
       return;
     }
     setRecoverPk(new PublicKey(res_data.pk));
-    if (res_data.sig_remain == 0) {
+    if (res_data.sig_remain === 0) {
       setAllSigned(true);
     }
   }, 2000);
@@ -56,50 +64,50 @@ const GenerateRecover: NextPage = () => {
       - Initialize recoveryWallet transaction and store it in DB
   */
   const handleGenerate = async (values: any) => {
+    if (!account) {
+      return;
+    }
+
+    const pk = new PublicKey(values.pk);
+    const res = await Axios.get(
+      "http://localhost:5000/api/getFromPk/" + pk.toBase58()
+    );
+    const res_data = res.data[0];
+    if (res_data !== undefined && res_data["pk"] === pk.toBase58()) {
+      setCanGenerate(false);
+      setErr("Duplicate recovery request! Please enter a different public key to recover");
+      return;
+    }
+
     console.log("=====GENERATING======");
     setLoading(true);
-    const pk = new PublicKey(values.pk);
     setRecoverPk(pk);
 
     const connection = new Connection(clusterApiUrl(network), "confirmed");
-    const newFeePayer = account!;
+    const newFeePayer = account;
     const newPublicKey = await newFeePayer.getPublicKey();
     const nonceAccount = new Keypair();
 
     console.log("curr new pk: ", newPublicKey.toBase58());
     console.log("nonce pk: ", nonceAccount.publicKey.toBase58());
 
-    // console.log("Requesting Airdrop of 1 SOL to newFeePayer...");
-    // const signature = await connection.requestAirdrop(
-    //   newFeePayer.publicKey,
-    //   1e9
-    // );
-    // await connection.confirmTransaction(signature, "finalized");
-    // console.log("Airdrop received");
-
-    const profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), pk.toBuffer()],
-      walletProgramId
-    );
-    const new_profile_pda = PublicKey.findProgramAddressSync(
-      [Buffer.from("profile", "utf-8"), newPublicKey.toBuffer()],
-      walletProgramId
-    );
+    const profile_pda = getProfilePDA(pk);
+    const new_profile_pda = getProfilePDA(newPublicKey);
 
     // "BvxqrkebkExVvDRfJHogQGcKfvKWuL2P5ErjDVxjdS9N"
     // "EmrYqBHvhmvRpy6ZVwVe212rdxZAZZacVTVFG5QbD9UN"
 
     // Fetching all guardians & recovery threshold from PDA
     const pda_account = await connection.getAccountInfo(profile_pda[0]);
-    const pda_data = pda_account?.data ?? new Buffer("");
+    const pda_data = pda_account?.data ?? Buffer.from("");
     console.log("PDA Data: ", pda_data);
     const thres = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
     console.log("guardian length: ", guardian_len);
     console.log("All Guardians:");
-    let guardians = [];
-    for (var i = 0; i < guardian_len; i++) {
-      let guard = new PublicKey(
+    const guardians: PublicKey[] = [];
+    for (let i = 0; i < guardian_len; i++) {
+      const guard = new PublicKey(
         base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
       );
       console.log(`guard ${i + 1}: `, guard.toBase58());
@@ -108,8 +116,9 @@ const GenerateRecover: NextPage = () => {
 
     // Transaction 1: setup nonce
     const recentBlockhash = await connection.getLatestBlockhash();
+    // TODO: Check if Yubikey is connected
     let tx = new Transaction({
-      feePayer: await account!.getPublicKey(),
+      feePayer: await account.getPublicKey(),
       ...recentBlockhash,
     });
     tx.add(
@@ -130,7 +139,7 @@ const GenerateRecover: NextPage = () => {
       })
     );
     (tx.feePayer = newPublicKey), console.log("Sending nonce transaction...");
-    let txid = await sendAndConfirmTransactionWithAccount(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
       [newFeePayer, new KeypairSigner(nonceAccount)],
@@ -149,8 +158,8 @@ const GenerateRecover: NextPage = () => {
     );
 
     // populate guardian keys and populate them into the transaction
-    let guard_keys = [];
-    for (var i = 0; i < guardian_len; i++) {
+    const guard_keys: AccountMeta[] = [];
+    for (let i = 0; i < guardian_len; i++) {
       guard_keys.push({
         pubkey: guardians[i],
         isSigner: true,
@@ -182,18 +191,18 @@ const GenerateRecover: NextPage = () => {
         },
         ...guard_keys,
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
-    let nonceAccountData = await connection.getNonce(
+    const nonceAccountData = await connection.getNonce(
       nonceAccount.publicKey,
       "confirmed"
     );
 
     // initialize guardian signature
-    let guard_sigs = [];
-    for (var i = 0; i < guardian_len; i++) {
+    const guard_sigs: SignaturePubkeyPair[] = [];
+    for (let i = 0; i < guardian_len; i++) {
       guard_sigs.push({
         publicKey: guardians[i],
         signature: null,
@@ -220,12 +229,12 @@ const GenerateRecover: NextPage = () => {
       requireAllSignatures: false,
     });
     const txBased64 = serializedTx.toString("base64");
-    console.log("TX base 64: ", txBased64)
-    let transaction = Transaction.from(Buffer.from(txBased64, "base64"));
+    console.log("TX base 64: ", txBased64);
+    const transaction = Transaction.from(Buffer.from(txBased64, "base64"));
     console.log("Signed. Transaction created");
 
     console.log("Transaction signatures: ");
-    for (var i = 0; i < transaction.signatures.length; i++) {
+    for (let i = 0; i < transaction.signatures.length; i++) {
       console.log(
         `pk ${i}: ${transaction.signatures[
           i
@@ -256,7 +265,10 @@ const GenerateRecover: NextPage = () => {
       {!allSigned && (
         <>
           {!generated && (
-            <p>Enter your old public key to get a unique recovery link</p>
+            <>
+              <p>Enter your old public key to get a unique recovery link</p>
+              {!canGenerate && <Alert message={err} type="error" />}
+            </>
           )}
           {generated && (
             <p style={{ textAlign: "center" }}>
@@ -323,7 +335,10 @@ const GenerateRecover: NextPage = () => {
               )}
 
               {loading && (
-                <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
+                <LoadingOutlined
+                  style={{ fontSize: 24, color: "#fff", marginTop: "36px" }}
+                  spin
+                />
               )}
             </StyledForm>
           )}

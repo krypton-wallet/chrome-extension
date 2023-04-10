@@ -1,10 +1,5 @@
-import { Badge, Dropdown, Menu, Button, Avatar } from "antd";
-import React, {
-  BaseSyntheticEvent,
-  ReactElement,
-  useEffect,
-  useState,
-} from "react";
+import { Badge, Dropdown, Menu, Button, Avatar, MenuProps } from "antd";
+import React, { BaseSyntheticEvent, useEffect, useState } from "react";
 import {
   DownOutlined,
   WalletOutlined,
@@ -19,6 +14,8 @@ import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
 import { Cluster, clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../utils/avatar";
+import { getCurrentAccount } from "../../utils";
+import { useGlobalModalContext } from "../GlobalModal";
 
 type DomEvent = {
   domEvent: BaseSyntheticEvent;
@@ -32,11 +29,11 @@ const PATHS_WITHOUT_HEADER_AND_FOOTER = [
   "/accounts/yubikey/signup",
 ];
 
-const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
-  const { network, setNetwork, account, currId, pda, avatar, setAvatar } =
-    useGlobalState();
-  const [accountName, setAccountName] = useState<string>("");
+const Layout = ({ children }: { children: JSX.Element }) => {
+  const { network, setNetwork, account, setAccount } = useGlobalState();
+  const [avatar, setAvatar] = useState<string>();
 
+  const modalContext = useGlobalModalContext();
   const router = useRouter();
 
   const selectNetwork = (e: DomEvent) => {
@@ -45,19 +42,28 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     setNetwork(selectedNetwork);
   };
 
-  const menu = (
-    <Menu>
-      <Menu.Item onClick={selectNetwork} key="1">
-        Mainnet {network === "mainnet-beta" && <Badge status="processing" />}
-      </Menu.Item>
-      <Menu.Item onClick={selectNetwork} key="2">
-        Devnet {network === "devnet" && <Badge status="processing" />}
-      </Menu.Item>
-      <Menu.Item onClick={selectNetwork} key="3">
-        Testnet {network === "testnet" && <Badge status="processing" />}
-      </Menu.Item>
-    </Menu>
-  );
+  const items: MenuProps["items"] = [
+    {
+      key: "1",
+      label: (
+        <>
+          Mainnet {network === "mainnet-beta" && <Badge status="processing" />}
+        </>
+      ),
+    },
+    {
+      key: "2",
+      label: (
+        <>Devnet {network === "devnet" && <Badge status="processing" />}</>
+      ),
+    },
+    {
+      key: "3",
+      label: (
+        <>Testnet {network === "testnet" && <Badge status="processing" />}</>
+      ),
+    },
+  ];
 
   const footerItems = [
     {
@@ -98,88 +104,35 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
     router.push("/accounts");
   };
 
-  // Setting Menu not used now
-  const settingMenu = (
-    <Menu>
-      {/* <Menu.Item key="/account">
-        {avatar ? (
-          <Avatar
-            src={avatar}
-            size="small"
-            shape="circle"
-            style={{
-              marginRight: "0.25rem",
-              fontSize: "16px",
-            }}
-            onError={() => {
-              console.log("error");
-              return false;
-            }}
-          />
-        ) : (
-          <UserOutlined
-            style={{
-              marginRight: "0.25rem",
-              fontSize: "16px",
-            }}
-          />
-        )}
-        <Link href="/account" passHref>
-          Account
-        </Link>
-      </Menu.Item> */}
-    </Menu>
-  );
-
   useEffect(() => {
     // Set account name
     if (!PATHS_WITHOUT_HEADER_AND_FOOTER.includes(router.pathname)) {
-      chrome.storage.local
-        .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
-        .then((res) => {
-          const [id, accountObj] =
-            res["mode"] == 0
-              ? [res["currId"], JSON.parse(res["accounts"])]
-              : [res["y_id"], JSON.parse(res["y_accounts"])];
-          const name = accountObj[id]["name"];
-          setAccountName(name);
-        });
+      const handleCurrAccount = async () => {
+        const curr = await getCurrentAccount(modalContext);
+        if (!curr) {
+          return;
+        }
+        setAccount(curr);
+        if (curr.avatar) {
+          const connection = new Connection(
+            clusterApiUrl(network),
+            "confirmed"
+          );
+          const avatarData = await getAvatar(
+            connection,
+            new PublicKey(curr.avatar)
+          );
+          const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
+            "base64"
+          )}`;
+          setAvatar(avatarSVG);
+        } else {
+          setAvatar(undefined);
+        }
+      };
+      handleCurrAccount();
     }
-  }, [currId, pda, router.pathname]);
-
-  useEffect(() => {
-    // Set avatar SVG
-    if (
-      ![...PATHS_WITHOUT_HEADER_AND_FOOTER, "/accounts/[id]"].includes(
-        router.pathname
-      )
-    ) {
-      chrome.storage.local
-        .get(["currId", "y_id", "accounts", "y_accounts", "mode"])
-        .then(async (res) => {
-          const [id, accountObj] =
-            res["mode"] == 0
-              ? [res["currId"], JSON.parse(res["accounts"])]
-              : [res["y_id"], JSON.parse(res["y_accounts"])];
-          if (accountObj[id]["avatar"]) {
-            const connection = new Connection(
-              clusterApiUrl(network),
-              "confirmed"
-            );
-            const avatarData = await getAvatar(
-              connection,
-              new PublicKey(accountObj[id].avatar)
-            );
-            const avatarSVG = `data:image/svg+xml;base64,${avatarData?.toString(
-              "base64"
-            )}`;
-            setAvatar(avatarSVG);
-          } else {
-            setAvatar(undefined);
-          }
-        });
-    }
-  }, [router.pathname, setAvatar]);
+  }, [modalContext, network, router.pathname, setAccount]);
 
   return (
     <div className={styles.container}>
@@ -216,7 +169,7 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
                     return false;
                   }}
                 />
-                {accountName}
+                {account?.name}
                 <DownOutlined style={{ fontSize: "10px" }} />
               </Button>
               {/* <div>
@@ -267,32 +220,33 @@ const Layout = ({ children }: { children: JSX.Element }): ReactElement => {
               >
                 <Dropdown
                   className={styles.top}
-                  overlay={menu}
+                  menu={{
+                    items,
+                    onClick: selectNetwork,
+                  }}
                   disabled={!account}
                 >
                   <a
                     className="ant-dropdown-link"
                     onClick={(e) => e.preventDefault()}
                   >
-                    {network == "devnet" ? "Devnet" : "Devnet"} <DownOutlined />
+                    {network === "devnet" ? "Devnet" : "Devnet"}{" "}
+                    <DownOutlined />
                   </a>
                 </Dropdown>
-
-                {account && (
-                  <Dropdown
-                    className={styles.top}
-                    overlay={settingMenu}
-                    disabled={!account}
-                    placement="bottomRight"
+                <Dropdown
+                  className={styles.top}
+                  menu={{ items: [] }}
+                  disabled={!account}
+                  placement="bottomRight"
+                >
+                  <a
+                    className="ant-dropdown-link"
+                    onClick={(e) => e.preventDefault()}
                   >
-                    <a
-                      className="ant-dropdown-link"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <SettingOutlined />
-                    </a>
-                  </Dropdown>
-                )}
+                    <SettingOutlined />
+                  </a>
+                </Dropdown>
               </Menu>
             </header>
           )}

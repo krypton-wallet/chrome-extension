@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NextPage } from "next";
-import { List, Avatar, Button } from "antd";
-import { useGlobalState } from "../../context";
+import { List } from "antd";
 import {
   WalletOutlined,
   NodeCollapseOutlined,
@@ -41,7 +40,8 @@ const Onboard: NextPage = () => {
             onClick={() => {
               router.push("/accounts/yubikey/onboard");
             }}
-            style={{ marginBottom: "20px" }}>
+            style={{ marginBottom: "20px" }}
+          >
             <List.Item.Meta
               avatar={
                 <KeyOutlined style={{ fontSize: "25px", color: "#fff" }} />

@@ -16,7 +16,7 @@ import {
   CloseOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { displayAddress, getSignerFromPkString } from "../../utils";
+import { displayAddress, getAccountFromPkString } from "../../utils";
 import { useRouter } from "next/router";
 import {
   clusterApiUrl,
@@ -27,22 +27,10 @@ import {
 import Link from "next/link";
 import { getAvatar } from "../../utils/avatar";
 import { useGlobalModalContext } from "../../components/GlobalModal";
+import { WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const AccountList: NextPage = () => {
-  const {
-    network,
-    balance,
-    setBalance,
-    account,
-    setAccount,
-    pda,
-    setPDA,
-    walletProgramId,
-    setTokens,
-    currId,
-    setCurrId,
-    setAvatar,
-  } = useGlobalState();
+  const { network, setBalance, setAccount, setCurrId } = useGlobalState();
 
   const [allAccounts, setAllAccounts] = useState<
     Array<[number, number, string, string, string?]>
@@ -62,13 +50,13 @@ const AccountList: NextPage = () => {
   const router = useRouter();
 
   const onClick: MenuProps["onClick"] = ({ key }) => {
-    if (key == "1") {
+    if (key === "1") {
       setCurrAccounts(allAccounts);
       setFilter("All");
-    } else if (key == "2") {
+    } else if (key === "2") {
       setCurrAccounts(standardAccounts);
       setFilter("Standard");
-    } else if (key == "3") {
+    } else if (key === "3") {
       setCurrAccounts(yubikeyAccounts);
       setFilter("Yubikey");
     }
@@ -94,15 +82,15 @@ const AccountList: NextPage = () => {
     chrome.storage.local
       .get(["accounts", "y_accounts"])
       .then(async (result) => {
-        let accountTmp: Array<[number, number, string, string, string?]> = [];
-        let yubikeyAccountTmp: Array<
+        const accountTmp: Array<[number, number, string, string, string?]> = [];
+        const yubikeyAccountTmp: Array<
           [number, number, string, string, string?]
         > = [];
 
         if (result["accounts"] != undefined) {
           const accountObj = JSON.parse(result["accounts"]);
 
-          for (var id in accountObj) {
+          for (const id in accountObj) {
             const name = accountObj[id].name;
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
@@ -129,7 +117,7 @@ const AccountList: NextPage = () => {
         if (result["y_accounts"] != undefined) {
           console.log(result["y_accounts"]);
           const accountObj = JSON.parse(result["y_accounts"]);
-          for (var id in accountObj) {
+          for (const id in accountObj) {
             const name = accountObj[id].name;
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
@@ -156,7 +144,7 @@ const AccountList: NextPage = () => {
         setAllAccounts(allAccountsTmp);
         setCurrAccounts(allAccountsTmp);
       });
-  }, []);
+  }, [network]);
 
   const handleAddAccount = () => {
     router.push("/accounts/onboard");
@@ -211,58 +199,47 @@ const AccountList: NextPage = () => {
                 console.log("=============SWITCHING ACCOUNT===============");
                 const mode = item[0];
                 const id = item[1];
-                if (mode == 0) {
+                if (mode === 0) {
                   chrome.storage.local.set({ currId: id });
                   setCurrId(id);
-                } else if (mode == 1) {
+                } else if (mode === 1) {
                   chrome.storage.local.set({ y_id: id });
                 }
-                if (item.length > 4) {
-                  setAvatar(item[4]);
-                } else {
-                  setAvatar(undefined);
-                }
-                chrome.storage.local
+                await chrome.storage.local
                   .get(["accounts", "y_accounts"])
                   .then(async (result) => {
                     let publicKey = "";
-                    if (mode == 0) {
-                      let accountObj = JSON.parse(result["accounts"]);
+                    if (mode === 0) {
+                      const accountObj = JSON.parse(result["accounts"]);
                       publicKey = accountObj[id]["pk"];
                       chrome.storage.local.set({ mode: 0 });
-                    } else if (mode == 1) {
-                      let accountObj = JSON.parse(result["y_accounts"]);
+                    } else if (mode === 1) {
+                      const accountObj = JSON.parse(result["y_accounts"]);
                       publicKey = accountObj[id]["pk"];
                       chrome.storage.local.set({ mode: 1 });
                     }
                     chrome.storage.local.set({ pk: publicKey });
 
                     // TODO: Detoxify this
-                    setAccount(
-                      await getSignerFromPkString(publicKey, modalContext)
+                    const curr = await getAccountFromPkString(
+                      publicKey,
+                      modalContext
                     );
-
-                    const profile_pda = PublicKey.findProgramAddressSync(
-                      [
-                        Buffer.from("profile", "utf-8"),
-                        new PublicKey(publicKey).toBuffer(),
-                      ],
-                      walletProgramId
-                    );
-                    setPDA(profile_pda[0]);
+                    if (!curr) {
+                      return;
+                    }
+                    setAccount(curr);
                     const connection = new Connection(
                       clusterApiUrl(network),
                       "confirmed"
                     );
                     const balance1 = await connection.getBalance(
-                      profile_pda[0]
+                      new PublicKey(curr.pda)
                     );
                     setBalance(balance1 / LAMPORTS_PER_SOL);
                   });
 
-                await new Promise((resolve) => setTimeout(resolve, 60));
-
-                router.push("/wallet");
+                setTimeout(() => router.push("/wallet"), 60);
               }}
             >
               <List.Item.Meta

@@ -4,14 +4,14 @@ import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
 
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { getSignerFromPkString } from "../../utils";
+import { getAccountFromPkString } from "../../utils";
+import { Signer } from "../../types/account";
 
 const SignTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [origin, setOrigin] = useState<string>("");
-  const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
   const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
@@ -34,7 +34,6 @@ const SignTransaction: NextPage = () => {
       setPk(new PublicKey(result.pk));
       setId(request.id);
       setOrigin(origin);
-      setSig(sig);
     });
   }, []);
 
@@ -51,7 +50,11 @@ const SignTransaction: NextPage = () => {
   };
 
   const handleSubmit = async () => {
-    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    setLoading(true);
+    const signer = (await getAccountFromPkString(
+      pk.toBase58(),
+      modalContext
+    )) as Signer;
     const sig = bs58.encode(await signer.signMessage(payload));
     console.log("sig: ", sig);
 
@@ -63,8 +66,7 @@ const SignTransaction: NextPage = () => {
       },
       id: id,
     });
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    window.close();
+    setTimeout(() => window.close(), 100);
   };
 
   return (

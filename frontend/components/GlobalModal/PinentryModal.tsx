@@ -1,5 +1,4 @@
 import { Button, Form, Input, Modal } from "antd";
-import { ReactElement } from "react";
 import {
   KeyOutlined,
   EyeOutlined,
@@ -11,7 +10,7 @@ const PinentryModal = (props: {
   isRetry: boolean;
   onSubmitPin: (pin: string) => void;
   onCancel: () => void;
-}): ReactElement => {
+}) => {
   const [form] = Form.useForm();
 
   return (

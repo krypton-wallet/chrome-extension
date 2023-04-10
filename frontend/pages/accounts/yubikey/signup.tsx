@@ -1,7 +1,7 @@
 import { NextPage } from "next";
 import { withRouter } from "next/router";
 import { useGlobalState } from "../../../context";
-import { YubikeySigner } from "../../../types/account";
+import { YubikeyAccount, YubikeySigner } from "../../../types/account";
 import { useGlobalModalContext } from "../../../components/GlobalModal";
 import PinentryModal from "../../../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
@@ -13,13 +13,17 @@ const YubikeySignup: NextPage = () => {
   const { yubikeyInfo: info } = useGlobalState();
   const { showModal, hideModal } = useGlobalModalContext();
 
+  if (!info) {
+    return null;
+  }
+
   const feePayer = new YubikeySigner(
-    info?.aid!,
+    info.aid,
     (isRetry: boolean) => {
       const promise = new Promise<string>((resolve, reject) => {
         showModal(
           <PinentryModal
-            title={`Please unlock YubiKey no. ${(info!.aid as string).substring(
+            title={`Please unlock YubiKey no. ${(info.aid as string).substring(
               20,
               28
             )}`}
@@ -51,29 +55,25 @@ const YubikeySignup: NextPage = () => {
   );
 
   const handleStorage = (
-    feePayerPK: string,
-    pda: string,
-    avatarPK?: string
+    feePayerAccount: Omit<YubikeyAccount, "name" | "manufacturer">
   ) => {
     chrome.storage.local.get(["y_counter", "y_accounts"], (res) => {
       const count = res["y_counter"];
       const accountRes = res["y_accounts"];
       if (accountRes != null) {
-        var old = JSON.parse(accountRes);
-        old[count] = {
+        const old = JSON.parse(accountRes);
+        const account = {
           name: "Yubikey " + count.toString(),
-          aid: info?.aid,
-          manufacturer: info?.manufacturer,
-          pk: feePayerPK,
-          pda: pda,
-          ...(avatarPK && { avatar: avatarPK }),
-        };
+          manufacturer: info.manufacturer,
+          ...feePayerAccount,
+        } as YubikeyAccount;
+        old[count] = account;
         const values = JSON.stringify(old);
         chrome.storage.local.set({
           y_accounts: values,
           y_counter: count + 1,
           y_id: count,
-          pk: feePayerPK,
+          pk: feePayerAccount.pk,
           mode: 1,
         });
       } else {

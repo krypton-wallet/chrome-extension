@@ -1,23 +1,19 @@
 import React, { createContext, useContext } from "react";
-import { Keypair, Cluster, PublicKey } from "@solana/web3.js";
+import { Cluster, PublicKey } from "@solana/web3.js";
 import { PgpCardInfo } from "bloss-js";
-import { Signer } from "../types/account";
+import { KryptonAccount } from "../types/account";
 
 export type GlobalContextType = {
   network: Cluster | undefined;
   setNetwork: React.Dispatch<React.SetStateAction<Cluster | undefined>>;
-  account: Signer | null;
-  setAccount: React.Dispatch<React.SetStateAction<Signer | null>>;
+  account: KryptonAccount | undefined;
+  setAccount: React.Dispatch<React.SetStateAction<KryptonAccount | undefined>>;
   mnemonic: string | null;
   setMnemonic: React.Dispatch<React.SetStateAction<string | null>>;
   balance: number | null;
   setBalance: React.Dispatch<React.SetStateAction<number | null>>;
   guardians: Array<PublicKey>;
   setGuardians: React.Dispatch<React.SetStateAction<Array<PublicKey>>>;
-  pda: PublicKey | null;
-  setPDA: React.Dispatch<React.SetStateAction<PublicKey | null>>;
-  walletProgramId: PublicKey;
-  setWalletProgramId: React.Dispatch<React.SetStateAction<PublicKey>>;
   recoverPk: PublicKey | null;
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   tokens: Array<[PublicKey, bigint, number]>;
@@ -26,25 +22,19 @@ export type GlobalContextType = {
   setCurrId: React.Dispatch<React.SetStateAction<number | null>>;
   yubikeyInfo: PgpCardInfo | null;
   setYubikeyInfo: React.Dispatch<React.SetStateAction<PgpCardInfo | null>>;
-  avatar: string | undefined;
-  setAvatar: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
   network: "devnet",
   setNetwork: () => null,
-  account: null,
-  setAccount: () => null,
+  account: undefined,
+  setAccount: () => undefined,
   mnemonic: null,
   setMnemonic: () => null,
   balance: null,
   setBalance: () => null,
   guardians: [],
   setGuardians: () => null,
-  pda: null,
-  setPDA: () => null,
-  walletProgramId: new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL"),
-  setWalletProgramId: () => null,
   recoverPk: null,
   setRecoverPk: () => null,
   tokens: [],
@@ -53,8 +43,6 @@ export const GlobalContext = createContext<GlobalContextType>({
   setCurrId: () => null,
   yubikeyInfo: null,
   setYubikeyInfo: () => null,
-  avatar: undefined,
-  setAvatar: () => null,
 });
 
 export const useGlobalState = () => useContext(GlobalContext);
