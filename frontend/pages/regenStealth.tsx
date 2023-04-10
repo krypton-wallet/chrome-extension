@@ -19,13 +19,11 @@ import BN from "bn.js";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 
-import {str2hex, share, setRNG,init, _isSetRNG , _getRNG, getConfig,} from "secret-sharing.js"
 //import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
 
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { walletProgramId, account, setAccount, pda, balance, privScan,privSpend, setPrivScan, setPrivSpend } =
-    useGlobalState();
+  const { account, setAccount, balance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const connection = new Connection("https://api.devnet.solana.com/");
 
@@ -33,45 +31,40 @@ const RegenStealth: NextPage = () => {
   const router = useRouter();
 
   const handleCancel = () => {
-
     router.push("/stealth");
   };
 
   const handleOk = async (values: any) => {
     setLoading(true);
-    console.log("WTFFFF")
+    console.log("WTFFFF");
     console.log(values);
     const scankey = new PublicKey(values.scankey);
     const spendkey = new PublicKey(values.spendkey);
-    
-    console.log("trying to set rng");
-   // setRNG("nodeCryptoRandomBytes");
 
-    scankey.toString()
+    console.log("trying to set rng");
+    // setRNG("nodeCryptoRandomBytes");
+
+    scankey.toString();
     //init(8,"nodeCryptoRandomBytes");
     console.log("before  str2hex");
-    let secret = str2hex(scankey.toString());
-    //let secret = privScan!;
+    // let secret = str2hex(scankey.toString());
+    // //let secret = privScan!;
 
-    setRNG("browserCryptoGetRandomValues");
+    // setRNG("browserCryptoGetRandomValues");
 
-
-    console.log(getConfig());
+    // console.log(getConfig());
 
     const myArray = new Uint32Array(10);
     console.log(crypto.getRandomValues(myArray));
     console.log(myArray);
 
-    
     console.log("waiting");
-    await new Promise(r => setTimeout(r, 30000));
+    // await new Promise((r) => setTimeout(r, 30000));
 
     console.log("before shares");
-     let shares = share(secret,3,2);
-     console.log(shares);
+    // let shares = share(secret, 3, 2);
+    // console.log(shares);
 
-
-    
     setLoading(false);
     setFinished(true);
   };

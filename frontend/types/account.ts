@@ -1,10 +1,10 @@
-import { Ed25519Program, Keypair, Message, PublicKey } from "@solana/web3.js";
+import { Keypair, Message, PublicKey } from "@solana/web3.js";
 import { getPubkey, signMessage } from "bloss-js";
-import bs58 from "bs58";
 import nacl from "tweetnacl";
 import {genFullSignature} from "solana-stealth";
 import {Point} from "@noble/ed25519"
 import BN from "bn.js";
+import bs58 from "bs58";
 
 interface Signer {
     getPublicKey(): Promise<PublicKey>,
@@ -12,7 +12,7 @@ interface Signer {
 }
 
 export class KeypairSigner implements Signer {
-    private keypair: Keypair;
+    public keypair: Keypair;
 
     constructor(keypair: Keypair) {
         this.keypair = keypair;
@@ -51,6 +51,7 @@ export class StealthSigner implements Signer {
 
 export class YubikeySigner implements Signer {
     private aid: string;
+    private pin: string = "123456";
     private getPin: (isRetry: boolean) => Promise<string>;
     private touchPrompt: () => void;
     private afterTouchCallback: () => void;
@@ -83,8 +84,12 @@ export class YubikeySigner implements Signer {
 
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
         let firstTry = true;
+        const encoder = new TextEncoder();
         while (true) {
-            const pin = new TextEncoder().encode(await this.getPin(!firstTry));
+            if (!firstTry) {
+                this.pin = await this.getPin(!firstTry);
+            }
+            const pin = encoder.encode(this.pin);
             try {
                 const sig = await signMessage(this.aid, message, pin, this.touchPrompt);
                 this.afterTouchCallback();
@@ -99,5 +104,31 @@ export class YubikeySigner implements Signer {
         }
     }
 }
+
+type StealthInfo = {
+    priv_scan: string;
+    priv_spend: string;
+}
+
+export type StandardAccount = KeypairSigner & {
+    name: string;
+    pk: string;
+    pda: string;
+    avatar?: string;
+    stealth?: StealthInfo; 
+    stealth_accounts?: [string];
+};
+
+export type YubikeyAccount = YubikeySigner & {
+    name: string;
+    pk: string;
+    pda: string;
+    avatar?: string;
+    manufacturer: string;
+    stealth?: StealthInfo; 
+    stealth_accounts?: [string];
+}
+
+export type KryptonAccount = StandardAccount | YubikeyAccount;
 
 export type {Signer}

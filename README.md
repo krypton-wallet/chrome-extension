@@ -1,6 +1,6 @@
-# SolMate
+# Krypton
 
-Introducing SolMate, a Solana smart contract wallet with multisig social recovery, eliminating fear of losing your private key and improving usability and security with advanced features
+Introducing Krypton, a Solana smart contract wallet with multisig social recovery, eliminating fear of losing your private key and improving usability and security with advanced features
 
 ![homepage](./frontend/public/static/images/ui.png)
 

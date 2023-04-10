@@ -1,10 +1,10 @@
-import React, { useState, useEffect, ReactElement } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "antd";
 import Link from "next/link";
 import { BankOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Card } from "../../styles/StyledComponents.styles";
 
-const CreateAccount = (): ReactElement => {
+const CreateAccount = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const CreateAccount = (): ReactElement => {
       <BankOutlined
         style={{ fontSize: "2rem", margin: "0.5rem 0", display: "block" }}
       />
-      <h2>New to SolMate?</h2>
+      <h2>New to Krypton?</h2>
       <p>
         Create a new wallet to send, receive and swap Solana digital assets.
       </p>
