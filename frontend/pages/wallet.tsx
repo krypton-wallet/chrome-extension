@@ -1,53 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { NextPage } from "next";
 import {
   Button,
   Tooltip,
-  Typography,
   List,
   Avatar,
   Skeleton,
   Empty,
+  Alert,
+  Space,
 } from "antd";
 import { useGlobalState } from "../context";
 import { useRouter } from "next/router";
-import { refreshBalance, handleAirdrop, displayAddress } from "../utils";
-import { ArrowRightOutlined, LoadingOutlined } from "@ant-design/icons";
 import {
-  Dashboard,
-  Airdrop,
-  Question,
-} from "../styles/StyledComponents.styles";
+  refreshBalance,
+  handleAirdrop,
+  displayAddress,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
+import { Dashboard } from "../styles/StyledComponents.styles";
 import {
   clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-
-const { Paragraph } = Typography;
+import {
+  MIN_KEYPAIR_BALANCE,
+  REFILL_TO_BALANCE,
+  WALLET_PROGRAM_ID,
+} from "../utils/constants";
+import BN from "bn.js";
+import { KeypairSigner, Signer } from "../types/account";
+import Paragraph from "antd/lib/typography/Paragraph";
 
 const Wallet: NextPage = () => {
-  const {
-    network,
-    balance,
-    setBalance,
-    account,
-    setAccount,
-    pda,
-    setPDA,
-    walletProgramId,
-    setTokens,
-    currId,
-    setCurrId,
-  } = useGlobalState();
+  const { network, balance, setBalance, account, setTokens, currId } =
+    useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
+  const [reimbursed, setReimbursed] = useState<boolean>(false);
+  const [canReimburse, setCanReimburse] = useState<boolean>(true);
+  const [reimburseMsg, setReimburseMsg] = useState<ReactNode>("");
   const [fungibleTokens, setFungibleTokens] = useState<
     Array<[PublicKey, bigint, number]>
   >([]);
-  //const [account, setAccount] = useState<Keypair>(new Keypair());
   const [airdropLoading, setAirdropLoading] = useState<boolean>(false);
 
   const router = useRouter();
@@ -55,11 +55,13 @@ const Wallet: NextPage = () => {
   useEffect(() => {
     console.log("============WALLET PAGE=================");
 
-    // if (!account) {
-    //   router.push("/");
-    //   return;
-    // }
-    refreshBalance(network, account)
+    if (!account) {
+      router.push("/");
+      return;
+    }
+    console.log(account);
+
+    refreshBalance(network, new PublicKey(account.pk))
       .then((updatedBalance) => {
         setBalance(updatedBalance);
       })
@@ -69,29 +71,19 @@ const Wallet: NextPage = () => {
 
     // Fetching all tokens from PDA and filter out fungible tokens
     const getTokens = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      const publicKey = await account!.getPublicKey();
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const publicKey = new PublicKey(account.pk);
       console.log("account pk: ", publicKey.toBase58());
-      const profile_pda = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("profile", "utf-8"),
-          publicKey.toBuffer(),
-        ],
-        walletProgramId
-      );
-      setPDA(profile_pda[0]);
-      console.log("PDA: ", profile_pda[0].toBase58());
-
-      let tokens_tmp: Array<[PublicKey, bigint, number]> = [];
-      let fungible_tokens_tmp: Array<[PublicKey, bigint, number]> = [
+      const profile_pda = new PublicKey(account.pda);
+      const tokens_tmp: Array<[PublicKey, bigint, number]> = [];
+      const fungible_tokens_tmp: Array<[PublicKey, bigint, number]> = [
         [PublicKey.default, BigInt(0), 0],
       ];
-      let allTA_res = await connection.getTokenAccountsByOwner(profile_pda[0], {
+      const allTA_res = await connection.getTokenAccountsByOwner(profile_pda, {
         programId: TOKEN_PROGRAM_ID,
       });
 
       for (const e of allTA_res.value) {
-        const oldTokenAccount = e.pubkey;
         const accountInfo = AccountLayout.decode(e.account.data);
 
         const mint = new PublicKey(accountInfo.mint);
@@ -109,11 +101,115 @@ const Wallet: NextPage = () => {
       setSpinning(false);
     };
     getTokens();
-  }, [balance, router, network, currId]);
+  }, [router, network, currId, reimbursed, account, setBalance, setTokens]);
+
+  useEffect(() => {
+    if (!account) {
+      router.push("/");
+      return;
+    }
+
+    const checkReimburse = async () => {
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const keypairPK = new PublicKey(account.pk);
+      const keypairBalance = await connection.getBalance(keypairPK);
+      if (keypairBalance < MIN_KEYPAIR_BALANCE) {
+        console.log("REFILL NEEEDED!");
+        const reimbursementAmount = REFILL_TO_BALANCE - keypairBalance + 5000;
+        console.log("reimbursement amount: ", reimbursementAmount);
+        const pdaBalance = await connection.getBalance(
+          new PublicKey(account.pda)
+        );
+        console.log("balance: ", pdaBalance);
+        if (pdaBalance < reimbursementAmount) {
+          setCanReimburse(false);
+          return;
+        }
+
+        /* TRANSACTION: Transfer Native SOL */
+        const idx = Buffer.from(new Uint8Array([7]));
+        const amountBuf = Buffer.from(
+          new Uint8Array(new BN(reimbursementAmount).toArray("le", 8))
+        );
+        const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
+
+        const recentBlockhash = await connection.getLatestBlockhash();
+        const transferSOLTx = new Transaction({
+          // TODO:  Check if Yubikey is connected
+          feePayer: await account.getPublicKey(),
+          ...recentBlockhash,
+        });
+        let newaccount = account as Signer;
+        if (!newaccount) {
+          newaccount = new KeypairSigner(new Keypair());
+        }
+        transferSOLTx.add(
+          new TransactionInstruction({
+            keys: [
+              {
+                pubkey: new PublicKey(account.pda) ?? PublicKey.default,
+                isSigner: false,
+                isWritable: true,
+              },
+              {
+                pubkey: keypairPK,
+                isSigner: false,
+                isWritable: true,
+              },
+              {
+                pubkey: keypairPK,
+                isSigner: true,
+                isWritable: true,
+              },
+            ],
+            programId: WALLET_PROGRAM_ID,
+            data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
+          })
+        );
+
+        console.log("Transfering native SOL...");
+        const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+          connection,
+          transferSOLTx,
+          [newaccount],
+          {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+            commitment: "confirmed",
+          }
+        );
+        console.log(
+          `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
+        );
+
+        const msg = (
+          <p style={{ color: "black" }}>
+            Keypair balance was insufficient for signing. <br />
+            {`Transfered
+        ${(reimbursementAmount / LAMPORTS_PER_SOL).toString()} `}
+            SOL from wallet to keypair and new keypair balance is 0.2 SOL.
+            <br />
+            <b>Note:</b> Krypton will automatically refill your keypair to 0.2
+            SOL when its balance is below 0.1 SOL.
+          </p>
+        );
+
+        setReimbursed(true);
+        setReimburseMsg(msg);
+      }
+    };
+    checkReimburse();
+  }, [account, balance, network, router]);
 
   const airdrop = async () => {
+    if (!account) {
+      return;
+    }
     setAirdropLoading(true);
-    const updatedBalance = await handleAirdrop(network ?? "devnet", account);
+    const updatedBalance = await handleAirdrop(
+      network ?? "devnet",
+      new PublicKey(account.pk)
+    );
     if (typeof updatedBalance === "number") {
       setBalance(updatedBalance);
     }
@@ -130,11 +226,51 @@ const Wallet: NextPage = () => {
         <Dashboard>
           <h1 style={{ marginBottom: 0, color: "#fff" }}>Dashboard</h1>
 
+          {reimbursed && (
+            <Space
+              direction="vertical"
+              style={{
+                width: "82%",
+                position: "absolute",
+                top: "-30px",
+                zIndex: "3",
+              }}
+            >
+              <Alert
+                message="Automatic Refill Success"
+                description={reimburseMsg}
+                type="success"
+                showIcon
+                closable
+              />
+            </Space>
+          )}
+
+          {!canReimburse && (
+            <Space
+              direction="vertical"
+              style={{
+                width: "80%",
+                position: "absolute",
+                top: "-30px",
+                zIndex: "3",
+              }}
+            >
+              <Alert
+                message="Automatic Refill Failed"
+                description="Please deposit SOL into your wallet so you can sign for transactions"
+                type="error"
+                showIcon
+                closable
+              />
+            </Space>
+          )}
+
           <Paragraph
-            copyable={{ text: pda?.toBase58(), tooltips: `Copy` }}
+            copyable={{ text: account.pda, tooltips: `Copy` }}
             style={{ margin: 0, color: "#fff" }}
           >
-            {`${displayAddress(pda?.toBase58() ?? "")}`}
+            {`${displayAddress(account.pda)}`}
           </Paragraph>
 
           <div
@@ -194,7 +330,7 @@ const Wallet: NextPage = () => {
                 <List.Item
                   key={item[0].toBase58()}
                   onClick={() => {
-                    if (item[0] == PublicKey.default) {
+                    if (item[0] === PublicKey.default) {
                       handleSend();
                     } else {
                       router.push({
@@ -208,17 +344,17 @@ const Wallet: NextPage = () => {
                     avatar={
                       <Avatar
                         src={
-                          item[0] == PublicKey.default
+                          item[0] === PublicKey.default
                             ? "/static/images/solana.png"
                             : "/static/images/token.png"
                         }
                       />
                     }
                     title={
-                      item[0] == PublicKey.default ? "Solana" : "Unknown Token"
+                      item[0] === PublicKey.default ? "Solana" : "Unknown Token"
                     }
                     description={
-                      item[0] == PublicKey.default
+                      item[0] === PublicKey.default
                         ? `${balance} SOL`
                         : displayAddress(item[0].toBase58())
                     }

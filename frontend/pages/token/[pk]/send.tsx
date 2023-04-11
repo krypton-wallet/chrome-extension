@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result } from "antd";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import styles from "../../../components/Layout/index.module.css";
 import {
+  clusterApiUrl,
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -13,18 +14,13 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
-  getOrCreateAssociatedTokenAccount,
-  AccountLayout,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
   getAssociatedTokenAddress,
   getAccount,
-  transferChecked,
   getMint,
 } from "@solana/spl-token";
 import { useGlobalState } from "../../../context";
-
 import BN from "bn.js";
 import { useRouter } from "next/router";
 import {
@@ -32,31 +28,41 @@ import {
   isNumber,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
+import { WALLET_PROGRAM_ID } from "../../../utils/constants";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const [decimals, setDecimals] = useState<number>(1);
-  const { walletProgramId, account, setAccount, pda, balance } =
-    useGlobalState();
+  const { account, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
   const [form] = Form.useForm();
-  const connection = new Connection("https://api.devnet.solana.com/");
 
   const router = useRouter();
   let { pk } = router.query;
   if (Array.isArray(pk)) {
     pk = pk[0];
   }
-  const mint_pk = pk ? new PublicKey(pk) : PublicKey.default;
+
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl(network), "confirmed"),
+    [network]
+  );
+  const mint_pk = useMemo(
+    () => (pk ? new PublicKey(pk) : PublicKey.default),
+    [pk]
+  );
 
   useEffect(() => {
+    if (!account) {
+      return;
+    }
     const getTokenAccountBalance = async () => {
       console.log("Getting src token account...");
       const srcAssociatedToken = await getAssociatedTokenAddress(
         mint_pk,
-        pda ?? PublicKey.default,
+        new PublicKey(account.pda) ?? PublicKey.default,
         true,
         TOKEN_PROGRAM_ID
       );
@@ -79,7 +85,7 @@ const Send: NextPage = () => {
       setDecimals(decimals);
     };
     getTokenAccountBalance();
-  }, [tokenBalance]);
+  }, [connection, mint_pk, account, network, pk]);
 
   const handleCancel = () => {
     router.push({
@@ -89,16 +95,21 @@ const Send: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
+    console.log("ok", account);
+    if (!account) {
+      return;
+    }
     setLoading(true);
     console.log(values);
+    console.log(account);
     const dest_pda = new PublicKey(values.pk);
-    const feePayerPk = await account!.getPublicKey();
+    const feePayerPk = new PublicKey(account.pk);
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
 
     console.log("Getting src token account...");
     const srcAssociatedToken = await getAssociatedTokenAddress(
       mint_pk,
-      pda ?? PublicKey.default,
+      new PublicKey(account.pda) ?? PublicKey.default,
       true,
       TOKEN_PROGRAM_ID
     );
@@ -124,6 +135,7 @@ const Send: NextPage = () => {
       console.log("Creating token account for mint...");
 
       const recentBlockhash = await connection.getLatestBlockhash();
+      // TODO: Check if Yubikey is connected
       const createTA_tx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
@@ -141,7 +153,7 @@ const Send: NextPage = () => {
       await sendAndConfirmTransactionWithAccount(
         connection,
         createTA_tx,
-        [account!],
+        [account],
         {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -161,6 +173,7 @@ const Send: NextPage = () => {
 
     /* TRANSACTION: Transfer Token */
     const recentBlockhash = await connection.getLatestBlockhash();
+    // TODO: Check if Yubikey is connected
     const transferTokenTx = new Transaction({
       feePayer: feePayerPk,
       ...recentBlockhash,
@@ -173,7 +186,7 @@ const Send: NextPage = () => {
     const transferAndCloseIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: pda ?? PublicKey.default,
+          pubkey: new PublicKey(account.pda) ?? PublicKey.default,
           isSigner: false,
           isWritable: true,
         },
@@ -203,24 +216,24 @@ const Send: NextPage = () => {
           isWritable: false,
         },
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx2, amountBuf, recoveryModeBuf]),
     });
 
     transferTokenTx.add(transferAndCloseIx);
 
     console.log("Transfering token...");
-    let txid = await sendAndConfirmTransactionWithAccount(
+    const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferTokenTx,
-      [account!],
+      [account],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet\n`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     setLoading(false);
     setFinished(true);
@@ -280,8 +293,12 @@ const Send: NextPage = () => {
                 async validator(_, value) {
                   if (!isNumber(value)) {
                     return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > tokenBalance / Math.pow(10, decimals)) {
+                  } else if (Number(value) <= 0) {
+                    return Promise.reject(new Error("Amount must be positive"));
+                  } else if (
+                    Number(value) >
+                    tokenBalance / Math.pow(10, decimals)
+                  ) {
                     return Promise.reject(
                       new Error("Cannot transfer more than balance")
                     );
@@ -306,7 +323,7 @@ const Send: NextPage = () => {
               opacity: "60%",
               color: "white",
               marginTop: "2px",
-              marginLeft: "230px",
+              alignSelf: "flex-end",
             }}
           >
             balance: {tokenBalance / Math.pow(10, decimals)}

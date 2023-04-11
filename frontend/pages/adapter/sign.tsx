@@ -3,10 +3,10 @@ import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
-
 import { PublicKey } from "@solana/web3.js";
-import { getSignerFromPkString } from "../../utils";
+import { getAccountFromPkString } from "../../utils";
 import { useGlobalModalContext } from "../../components/GlobalModal";
+import { Signer } from "../../types/account";
 
 const Sign: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -50,13 +50,17 @@ const Sign: NextPage = () => {
   const postMessage = (message: any) => {
     // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
-      channel: "solmate_extension_background_channel",
+      channel: "krypton_extension_background_channel",
       data: message,
     });
   };
 
   const handleSubmit = async () => {
-    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    setLoading(true);
+    const signer = (await getAccountFromPkString(
+      pk.toBase58(),
+      modalContext
+    )) as Signer;
     const data = new TextEncoder().encode(msg);
     const sig = bs58.encode(await signer.signMessage(data));
 
@@ -68,8 +72,7 @@ const Sign: NextPage = () => {
       },
       id: id,
     });
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    window.close();
+    setTimeout(() => window.close(), 100);
   };
 
   return (

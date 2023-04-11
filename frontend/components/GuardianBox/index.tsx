@@ -1,8 +1,9 @@
-import React, { ReactElement, useState } from "react";
-import { Button, Typography } from "antd";
+import React, { useState } from "react";
+import { Button } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -13,10 +14,9 @@ import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
 } from "../../utils";
-
-const BN = require("bn.js");
-
-const { Paragraph } = Typography;
+import BN from "bn.js";
+import Paragraph from "antd/lib/typography/Paragraph";
+import { WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
@@ -24,14 +24,17 @@ const GuardianBox = ({
 }: {
   guardian: PublicKey;
   editMode: boolean;
-}): ReactElement => {
-  const { setGuardians, guardians, walletProgramId, pda, account } =
-    useGlobalState();
+}) => {
+  const { setGuardians, guardians, account, network } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
 
   const onDelete = async () => {
+    if (!account) {
+      return;
+    }
     setLoading(true);
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const feePayerPK = new PublicKey(account.pk);
     const defaultpk = PublicKey.default;
 
     const idx3 = Buffer.from(new Uint8Array([3]));
@@ -42,12 +45,12 @@ const GuardianBox = ({
     const deleteFromRecoveryIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: pda ?? defaultpk,
+          pubkey: new PublicKey(account.pda) ?? defaultpk,
           isSigner: false,
           isWritable: true,
         },
         {
-          pubkey: await account!.getPublicKey(),
+          pubkey: feePayerPK,
           isSigner: true,
           isWritable: true,
         },
@@ -57,13 +60,14 @@ const GuardianBox = ({
           isWritable: false,
         },
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx3, new_acct_len]),
     });
 
     const recentBlockhash = await connection.getLatestBlockhash();
+    // TODO: Check if Yubikey is connected
     const tx = new Transaction({
-      feePayer: await account!.getPublicKey(),
+      feePayer: feePayerPK,
       ...recentBlockhash,
     });
     tx.add(deleteFromRecoveryIx);
@@ -71,16 +75,16 @@ const GuardianBox = ({
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
-      [account!],
+      [account],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    var newGuard = guardians.filter((g) => {
+    const newGuard = guardians.filter((g) => {
       return g.toBase58() !== guardian.toBase58();
     });
     console.log(newGuard);
@@ -93,7 +97,7 @@ const GuardianBox = ({
       style={{
         display: "flex",
         width: "350px",
-        justifyContent: "center",
+        justifyContent: "space-evenly",
         marginTop: "10px",
       }}
     >
@@ -103,7 +107,6 @@ const GuardianBox = ({
 
       {!loading && editMode && (
         <Button
-          style={{ marginLeft: "140px" }}
           type="primary"
           onClick={onDelete}
           danger
@@ -114,7 +117,7 @@ const GuardianBox = ({
 
       {loading && editMode && (
         <LoadingOutlined
-          style={{ fontSize: 24, color: "#fff", marginLeft: "190px" }}
+          style={{ fontSize: 24, color: "#fff" }}
           spin
         />
       )}

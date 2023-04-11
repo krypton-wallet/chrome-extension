@@ -3,8 +3,6 @@ import { NextPage } from "next";
 import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
 import { useGlobalState } from "../context";
 import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
-import { useRouter } from "next/router";
-
 import {
   clusterApiUrl,
   Connection,
@@ -15,16 +13,15 @@ import {
 import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
-
-const BN = require("bn.js");
+import BN from "bn.js";
+import { WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Guardian: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
-  const { setGuardians, guardians, walletProgramId, pda, account, setPDA } =
-    useGlobalState();
+  const { setGuardians, guardians, account, network } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
@@ -33,27 +30,25 @@ const Guardian: NextPage = () => {
   useEffect(() => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
-      const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-      const publicKey = await account!.getPublicKey();
+      if (!account) {
+        return;
+      }
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const publicKey = new PublicKey(account.pk);
       console.log("account pk: ", publicKey.toBase58());
-      const profile_pda = PublicKey.findProgramAddressSync(
-        [Buffer.from("profile", "utf-8"), publicKey.toBuffer()],
-        walletProgramId
-      );
-      setPDA(profile_pda[0]);
-      console.log("PDA: ", profile_pda[0].toBase58());
+      console.log("PDA: ", account.pda);
       const pda_account = await connection.getAccountInfo(
-        profile_pda[0] ?? PublicKey.default
+        new PublicKey(account.pda) ?? PublicKey.default
       );
-      const pda_data = pda_account?.data ?? new Buffer("");
+      const pda_data = pda_account?.data ?? Buffer.from("");
       const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
       const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
       console.log("threshold: ", threshold);
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
-      let guardians_tmp = [];
-      for (var i = 0; i < guardian_len; i++) {
-        let guard = new PublicKey(
+      const guardians_tmp: PublicKey[] = [];
+      for (let i = 0; i < guardian_len; i++) {
+        const guard = new PublicKey(
           base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
         console.log(`guard ${i + 1}: `, guard.toBase58());
@@ -63,24 +58,26 @@ const Guardian: NextPage = () => {
       setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, []);
-
-  const router = useRouter();
+  }, [account, network, setGuardians]);
 
   const showModal = () => {
     setIsModalOpen(true);
   };
 
   const onFinish = async (values: any) => {
+    if (!account) {
+      return;
+    }
+
     console.log("=====ADDING GUARDIAN======");
     console.log("Values received:", values);
     setLoading(true);
     form.resetFields();
 
     // Instr Add
-    const publicKey = await account!.getPublicKey();
+    const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
-    const connection = new Connection("https://api.devnet.solana.com/");
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
@@ -90,7 +87,7 @@ const Guardian: NextPage = () => {
     const addToRecoveryListIx = new TransactionInstruction({
       keys: [
         {
-          pubkey: pda ?? defaultpk,
+          pubkey: new PublicKey(account.pda) ?? defaultpk,
           isSigner: false,
           isWritable: true,
         },
@@ -105,10 +102,11 @@ const Guardian: NextPage = () => {
           isWritable: false,
         },
       ],
-      programId: walletProgramId,
+      programId: WALLET_PROGRAM_ID,
       data: Buffer.concat([idx1, new_acct_len]),
     });
 
+    // TODO: Check if Yubikey is connected
     const tx = new Transaction({
       feePayer: publicKey,
       ...latestBlockhash,
@@ -118,14 +116,14 @@ const Guardian: NextPage = () => {
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
-      [account!],
+      [account],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=devnet`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
     setLoading(false);
     setIsModalOpen(false);
@@ -136,11 +134,6 @@ const Guardian: NextPage = () => {
   const handleModalCancel = () => {
     setIsModalOpen(false);
     form.resetFields();
-  };
-
-  const handleOk = () => {
-    setLoading(true);
-    form.submit();
   };
 
   const toggleEditmode = () => {
@@ -227,7 +220,7 @@ const Guardian: NextPage = () => {
       <Modal
         title="Add New Guardian"
         open={isModalOpen}
-        onOk={handleOk}
+        onOk={form.submit}
         onCancel={handleModalCancel}
         confirmLoading={loading}
         okButtonProps={{ disabled: !isPkValid }}
@@ -253,7 +246,10 @@ const Guardian: NextPage = () => {
                       );
                     }
 
-                    const connection = new Connection(clusterApiUrl("devnet"));
+                    const connection = new Connection(
+                      clusterApiUrl(network),
+                      "confirmed"
+                    );
                     const pda_account = await connection.getAccountInfo(
                       new PublicKey(value)
                     );

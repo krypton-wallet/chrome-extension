@@ -1,8 +1,7 @@
-import React, { ReactElement, useEffect, useState } from "react";
-import { Divider, Typography } from "antd";
+import React from "react";
+import Paragraph from "antd/lib/typography/Paragraph";
 import { Box } from "../../styles/StyledComponents.styles";
-
-const { Paragraph } = Typography;
+import { EnterOutlined } from "@ant-design/icons";
 
 const EditableBox = ({
   fieldName,
@@ -12,13 +11,17 @@ const EditableBox = ({
   fieldName: string;
   value: string;
   handleChange: (s: string) => void;
-}): ReactElement => {
+}) => {
   return (
     <Box style={{ display: "flex" }}>
-      <Paragraph style={{}}>{fieldName}</Paragraph>
+      <Paragraph>{fieldName}</Paragraph>
       <Paragraph
         style={{ position: "absolute", right: "55px" }}
-        editable={{ onChange: handleChange, autoSize: true }}
+        editable={{
+          onChange: handleChange,
+          autoSize: true,
+          enterIcon: <EnterOutlined style={{ color: "#fff" }} />,
+        }}
       >
         {value}
       </Paragraph>

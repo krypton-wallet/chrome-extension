@@ -3,15 +3,14 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import CreateAccount from "../components/CreateAccount";
 import styled from "styled-components";
-import { Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useGlobalState } from "../context";
-import { getSignerFromPkString } from "../utils";
+import { getAccountFromPkString } from "../utils";
 import { useGlobalModalContext } from "../components/GlobalModal";
 
 const Home: NextPage = () => {
   const router = useRouter();
-  const { walletProgramId, account, setAccount, setPDA } = useGlobalState();
+  const { setAccount } = useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
 
   const modalContext = useGlobalModalContext();
@@ -33,29 +32,27 @@ const Home: NextPage = () => {
       }
 
       // TODO: Detoxify this
-      const currKeypair = await getSignerFromPkString(result.pk, modalContext);
+      const currKeypair = await getAccountFromPkString(result.pk, modalContext);
+      if (!currKeypair) {
+        return;
+      }
+      console.log(currKeypair);
       setAccount(currKeypair);
-
-      const profile_pda = PublicKey.findProgramAddressSync(
-        [Buffer.from("profile", "utf-8"), new PublicKey(result.pk).toBuffer()],
-        walletProgramId
-      );
-      setPDA(profile_pda[0]);
       router.push("/wallet");
     });
-  }, []);
+  }, [modalContext, router, setAccount]);
 
   return (
     <>
       <Head>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
         <meta charSet="utf-8" />
-        <title>SolMate</title>
+        <title>Krypton</title>
         <meta
           name="description"
-          content="Web3 tutorial for Solana crypto wallet."
+          content="Next-gen social recovery non-custodial wallet."
         />
-        <link rel="icon" href="/solmate_logo.ico" />
+        <link rel="icon" href="/static/icons/krypton_logo.ico" />
       </Head>
       {!visible && (
         <div style={{ minWidth: "600px", minHeight: "500px" }}></div>

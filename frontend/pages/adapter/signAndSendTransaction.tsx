@@ -4,23 +4,26 @@ import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
 import {
+  clusterApiUrl,
   Connection,
   PublicKey,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { getSignerFromPkString, partialSign } from "../../utils";
+import { getAccountFromPkString, partialSign } from "../../utils";
+import { useGlobalState } from "../../context";
+import { Signer } from "../../types/account";
 
 const SignAndSendTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [origin, setOrigin] = useState<string>("");
-  const [sig, setSig] = useState<string>("");
   const [id, setId] = useState<number>(0);
   const [pk, setPk] = useState<PublicKey>(PublicKey.default);
   const [payload, setPayload] = useState<Uint8Array>(new Uint8Array());
   const [options, setOptions] = useState<any>();
   const modalContext = useGlobalModalContext();
+  const { network } = useGlobalState();
 
   useEffect(() => {
     chrome.storage.local.get(["searchParams", "pk"]).then(async (result) => {
@@ -51,16 +54,20 @@ const SignAndSendTransaction: NextPage = () => {
   const postMessage = (message: any) => {
     // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
-      channel: "solmate_extension_background_channel",
+      channel: "krypton_extension_background_channel",
       data: message,
     });
   };
 
   const handleSubmit = async () => {
-    const connection = new Connection("https://api.devnet.solana.com/");
+    setLoading(true);
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
     const { blockhash } = await connection.getLatestBlockhash();
 
-    const signer = await getSignerFromPkString(pk.toBase58(), modalContext);
+    const signer = (await getAccountFromPkString(
+      pk.toBase58(),
+      modalContext
+    )) as Signer;
     const message = VersionedMessage.deserialize(payload);
     message.recentBlockhash = blockhash;
     const transaction = new VersionedTransaction(message);
@@ -79,8 +86,7 @@ const SignAndSendTransaction: NextPage = () => {
       },
       id: id,
     });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    window.close();
+    setTimeout(() => window.close(), 300);
   };
 
   return (
