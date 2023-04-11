@@ -111,6 +111,14 @@ const SignupForm = ({
       new Uint8Array(new BN(thres).toArray("le", 1))
     );
 
+      //michael change this
+      const echo = "hehe";
+      const echo2 = "hohoho";
+    const messageLen = Buffer.from(new Uint8Array((new BN(echo.length)).toArray("le", 4)));
+  const message3 = Buffer.from(echo, "ascii");
+  const messageLen2 = Buffer.from(new Uint8Array((new BN(echo2.length)).toArray("le", 4)));
+  const message2 = Buffer.from(echo2, "ascii");
+
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
         {
@@ -130,7 +138,7 @@ const SignupForm = ({
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx, acct_len, recovery_threshold]),
+      data: Buffer.concat([idx, acct_len, recovery_threshold, messageLen,message3,messageLen2,message2]),
     });
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);

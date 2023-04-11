@@ -21,6 +21,9 @@ import { StyledForm } from "../../styles/StyledComponents.styles";
 import { isNumber } from "../../utils";
 
 //import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
+import {combine, split} from "shamirs-secret-sharing-ts";
+import * as aesjs from "aes-js";
+import base58 from "bs58";
 
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,22 +37,18 @@ const RegenStealth: NextPage = () => {
   const handleCancel = () => {
     router.push("/stealth");
   };
-
+  
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log("WTFFFF");
     console.log(values);
-    const scankey = new PublicKey(values.scankey);
-    const spendkey = new PublicKey(values.spendkey);
-
-    console.log("trying to set rng");
-    // setRNG("nodeCryptoRandomBytes");
-
-    scankey.toString();
-    //init(8,"nodeCryptoRandomBytes");
+    const key = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
+    const aesCtr = new aesjs.ModeOfOperation.ctr(key);
+    
     console.log("before  str2hex");
     // let secret = str2hex(scankey.toString());
-    // //let secret = privScan!;
+    let secret = values.scankey;
+    let secret2 = base58.decode(values.scankey);
 
     // setRNG("browserCryptoGetRandomValues");
 
@@ -57,14 +56,28 @@ const RegenStealth: NextPage = () => {
 
     const myArray = new Uint32Array(10);
     console.log(crypto.getRandomValues(myArray));
+    
     console.log(myArray);
 
     console.log("waiting");
     // await new Promise((r) => setTimeout(r, 30000));
 
     console.log("before shares");
-    // let shares = share(secret, 3, 2);
-    // console.log(shares);
+    let shards = split( Buffer.from(key),{shares: 10, threshold: 3});
+    console.log(shards);
+   
+
+    var text = 'Text may be any length you wish, no padding is required.';
+    var textBytes = aesjs.utils.utf8.toBytes(text);
+    const encrypted = aesCtr.encrypt(base58.decode(secret));
+    const result = combine(shards.slice(2,6));
+    console.log("result: ",result); 
+    console.log("encrypted: ",encrypted);
+    const aesCtr2 = new aesjs.ModeOfOperation.ctr(result);
+    const res2 = aesCtr2.decrypt(encrypted);
+    console.log("res2: ",res2);
+    console.log("res2: ",base58.encode(res2));
+    
 
     setLoading(false);
     setFinished(true);
