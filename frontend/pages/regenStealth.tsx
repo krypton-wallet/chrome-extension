@@ -19,7 +19,9 @@ import BN from "bn.js";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 
-import {str2hex, share, setRNG,init, _isSetRNG , _getRNG, getConfig,} from "secret-sharing.js"
+//import {str2hex, share, setRNG,init, _isSetRNG , _getRNG, getConfig,} from "secret-sharing.js"
+import { split, combine  } from 'shamirs-secret-sharing-ts'
+import base58 from "bs58";
 //import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
 
 const RegenStealth: NextPage = () => {
@@ -50,25 +52,34 @@ const RegenStealth: NextPage = () => {
     scankey.toString()
     //init(8,"nodeCryptoRandomBytes");
     console.log("before  str2hex");
-    let secret = str2hex(scankey.toString());
+    let secret = scankey.toString();
     //let secret = privScan!;
 
-    setRNG("browserCryptoGetRandomValues");
-
-
-    console.log(getConfig());
-
-    const myArray = new Uint32Array(10);
-    console.log(crypto.getRandomValues(myArray));
-    console.log(myArray);
-
+    
     
     console.log("waiting");
-    await new Promise(r => setTimeout(r, 30000));
+    //await new Promise(r => setTimeout(r, 30000));
 
     console.log("before shares");
-     let shares = share(secret,3,2);
+     let shares = split(secret,{shares: 10, threshold: 2});
      console.log(shares);
+     for (const j of shares){
+      console.log(base58.encode(j));
+     }
+
+
+     let secret2 = "arbitrary";
+     let shares2 = split(secret2,{shares: 10, threshold: 2});
+     console.log(shares2);
+
+     let secret3 = "len";
+     let shares3 = split(secret3,{shares: 10, threshold: 2});
+     console.log(shares3);
+
+
+     let secret4 = "reaaaalllllllly looooooooooooooooooooooooooooooooong";
+     let shares4 = split(secret4,{shares: 10, threshold: 2});
+     console.log(shares4);
 
 
     
