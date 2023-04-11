@@ -202,13 +202,11 @@ const getAccountFromPkString = async (
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
-          ...(res.priv_scan &&
-            res.priv_spend && {
-              stealth: {
-                priv_scan: res.priv_scan,
-                priv_spend: res.priv_spend,
-              } as StealthInfo,
-            }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            encrypt_key: res.encrypt_key,
+          } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
           }),
@@ -275,13 +273,11 @@ const getAccountFromPkString = async (
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
-          ...(res.priv_scan &&
-            res.priv_spend && {
-              stealth: {
-                priv_scan: res.priv_scan,
-                priv_spend: res.priv_spend,
-              } as StealthInfo,
-            }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            encrypt_key: res.encrypt_key,
+          } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
           }),
@@ -316,13 +312,11 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
-          ...(res.priv_scan &&
-            res.priv_spend && {
-              stealth: {
-                priv_scan: res.priv_scan,
-                priv_spend: res.priv_spend,
-              } as StealthInfo,
-            }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            encrypt_key: res.encrypt_key,
+          } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
           }),
@@ -383,13 +377,11 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
-          ...(res.priv_scan &&
-            res.priv_spend && {
-              stealth: {
-                priv_scan: res.priv_scan,
-                priv_spend: res.priv_spend,
-              } as StealthInfo,
-            }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            encrypt_key: res.encrypt_key,
+          } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
           }),

@@ -26,8 +26,9 @@ const Signup: NextPage = () => {
         const { stealth, ...rest } = account;
         old[count] = {
           sk: base58.encode(feePayer.secretKey),
-          priv_scan: stealth?.priv_scan,
-          priv_spend: stealth?.priv_spend,
+          priv_scan: stealth.priv_scan,
+          priv_spend: stealth.priv_spend,
+          encrypt_key: stealth.encrypt_key,
           ...rest,
         };
         const values = JSON.stringify(old);

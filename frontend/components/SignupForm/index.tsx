@@ -40,6 +40,7 @@ import {
   setAuthority,
   AuthorityType,
 } from "@solana/spl-token";
+import { randomBytes } from "tweetnacl";
 
 const SignupForm = ({
   feePayer,
@@ -76,10 +77,23 @@ const SignupForm = ({
     const profile_pda = getProfilePDA(feePayerPK);
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
+
+    // Generating Stealth
+    const utf8 = new TextEncoder();
+    const message = utf8.encode(
+      "Signing this message is equivalent to generating your private keys. Do not sign this once you have already generated your private keys."
+    );
+    const sig = await feePayer.signMessage(message);
+    const keys: StealthKeys = await genKeys(sig);
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
       pda: profile_pda[0].toBase58(),
+      stealth: {
+        priv_scan: keys.privScan,
+        priv_spend: keys.privSpend,
+        encrypt_key: Buffer.from(randomBytes(10)).toString(),
+      },
     };
     console.log(feePayerAccount);
 
@@ -376,19 +390,6 @@ const SignupForm = ({
       );
       feePayerAccount.avatar = avatarPK.toBase58();
     }
-
-    // Generating Stealth
-    const utf8 = new TextEncoder();
-    const message = utf8.encode(
-      "Signing this message is equivalent to generating your private keys. Do not sign this once you have already generated your private keys."
-    );
-    const sig = await feePayer.signMessage(message);
-    const keys: StealthKeys = await genKeys(sig);
-    feePayerAccount.stealth = {
-      priv_scan: keys.privScan,
-      priv_spend: keys.privSpend,
-    };
-
     handleStorage(feePayerAccount);
     setCurrStep((prev) => prev + 1);
 

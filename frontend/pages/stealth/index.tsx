@@ -28,6 +28,8 @@ import Paragraph from "antd/lib/typography/Paragraph";
 const Stealth: NextPage = () => {
   const { network, account, setStealth, setStealthBalance } = useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
+  const [publicScan, setPublicScan] = useState<string>("");
+  const [publicSpend, setPublicSpend] = useState<string>("");
   const [stealthAccounts, setStealthAccounts] = useState<
     Array<[string, number | undefined, PublicKey]>
   >([]);
@@ -37,7 +39,7 @@ const Stealth: NextPage = () => {
     console.log("============STEALTH PAGE=================");
     setSpinning(true);
 
-    if (!account || !account.stealth) {
+    if (!account) {
       router.push("/");
       return;
     }
@@ -60,6 +62,14 @@ const Stealth: NextPage = () => {
         }
         stealth_accs.push([priv, lamps, pubkey]);
       }
+
+      const scan = new StealthSigner(account.stealth.priv_scan);
+      const scan_key = await scan.getPublicKey();
+      setPublicScan(scan_key.toBase58());
+
+      const spend = new StealthSigner(account.stealth.priv_spend);
+      const spend_key = await spend.getPublicKey();
+      setPublicSpend(spend_key.toBase58());
 
       setStealthAccounts(stealth_accs);
       setSpinning(false);
@@ -91,7 +101,42 @@ const Stealth: NextPage = () => {
           >
             {`${displayAddress(account.pda)}`}
           </Paragraph>
-
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "45%",
+            }}
+          >
+            <p
+              style={{ color: "#bababa", margin: "0" }}
+            >{`Public scan key: `}</p>
+            <Paragraph
+              copyable={{ text: publicScan, tooltips: `Copy` }}
+              style={{ margin: 0, color: "#fff" }}
+            >
+              {`${displayAddress(publicScan)}`}
+            </Paragraph>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "45%",
+            }}
+          >
+            <p
+              style={{ color: "#bababa", margin: "0" }}
+            >{`Public spend key: `}</p>
+            <Paragraph
+              copyable={{ text: publicSpend, tooltips: `Copy` }}
+              style={{ margin: 0, color: "#fff" }}
+            >
+              {`${displayAddress(publicSpend)}`}
+            </Paragraph>
+          </div>
           <div
             style={{
               display: "flex",

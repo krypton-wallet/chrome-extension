@@ -23,8 +23,8 @@ import { isNumber, sendAndConfirmTransactionWithAccount } from "../../utils";
 import { KeypairSigner, StealthSigner } from "../../types/account";
 
 const AddStealth: NextPage = () => {
-  const [loading, setLoading] = useState<boolean>(false);
   const { account, setAccount, balance, network } = useGlobalState();
+  const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
   const [failed, setFailed] = useState<boolean>(false);
 
@@ -41,10 +41,13 @@ const AddStealth: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
-    if (!account || !account.stealth) {
+    if (!account) {
       router.push("/");
       return;
     }
+    setLoading(true);
+    setFinished(false);
+    setFailed(false);
 
     await chrome.storage.local
       .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
@@ -64,6 +67,7 @@ const AddStealth: NextPage = () => {
           stealth_accs.push(values.sk);
         } catch (error) {
           console.log("error");
+          setLoading(false);
           setFinished(true);
           setFailed(true);
           return;
@@ -87,7 +91,9 @@ const AddStealth: NextPage = () => {
       });
     // TODO: maybe setAccount
     console.log(values);
+    setLoading(false);
     setFinished(true);
+    setFailed(false);
   };
 
   return (

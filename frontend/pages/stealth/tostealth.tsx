@@ -71,7 +71,7 @@ const ToStealth: NextPage = () => {
     const recentBlockhash = await connection.getLatestBlockhash();
     // TODO:  Check if Yubikey is connected
     const transferSOLTx = new Transaction({
-      feePayer: await account!.getPublicKey(),
+      feePayer: new PublicKey(account.pk),
       ...recentBlockhash,
     });
     let newaccount = account as Signer;

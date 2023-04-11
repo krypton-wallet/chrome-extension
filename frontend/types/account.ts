@@ -107,14 +107,15 @@ export class YubikeySigner implements Signer {
 export type StealthInfo = {
     priv_scan: string;
     priv_spend: string;
+    encrypt_key: string;
 }
 
 export type StandardAccount = KeypairSigner & {
     name: string;
     pk: string;
     pda: string;
+    stealth: StealthInfo; 
     avatar?: string;
-    stealth?: StealthInfo; 
     stealth_accounts?: [string];
 };
 
@@ -124,7 +125,7 @@ export type YubikeyAccount = YubikeySigner & {
     pda: string;
     avatar?: string;
     manufacturer: string;
-    stealth?: StealthInfo; 
+    stealth: StealthInfo; 
     stealth_accounts?: [string];
 }
 
