@@ -23,6 +23,7 @@ const Account: NextPage = () => {
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
+  const [privateScan, setPrivateScan] = useState<string>("");
   const [avatar, setAvatar] = useState<string>();
   const [keypairBalance, setKeypairBalance] = useState<number>(0);
   const [oneAccountLeft, setOneAccountLeft] = useState<boolean>(false);
@@ -71,7 +72,8 @@ const Account: NextPage = () => {
 
   const handleDelete = () => {
     chrome.storage.local.get(["accounts", "y_accounts"], (res) => {
-      const accountRes = selectedMode === 0 ? res["accounts"] : res["y_accounts"];
+      const accountRes =
+        selectedMode === 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         const old = JSON.parse(accountRes);
 
@@ -129,11 +131,13 @@ const Account: NextPage = () => {
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
+        const privScan = accountObj[selectedId]["priv_scan"];
         const connection = new Connection(clusterApiUrl(network), "confirmed");
         const keypairBalance = await connection.getBalance(new PublicKey(pk));
         setAccountName(name);
         setPk(pk);
         setPda(pda);
+        setPrivateScan(privScan);
         setKeypairBalance(keypairBalance / LAMPORTS_PER_SOL);
         if (accountObj[selectedId]["avatar"]) {
           const connection = new Connection(
@@ -187,6 +191,11 @@ const Account: NextPage = () => {
         copyableValue={pk}
       />
       <InfoBox fieldName="Keypair Balance" value={`${keypairBalance} SOL`} />
+      <CopyableBox
+        fieldName="Private Scan Key"
+        value={displayAddress(privateScan)}
+        copyableValue={privateScan}
+      />
       <Image
         width={"23%"}
         style={{

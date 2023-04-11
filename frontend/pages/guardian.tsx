@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
 import { useGlobalState } from "../context";
@@ -17,13 +17,20 @@ import BN from "bn.js";
 import { WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Guardian: NextPage = () => {
+  const { setGuardians, guardians, account, network } = useGlobalState();
+  const [shards, setShards] = useState<string[]>([
+    "hello",
+    "heyy",
+    "yoyoyoyoyo",
+  ]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
-  const { setGuardians, guardians, account, network } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
+
+  const guardShardMap = useMemo(() => new Map<number, PublicKey>(), []);
 
   const defaultpk = PublicKey.default;
 
@@ -33,6 +40,7 @@ const Guardian: NextPage = () => {
       if (!account) {
         return;
       }
+
       const connection = new Connection(clusterApiUrl(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
       console.log("account pk: ", publicKey.toBase58());
@@ -46,19 +54,27 @@ const Guardian: NextPage = () => {
       console.log("threshold: ", threshold);
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
+
+      // generate shards from encryption key
+      const { encrypt_key } = account.stealth;
+      // const shares = share(encrypt_key, MAX_GUARDIANS, threshold);
+      // setShards(shares);
+
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
         const guard = new PublicKey(
           base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
+        const shard_idx = pda_data.subarray().readUInt8();
         console.log(`guard ${i + 1}: `, guard.toBase58());
         guardians_tmp.push(guard);
+        guardShardMap.set(i, guard);
       }
       setThres(threshold);
       setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, [account, network, setGuardians]);
+  }, [account, guardShardMap, network, setGuardians, setShards]);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -125,6 +141,14 @@ const Guardian: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
+    // set new shard idx
+    for (let i = 0; i < shards.length; ++i) {
+      if (!guardShardMap.has(i)) {
+        guardShardMap.set(i, new PublicKey(values.guardian));
+        break;
+      }
+    }
+
     setLoading(false);
     setIsModalOpen(false);
     setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
@@ -156,13 +180,14 @@ const Guardian: NextPage = () => {
       </div>
 
       <div style={{ overflow: "auto", height: "250px" }}>
-        {guardians?.map((g) => {
+        {[...guardShardMap].map(([idx, g]) => {
           return (
             <GuardianBox
               key={g.toBase58()}
               guardian={g}
+              shard={shards[idx]}
               editMode={editmode}
-            ></GuardianBox>
+            />
           );
         })}
       </div>
@@ -188,33 +213,17 @@ const Guardian: NextPage = () => {
         >
           Add
         </Button>
-
-        {!editmode && (
-          <Button
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            className="edit-btn"
-            danger
-          >
-            Edit
-          </Button>
-        )}
-
-        {editmode && (
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            danger
-            className="edit-btn"
-          >
-            Finish
-          </Button>
-        )}
+        <Button
+          type={editmode ? "primary" : undefined}
+          icon={<EditOutlined />}
+          onClick={toggleEditmode}
+          size="middle"
+          style={{ width: "168px" }}
+          danger
+          className="edit-btn"
+        >
+          {editmode ? "Finish" : "Edit"}
+        </Button>
       </div>
 
       <Modal

@@ -20,9 +20,11 @@ import { WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
+  shard,
   editMode,
 }: {
   guardian: PublicKey;
+  shard: string;
   editMode: boolean;
 }) => {
   const { setGuardians, guardians, account, network } = useGlobalState();
@@ -97,29 +99,56 @@ const GuardianBox = ({
       style={{
         display: "flex",
         width: "350px",
-        justifyContent: "space-evenly",
         marginTop: "10px",
+        justifyContent: "space-evenly",
+        alignItems: "center",
       }}
     >
-      <Paragraph copyable={{ text: guardian.toBase58(), tooltips: `Copy` }}>
-        {displayAddress(guardian.toBase58())}
-      </Paragraph>
-
-      {!loading && editMode && (
-        <Button
-          type="primary"
-          onClick={onDelete}
-          danger
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "space-evenly",
+            marginBottom: "0.5rem",
+          }}
         >
+          <Paragraph
+            copyable={{ text: guardian.toBase58(), tooltips: `Copy` }}
+            style={{ marginBottom: 0 }}
+          >
+            {displayAddress(guardian.toBase58())}
+          </Paragraph>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <p style={{ margin: "0", color: "#bababa", fontSize: "12px" }}>
+            Shard:
+          </p>
+          <Paragraph
+            code
+            copyable={{ text: shard, tooltips: `Copy` }}
+            style={{ color: "#bababa", marginBottom: 0 }}
+          >
+            {shard}
+          </Paragraph>
+        </div>
+      </div>
+      {!loading && editMode && (
+        <Button type="primary" onClick={onDelete} danger>
           Delete
         </Button>
       )}
 
       {loading && editMode && (
-        <LoadingOutlined
-          style={{ fontSize: 24, color: "#fff" }}
-          spin
-        />
+        <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
       )}
     </Box>
   );
