@@ -16,15 +16,17 @@ import {
 } from "../../utils";
 import BN from "bn.js";
 import Paragraph from "antd/lib/typography/Paragraph";
-import { WALLET_PROGRAM_ID } from "../../utils/constants";
+import { guardShardMap, WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
   shard,
+  shardIdx,
   editMode,
 }: {
   guardian: PublicKey;
   shard: string;
+  shardIdx: number;
   editMode: boolean;
 }) => {
   const { setGuardians, guardians, account, network } = useGlobalState();
@@ -90,6 +92,7 @@ const GuardianBox = ({
       return g.toBase58() !== guardian.toBase58();
     });
     console.log(newGuard);
+    guardShardMap.delete(shardIdx);
     setGuardians(newGuard);
     setLoading(false);
   };

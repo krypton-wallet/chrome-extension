@@ -14,23 +14,17 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { WALLET_PROGRAM_ID } from "../utils/constants";
+import { WALLET_PROGRAM_ID, guardShardMap } from "../utils/constants";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, network } = useGlobalState();
-  const [shards, setShards] = useState<string[]>([
-    "hello",
-    "heyy",
-    "yoyoyoyoyo",
-  ]);
+  const [shards, setShards] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
-
-  const guardShardMap = useMemo(() => new Map<number, PublicKey>(), []);
 
   const defaultpk = PublicKey.default;
 
@@ -74,7 +68,7 @@ const Guardian: NextPage = () => {
       setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, [account, guardShardMap, network, setGuardians, setShards]);
+  }, [account, network, setGuardians, setShards]);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -186,6 +180,7 @@ const Guardian: NextPage = () => {
               key={g.toBase58()}
               guardian={g}
               shard={shards[idx]}
+              shardIdx={idx}
               editMode={editmode}
             />
           );
