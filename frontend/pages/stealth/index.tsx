@@ -39,12 +39,23 @@ const Stealth: NextPage = () => {
     console.log("============STEALTH PAGE=================");
     setSpinning(true);
 
+    console.log("acc: ", account);
     if (!account) {
       router.push("/");
       return;
     }
 
     const getStealthAccounts = async () => {
+      
+      
+      const scan = new StealthSigner(account.stealth.priv_scan);
+      const scan_key = await scan.getPublicKey();
+      setPublicScan(scan_key.toBase58());
+
+      const spend = new StealthSigner(account.stealth.priv_spend);
+      const spend_key = await spend.getPublicKey();
+      setPublicSpend(spend_key.toBase58());
+      
       if (!account.stealth_accounts || account.stealth_accounts.length <= 0) {
         setStealthAccounts([]);
         setSpinning(false);
@@ -63,13 +74,7 @@ const Stealth: NextPage = () => {
         stealth_accs.push([priv, lamps, pubkey]);
       }
 
-      const scan = new StealthSigner(account.stealth.priv_scan);
-      const scan_key = await scan.getPublicKey();
-      setPublicScan(scan_key.toBase58());
-
-      const spend = new StealthSigner(account.stealth.priv_spend);
-      const spend_key = await spend.getPublicKey();
-      setPublicSpend(spend_key.toBase58());
+      
 
       setStealthAccounts(stealth_accs);
       setSpinning(false);

@@ -14,7 +14,12 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { WALLET_PROGRAM_ID, guardShardMap } from "../utils/constants";
+import {
+  MAX_GUARDIANS,
+  WALLET_PROGRAM_ID,
+  guardShardMap,
+} from "../utils/constants";
+import { split } from "shamirs-secret-sharing-ts";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, network } = useGlobalState();
@@ -51,18 +56,21 @@ const Guardian: NextPage = () => {
 
       // generate shards from encryption key
       const { encrypt_key } = account.stealth;
-      // const shares = share(encrypt_key, MAX_GUARDIANS, threshold);
-      // setShards(shares);
+      const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
+      setShards(shares);
 
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
         const guard = new PublicKey(
           base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
-        const shard_idx = pda_data.subarray().readUInt8();
+        const shard_idx = pda_data
+          .subarray(5 + 32 * guardian_len + 4 + i)
+          .readUInt8();
         console.log(`guard ${i + 1}: `, guard.toBase58());
+        console.log(`shard ${i + 1}: `, shard_idx);
         guardians_tmp.push(guard);
-        guardShardMap.set(i, guard);
+        guardShardMap.set(shard_idx, guard);
       }
       setThres(threshold);
       setGuardians(guardians_tmp);
@@ -89,6 +97,8 @@ const Guardian: NextPage = () => {
     console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
+    const idx0 = Buffer.from(new Uint8Array([0]));
+    const len = Buffer.from(new Uint8Array(new BN(1).toArray("le", 4)));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
     );
@@ -113,7 +123,7 @@ const Guardian: NextPage = () => {
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx1, new_acct_len]),
+      data: Buffer.concat([idx1, new_acct_len, len, idx0]),
     });
 
     // TODO: Check if Yubikey is connected

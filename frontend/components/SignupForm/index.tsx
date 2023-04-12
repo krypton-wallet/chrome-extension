@@ -41,6 +41,8 @@ import {
   AuthorityType,
 } from "@solana/spl-token";
 import { randomBytes } from "tweetnacl";
+import * as aesjs from "aes-js";
+import base58 from "bs58";
 
 const SignupForm = ({
   feePayer,
@@ -85,6 +87,7 @@ const SignupForm = ({
     );
     const sig = await feePayer.signMessage(message);
     const keys: StealthKeys = await genKeys(sig);
+    const encryption_key = randomBytes(16);
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
@@ -92,7 +95,7 @@ const SignupForm = ({
       stealth: {
         priv_scan: keys.privScan,
         priv_spend: keys.privSpend,
-        encrypt_key: Buffer.from(randomBytes(10)).toString(),
+        encrypt_key: base58.encode(encryption_key),
       },
     };
     console.log(feePayerAccount);
@@ -125,6 +128,23 @@ const SignupForm = ({
       new Uint8Array(new BN(thres).toArray("le", 1))
     );
 
+    const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
+
+      //michael change this
+      const encrypted = aesCtr.encrypt(base58.decode(keys.privScan));
+      const echo = encrypted;
+      const encrypted2 = aesCtr.encrypt(base58.decode(keys.privSpend));
+      const echo2 = encrypted2;
+      //const echo2 = "hohoho";
+    const messageLen = Buffer.from(new Uint8Array((new BN(echo.length)).toArray("le", 4)));
+    console.log("message len: ", messageLen);
+    console.log("message: ", echo);
+    const message3 = echo;
+    const messageLen2 = Buffer.from(new Uint8Array((new BN(echo2.length)).toArray("le", 4)));
+    console.log("message len2: ", messageLen2);
+    console.log("message: ", echo2);
+  const message2 = echo2;
+
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
         {
@@ -144,7 +164,7 @@ const SignupForm = ({
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx, acct_len, recovery_threshold]),
+      data: Buffer.concat([idx, acct_len, recovery_threshold, messageLen,message3,messageLen2,message2]),
     });
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);
