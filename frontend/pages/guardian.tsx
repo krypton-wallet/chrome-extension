@@ -14,21 +14,22 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { MAX_GUARDIANS, WALLET_PROGRAM_ID } from "../utils/constants";
+import {
+  MAX_GUARDIANS,
+  WALLET_PROGRAM_ID,
+  guardShardMap,
+} from "../utils/constants";
 import { split } from "shamirs-secret-sharing-ts";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, network } = useGlobalState();
-  const [shards, setShards] = useState<string[]>([
-  ]);
+  const [shards, setShards] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
-
-  const guardShardMap = useMemo(() => new Map<number, PublicKey>(), []);
 
   const defaultpk = PublicKey.default;
 
@@ -55,7 +56,7 @@ const Guardian: NextPage = () => {
 
       // generate shards from encryption key
       const { encrypt_key } = account.stealth;
-      const shares = split(encrypt_key,{ shares: MAX_GUARDIANS, threshold});
+      const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
       setShards(shares);
 
       const guardians_tmp: PublicKey[] = [];
@@ -63,7 +64,9 @@ const Guardian: NextPage = () => {
         const guard = new PublicKey(
           base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
-        const shard_idx = pda_data.subarray(5 + 32* guardian_len + 4 +i).readUInt8();
+        const shard_idx = pda_data
+          .subarray(5 + 32 * guardian_len + 4 + i)
+          .readUInt8();
         console.log(`guard ${i + 1}: `, guard.toBase58());
         console.log(`shard ${i + 1}: `, shard_idx);
         guardians_tmp.push(guard);
@@ -73,7 +76,7 @@ const Guardian: NextPage = () => {
       setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, [account, guardShardMap, network, setGuardians, setShards]);
+  }, [account, network, setGuardians, setShards]);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -196,6 +199,7 @@ const Guardian: NextPage = () => {
               key={g.toBase58()}
               guardian={g}
               shard={shards[idx]}
+              shardIdx={idx}
               editMode={editmode}
             />
           );

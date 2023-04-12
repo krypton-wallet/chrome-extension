@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
+export const guardShardMap = new Map<number, PublicKey>();
 //export const WALLET_PROGRAM_ID = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 export const WALLET_PROGRAM_ID = new PublicKey("DdRGFn2y21wDUE6EQN3wxe6Dhr2VwscGtnEy5GNB44Ju"); //shard support
 export const TX_FEE = 5000;
