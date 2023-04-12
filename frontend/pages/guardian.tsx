@@ -89,12 +89,22 @@ const Guardian: NextPage = () => {
     setLoading(true);
     form.resetFields();
 
+
+    let shard_idx = 11; 
+
+    for (let i = 0; i < shards.length; ++i) {
+      if (!guardShardMap.has(i)) {
+        shard_idx = i;
+        break;
+      }
+    }
+
     // Instr Add
     const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
-    const idx0 = Buffer.from(new Uint8Array([0]));
+    const idx_shard = Buffer.from(new Uint8Array([shard_idx]));
     const len =  Buffer.from(new Uint8Array((new BN(1)).toArray("le", 4)));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
@@ -120,7 +130,7 @@ const Guardian: NextPage = () => {
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx1, new_acct_len,len,idx0]),
+      data: Buffer.concat([idx1, new_acct_len,len,idx_shard]),
     });
 
     // TODO: Check if Yubikey is connected
@@ -143,11 +153,10 @@ const Guardian: NextPage = () => {
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
     // set new shard idx
-    for (let i = 0; i < shards.length; ++i) {
-      if (!guardShardMap.has(i)) {
-        guardShardMap.set(i, new PublicKey(values.guardian));
-        break;
-      }
+    if (shard_idx != 11 ) {
+      guardShardMap.set(shard_idx, new PublicKey(values.guardian));
+    }else {
+      console.log("something went wrong, shard_idx = 11")
     }
 
     setLoading(false);
