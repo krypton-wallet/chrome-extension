@@ -21,6 +21,7 @@ import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../../utils";
 import { KeypairSigner, StealthSigner } from "../../types/account";
+import { receiverGenKey } from "solana-stealth";
 
 const AddStealth: NextPage = () => {
   const { account, setAccount, balance, network } = useGlobalState();
@@ -41,6 +42,7 @@ const AddStealth: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
+    console.log("ok");
     if (!account) {
       router.push("/");
       return;
@@ -62,9 +64,10 @@ const AddStealth: NextPage = () => {
           stealth_accs = account.stealth_accounts;
         }
         try {
-          const signer = new StealthSigner(values.sk);
+          let key = await receiverGenKey(account.stealth.priv_scan,account.stealth.priv_spend,values.sk)
+          const signer = new StealthSigner(key);
           await connection.getAccountInfo(await signer.getPublicKey());
-          stealth_accs.push(values.sk);
+          stealth_accs.push(key);
         } catch (error) {
           console.log("error");
           setLoading(false);
@@ -72,6 +75,7 @@ const AddStealth: NextPage = () => {
           setFailed(true);
           return;
         }
+        console.log("why");
         const { stealth_accounts: _, ...rest } = old[id];
         old[id] = {
           stealth_accounts: stealth_accs,
@@ -93,7 +97,6 @@ const AddStealth: NextPage = () => {
     console.log(values);
     setLoading(false);
     setFinished(true);
-    setFailed(false);
   };
 
   return (
@@ -112,7 +115,7 @@ const AddStealth: NextPage = () => {
             rules={[
               {
                 required: true,
-                message: "Please enter the private key",
+                message: "Please enter the ephemeral key",
               },
               // {
               //   async validator(_, value) {
@@ -128,7 +131,7 @@ const AddStealth: NextPage = () => {
             ]}
           >
             <Input
-              placeholder="Private Key"
+              placeholder="Emphemeral Key"
               style={{
                 minWidth: "300px",
                 backgroundColor: "rgb(34, 34, 34)",
