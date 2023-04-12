@@ -21,7 +21,7 @@ import { StyledForm } from "../../styles/StyledComponents.styles";
 import { isNumber } from "../../utils";
 
 //import {str2hex,init,getConfig,setRNG,share} from "secrets.js-grempe"
-import {combine, split} from "shamirs-secret-sharing-ts";
+import { combine, split } from "shamirs-secret-sharing-ts";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
 
@@ -37,47 +37,62 @@ const RegenStealth: NextPage = () => {
   const handleCancel = () => {
     router.push("/stealth");
   };
-  
+
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log("WTFFFF");
+    if(!account) {
+      return;
+    }
     console.log(values);
-    const key = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
-    const aesCtr = new aesjs.ModeOfOperation.ctr(key);
-    
+    console.log("acc: ", account);
+    console.log("key: ", account.stealth.encrypt_key);
+    console.log("key: ", base58.decode(account?.stealth.encrypt_key!));
+    const aesCtr = new aesjs.ModeOfOperation.ctr(base58.decode(account?.stealth.encrypt_key!));
+
     console.log("before  str2hex");
     // let secret = str2hex(scankey.toString());
-    let secret = values.scankey;
-    let secret2 = base58.decode(values.scankey);
+
+    const pda_account = await connection.getAccountInfo(
+      new PublicKey(account.pda) ?? PublicKey.default
+    );
+    const pda_data = pda_account?.data ?? Buffer.from("");
+    const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
+    const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
+    const priv_scan_enc = base58.encode(pda_data.subarray(33*guardian_len +13,33*guardian_len +45));
+    console.log("full data: ", pda_data);
+    console.log("something: ", pda_data.subarray(33*guardian_len +9,33*guardian_len +13));
+    console.log("something2: ", priv_scan_enc);
+
+      console.log("comparison?: ",account.stealth.priv_scan);
+      
+
+    console.log("threshold: ", threshold);
+    console.log("guardian length: ", guardian_len);
+
+    let secret = priv_scan_enc;
 
     // setRNG("browserCryptoGetRandomValues");
 
     // console.log(getConfig());
 
-    const myArray = new Uint32Array(10);
-    console.log(crypto.getRandomValues(myArray));
-    
-    console.log(myArray);
-
     console.log("waiting");
     // await new Promise((r) => setTimeout(r, 30000));
 
     console.log("before shares");
-    let shards = split( Buffer.from(key),{shares: 10, threshold: 3});
+    console.log(account?.stealth.encrypt_key!);
+    let shards = split(Buffer.from(base58.decode(account?.stealth.encrypt_key!)), { shares: 10, threshold: 3 });
     console.log(shards);
-   
 
-    var text = 'Text may be any length you wish, no padding is required.';
-    var textBytes = aesjs.utils.utf8.toBytes(text);
-    const encrypted = aesCtr.encrypt(base58.decode(secret));
-    const result = combine(shards.slice(2,6));
-    console.log("result: ",result); 
-    console.log("encrypted: ",encrypted);
-    const aesCtr2 = new aesjs.ModeOfOperation.ctr(result);
-    const res2 = aesCtr2.decrypt(encrypted);
-    console.log("res2: ",res2);
-    console.log("res2: ",base58.encode(res2));
+
     
+    const result = combine(shards.slice(2, 6));
+    console.log("result: ", result);
+    const aesCtr2 = new aesjs.ModeOfOperation.ctr(result);
+    const res2 = aesCtr2.decrypt(base58.decode(secret));
+    console.log("res2: ", res2);
+    console.log("res2: ", base58.encode(res2));
+
 
     setLoading(false);
     setFinished(true);
