@@ -23,7 +23,11 @@ import {
 import { GlobalModalContext } from "../components/GlobalModal";
 import PinentryModal from "../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
-import { PDA_RENT_EXEMPT_FEE, WALLET_PROGRAM_ID } from "./constants";
+import {
+  guardShardMap,
+  PDA_RENT_EXEMPT_FEE,
+  WALLET_PROGRAM_ID,
+} from "./constants";
 
 // implement a function that gets an account's balance
 const refreshBalance = async (
@@ -285,6 +289,7 @@ const getAccountFromPkString = async (
       }
     });
   console.log(account);
+  guardShardMap.clear();
   return account;
 };
 
@@ -389,6 +394,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
       }
     });
   console.log(account);
+  guardShardMap.clear();
   return account;
 };
 

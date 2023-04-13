@@ -140,7 +140,7 @@ const GuardianBox = ({
             copyable={{ text: shard, tooltips: `Copy` }}
             style={{ color: "#bababa", marginBottom: 0 }}
           >
-            {shard}
+            {displayAddress(shard)}
           </Paragraph>
         </div>
       </div>

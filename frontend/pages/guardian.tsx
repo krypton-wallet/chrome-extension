@@ -22,6 +22,7 @@ import {
 import { split } from "shamirs-secret-sharing-ts";
 import { randomBytes } from "crypto";
 import * as aesjs from "aes-js";
+import bs58 from "bs58";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, network } = useGlobalState();
@@ -59,7 +60,7 @@ const Guardian: NextPage = () => {
       // generate shards from encryption key
       const { encrypt_key } = account.stealth;
       const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
-      setShards(shares);
+      setShards(shares.map((share) => bs58.encode(share)));
 
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
@@ -94,7 +95,6 @@ const Guardian: NextPage = () => {
     setLoading(true);
     form.resetFields();
 
-
     let shard_idx = 11;
 
     for (let i = 0; i < shards.length; ++i) {
@@ -110,7 +110,7 @@ const Guardian: NextPage = () => {
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const idx_shard = Buffer.from(new Uint8Array([shard_idx]));
-    const len = Buffer.from(new Uint8Array((new BN(1)).toArray("le", 4)));
+    const len = Buffer.from(new Uint8Array(new BN(1).toArray("le", 4)));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
     );
@@ -161,7 +161,7 @@ const Guardian: NextPage = () => {
     if (shard_idx != 11) {
       guardShardMap.set(shard_idx, new PublicKey(values.guardian));
     } else {
-      console.log("something went wrong, shard_idx = 11")
+      console.log("something went wrong, shard_idx = 11");
     }
 
     setLoading(false);
@@ -179,20 +179,28 @@ const Guardian: NextPage = () => {
     setEditmode(!editmode);
   };
   const regenShards = async () => {
-    if (!account) { return; }
+    if (!account) {
+      return;
+    }
     console.log("regenning boys");
     const encryption_key = randomBytes(16);
     account.stealth.encrypt_key = base58.encode(encryption_key);
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
     const encrypted = aesCtr.encrypt(base58.decode(account.stealth.priv_scan));
-    const encrypted2 = aesCtr.encrypt(base58.decode(account.stealth.priv_spend));
+    const encrypted2 = aesCtr.encrypt(
+      base58.decode(account.stealth.priv_spend)
+    );
 
-    const messageLen = Buffer.from(new Uint8Array((new BN(encrypted.length)).toArray("le", 4)));
+    const messageLen = Buffer.from(
+      new Uint8Array(new BN(encrypted.length).toArray("le", 4))
+    );
     console.log("message len: ", messageLen);
     console.log("message: ", encrypted);
     const message3 = encrypted;
-    const messageLen2 = Buffer.from(new Uint8Array((new BN(encrypted2.length)).toArray("le", 4)));
+    const messageLen2 = Buffer.from(
+      new Uint8Array(new BN(encrypted2.length).toArray("le", 4))
+    );
     console.log("message len2: ", messageLen2);
     console.log("message: ", encrypted2);
     const message2 = encrypted2;
@@ -245,9 +253,8 @@ const Guardian: NextPage = () => {
     const pda_data = pda_account?.data ?? Buffer.from("");
     const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const { encrypt_key } = account.stealth;
-      const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
-      setShards(shares);
-
+    const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
+    setShards(shares);
   };
 
   return (
@@ -281,8 +288,9 @@ const Guardian: NextPage = () => {
 
       {guardians.length < thres && (
         <Alert
-          message={`Need ${thres - guardians.length
-            } more guardian(s) to activate recovery feature`}
+          message={`Need ${
+            thres - guardians.length
+          } more guardian(s) to activate recovery feature`}
           type="warning"
           style={{ width: "85%", position: "absolute", bottom: "95px" }}
           showIcon

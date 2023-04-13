@@ -46,8 +46,6 @@ const Stealth: NextPage = () => {
     }
 
     const getStealthAccounts = async () => {
-      
-      
       const scan = new StealthSigner(account.stealth.priv_scan);
       const scan_key = await scan.getPublicKey();
       setPublicScan(scan_key.toBase58());
@@ -55,7 +53,7 @@ const Stealth: NextPage = () => {
       const spend = new StealthSigner(account.stealth.priv_spend);
       const spend_key = await spend.getPublicKey();
       setPublicSpend(spend_key.toBase58());
-      
+
       if (!account.stealth_accounts || account.stealth_accounts.length <= 0) {
         setStealthAccounts([]);
         setSpinning(false);
@@ -73,8 +71,6 @@ const Stealth: NextPage = () => {
         }
         stealth_accs.push([priv, lamps, pubkey]);
       }
-
-      
 
       setStealthAccounts(stealth_accs);
       setSpinning(false);
@@ -111,7 +107,7 @@ const Stealth: NextPage = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              width: "45%",
+              width: "50%",
             }}
           >
             <p
@@ -129,7 +125,7 @@ const Stealth: NextPage = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              width: "45%",
+              width: "50%",
             }}
           >
             <p
