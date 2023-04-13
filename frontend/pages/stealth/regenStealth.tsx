@@ -44,15 +44,10 @@ const RegenStealth: NextPage = () => {
     if(!account) {
       return;
     }
-    console.log(values);
-    console.log("acc: ", account);
-    console.log("key: ", account.stealth.encrypt_key);
-    console.log("key: ", base58.decode(account?.stealth.encrypt_key!));
-    const aesCtr = new aesjs.ModeOfOperation.ctr(base58.decode(account?.stealth.encrypt_key!));
+    console.log("stealth scan: ", account.stealth.priv_scan);
+    console.log("stealth spend: ",account.stealth.priv_spend);
 
-    console.log("before  str2hex");
-    // let secret = str2hex(scankey.toString());
-
+    
     const pda_account = await connection.getAccountInfo(
       new PublicKey(account.pda) ?? PublicKey.default
     );
@@ -60,38 +55,27 @@ const RegenStealth: NextPage = () => {
     const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
     const priv_scan_enc = base58.encode(pda_data.subarray(33*guardian_len +13,33*guardian_len +45));
+    const priv_spend_enc = base58.encode(pda_data.subarray(33*guardian_len +49,33*guardian_len +81));
     console.log("full data: ", pda_data);
     console.log("something: ", pda_data.subarray(33*guardian_len +9,33*guardian_len +13));
     console.log("something2: ", priv_scan_enc);
-
-      console.log("comparison?: ",account.stealth.priv_scan);
       
 
     console.log("threshold: ", threshold);
     console.log("guardian length: ", guardian_len);
 
-    let secret = priv_scan_enc;
 
-    // setRNG("browserCryptoGetRandomValues");
-
-    // console.log(getConfig());
-
-    console.log("waiting");
-    // await new Promise((r) => setTimeout(r, 30000));
-
-    console.log("before shares");
-    console.log(account?.stealth.encrypt_key!);
-    let shards = split(Buffer.from(base58.decode(account?.stealth.encrypt_key!)), { shares: 10, threshold: 3 });
+    let shards = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: 10, threshold: 3 });
     console.log(shards);
-
 
     
     const result = combine(shards.slice(2, 6));
     console.log("result: ", result);
-    const aesCtr2 = new aesjs.ModeOfOperation.ctr(result);
-    const res2 = aesCtr2.decrypt(base58.decode(secret));
-    console.log("res2: ", res2);
-    console.log("res2: ", base58.encode(res2));
+    const aesCtr = new aesjs.ModeOfOperation.ctr(result);
+    const res2 = aesCtr.decrypt(base58.decode(priv_scan_enc));
+    console.log("privscan: ", base58.encode(res2));
+    const res3 = aesCtr.decrypt(base58.decode(priv_spend_enc));
+    console.log("privspend: ", base58.encode(res3));
 
 
     setLoading(false);

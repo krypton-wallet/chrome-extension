@@ -130,20 +130,18 @@ const SignupForm = ({
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
 
-      //michael change this
+
       const encrypted = aesCtr.encrypt(base58.decode(keys.privScan));
-      const echo = encrypted;
       const encrypted2 = aesCtr.encrypt(base58.decode(keys.privSpend));
-      const echo2 = encrypted2;
-      //const echo2 = "hohoho";
-    const messageLen = Buffer.from(new Uint8Array((new BN(echo.length)).toArray("le", 4)));
+
+    const messageLen = Buffer.from(new Uint8Array((new BN(encrypted.length)).toArray("le", 4)));
     console.log("message len: ", messageLen);
-    console.log("message: ", echo);
-    const message3 = echo;
-    const messageLen2 = Buffer.from(new Uint8Array((new BN(echo2.length)).toArray("le", 4)));
+    console.log("message: ", encrypted);
+    const message3 = encrypted;
+    const messageLen2 = Buffer.from(new Uint8Array((new BN(encrypted2.length)).toArray("le", 4)));
     console.log("message len2: ", messageLen2);
-    console.log("message: ", echo2);
-  const message2 = echo2;
+    console.log("message: ", encrypted2);
+  const message2 = encrypted2;
 
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
