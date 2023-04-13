@@ -64,7 +64,11 @@ const AddStealth: NextPage = () => {
           stealth_accs = account.stealth_accounts;
         }
         try {
-          let key = await receiverGenKey(account.stealth.priv_scan,account.stealth.priv_spend,values.sk)
+          let key = await receiverGenKey(
+            account.stealth.priv_scan,
+            account.stealth.priv_spend,
+            values.sk
+          );
           const signer = new StealthSigner(key);
           await connection.getAccountInfo(await signer.getPublicKey());
           stealth_accs.push(key);

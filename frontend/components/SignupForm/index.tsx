@@ -26,6 +26,7 @@ import {
 } from "../../utils";
 import OnboardingSteps from "../OnboardingSteps";
 import {
+  MAX_GUARDIANS,
   REFILL_TO_BALANCE,
   TEST_INITIAL_BALANCE_FAILURE,
   WALLET_PROGRAM_ID,
@@ -43,6 +44,7 @@ import {
 import { randomBytes } from "tweetnacl";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
+import { split } from "shamirs-secret-sharing-ts";
 
 const SignupForm = ({
   feePayer,
@@ -88,6 +90,11 @@ const SignupForm = ({
     const sig = await feePayer.signMessage(message);
     const keys: StealthKeys = await genKeys(sig);
     const encryption_key = randomBytes(16);
+    const shares = split(Buffer.from(encryption_key), {
+      shares: MAX_GUARDIANS,
+      threshold: thres,
+    });
+    const shards = shares.map((share) => base58.encode(share));
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
@@ -95,7 +102,7 @@ const SignupForm = ({
       stealth: {
         priv_scan: keys.privScan,
         priv_spend: keys.privSpend,
-        encrypt_key: base58.encode(encryption_key),
+        shards,
       },
     };
     console.log(feePayerAccount);
@@ -130,18 +137,21 @@ const SignupForm = ({
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
 
+    const encrypted = aesCtr.encrypt(base58.decode(keys.privScan));
+    const encrypted2 = aesCtr.encrypt(base58.decode(keys.privSpend));
 
-      const encrypted = aesCtr.encrypt(base58.decode(keys.privScan));
-      const encrypted2 = aesCtr.encrypt(base58.decode(keys.privSpend));
-
-    const messageLen = Buffer.from(new Uint8Array((new BN(encrypted.length)).toArray("le", 4)));
+    const messageLen = Buffer.from(
+      new Uint8Array(new BN(encrypted.length).toArray("le", 4))
+    );
     console.log("message len: ", messageLen);
     console.log("message: ", encrypted);
     const message3 = encrypted;
-    const messageLen2 = Buffer.from(new Uint8Array((new BN(encrypted2.length)).toArray("le", 4)));
+    const messageLen2 = Buffer.from(
+      new Uint8Array(new BN(encrypted2.length).toArray("le", 4))
+    );
     console.log("message len2: ", messageLen2);
     console.log("message: ", encrypted2);
-  const message2 = encrypted2;
+    const message2 = encrypted2;
 
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
@@ -162,7 +172,15 @@ const SignupForm = ({
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx, acct_len, recovery_threshold, messageLen,message3,messageLen2,message2]),
+      data: Buffer.concat([
+        idx,
+        acct_len,
+        recovery_threshold,
+        messageLen,
+        message3,
+        messageLen2,
+        message2,
+      ]),
     });
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);

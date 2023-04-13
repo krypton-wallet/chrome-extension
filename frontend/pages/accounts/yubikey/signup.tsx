@@ -71,7 +71,7 @@ const YubikeySignup: NextPage = () => {
         old[count] = {
           priv_scan: stealth.priv_scan,
           priv_spend: stealth.priv_spend,
-          encrypt_key: stealth.encrypt_key,
+          shards: stealth.shards,
           ...rest,
         };
         const values = JSON.stringify(old);
