@@ -70,8 +70,15 @@ const RegenStealth: NextPage = () => {
     console.log("threshold: ", threshold);
     console.log("guardian length: ", guardian_len);
 
-    const shards = account.stealth.shards;
-    const result = combine(shards.slice(2, 6));
+
+
+      let shard1 = Buffer.from(base58.decode(values.shard1));
+      let shard2 = Buffer.from(base58.decode(values.shard2));
+
+
+    let shards = [shard1,shard2];
+    
+    const result = combine(shards);
     console.log("result: ", result);
     const aesCtr = new aesjs.ModeOfOperation.ctr(result);
     const res2 = aesCtr.decrypt(base58.decode(priv_scan_enc));
@@ -95,7 +102,7 @@ const RegenStealth: NextPage = () => {
           onFinish={handleOk}
         >
           <Form.Item
-            name="scankey"
+            name="shard1"
             rules={[
               {
                 required: true,
@@ -115,7 +122,7 @@ const RegenStealth: NextPage = () => {
             ]}
           >
             <Input
-              placeholder="Recipient's Scan Key"
+              placeholder="Shard 1"
               style={{
                 minWidth: "300px",
                 backgroundColor: "rgb(34, 34, 34)",
@@ -125,7 +132,7 @@ const RegenStealth: NextPage = () => {
             />
           </Form.Item>
           <Form.Item
-            name="spendkey"
+            name="shard2"
             rules={[
               {
                 required: true,
@@ -145,42 +152,9 @@ const RegenStealth: NextPage = () => {
             ]}
           >
             <Input
-              placeholder="Recipient's Spend Key"
+              placeholder="Shard 2"
               style={{
                 minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="amount"
-            rules={[
-              {
-                required: true,
-                message: "Please enter amount in SOL",
-              },
-              {
-                validator(_, value) {
-                  if (!isNumber(value)) {
-                    return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > (balance ?? 0)) {
-                    return Promise.reject(
-                      new Error("Cannot transfer more SOL than balance")
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder=""
-              suffix="SOL"
-              style={{
                 backgroundColor: "rgb(34, 34, 34)",
                 color: "#d3d3d3",
                 border: "1px solid #d3d3d3",
