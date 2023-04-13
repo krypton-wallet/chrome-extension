@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
-import { Button, Form, Input, Result } from "antd";
+import { Button, Form, Input, Result, Switch } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../styles/StyledComponents.styles";
@@ -24,6 +24,7 @@ import { WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [stealthMode, setStealthMode] = useState<boolean>(false);
   const { account, network, balance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const connection = new Connection(clusterApiUrl(network), "confirmed");
@@ -122,6 +123,15 @@ const Transfer: NextPage = () => {
           requiredMark={false}
           onFinish={handleOk}
         >
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <p style={{ marginRight: "10px" }}>Stealth Mode: </p>
+            <Switch
+              checkedChildren="on"
+              unCheckedChildren="off"
+              checked={stealthMode}
+              onChange={() => setStealthMode((prev) => !prev)}
+            />
+          </div>
           <Form.Item
             name="pk"
             rules={[
@@ -152,6 +162,38 @@ const Transfer: NextPage = () => {
               }}
             />
           </Form.Item>
+          {stealthMode && (
+            <Form.Item
+              name="pk"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's address",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = await connection.getAccountInfo(
+                      new PublicKey(value)
+                    );
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Address"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="amount"
