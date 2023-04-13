@@ -21,6 +21,7 @@ import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 import { KeypairSigner, Signer } from "../types/account";
 import { WALLET_PROGRAM_ID } from "../utils/constants";
+import { stealthTransferIx } from "solana-stealth";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -44,7 +45,20 @@ const Transfer: NextPage = () => {
 
     setLoading(true);
     console.log(values);
-    const dest_pda = new PublicKey(values.pk);
+
+    let dest_pda: PublicKey;
+    let notifyIx: TransactionInstruction;
+    if (stealthMode){
+      notifyIx = await stealthTransferIx(
+        new PublicKey(account.pk),
+        values.scankey,
+        values.spendkey,
+        0
+      );
+      dest_pda = notifyIx.keys[1].pubkey;
+    }else{
+      dest_pda = new PublicKey(values.pk);
+    }
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
     const connection = new Connection(clusterApiUrl(network), "confirmed");
 
@@ -93,6 +107,10 @@ const Transfer: NextPage = () => {
       })
     );
 
+    if (stealthMode){ 
+      transferSOLTx.add(notifyIx!)
+    }
+
     console.log("Transfering native SOL...");
     const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
       connection,
@@ -132,37 +150,7 @@ const Transfer: NextPage = () => {
               onChange={() => setStealthMode((prev) => !prev)}
             />
           </div>
-          <Form.Item
-            name="pk"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the recipient's address",
-              },
-              {
-                async validator(_, value) {
-                  const pdaInfo = await connection.getAccountInfo(
-                    new PublicKey(value)
-                  );
-                  if (pdaInfo) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("Invalid public key"));
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder="Recipient's Address"
-              style={{
-                minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item>
-          {stealthMode && (
+          {!stealthMode && (
             <Form.Item
               name="pk"
               rules={[
@@ -185,6 +173,66 @@ const Transfer: NextPage = () => {
             >
               <Input
                 placeholder="Recipient's Address"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="scankey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's scan key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Scan Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="spendkey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's spend key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Spend Key"
                 style={{
                   minWidth: "300px",
                   backgroundColor: "rgb(34, 34, 34)",
