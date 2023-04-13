@@ -24,6 +24,7 @@ import { isNumber } from "../../utils";
 import { combine, split } from "shamirs-secret-sharing-ts";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
+import { MAX_GUARDIANS } from "../../utils/constants";
 
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -65,7 +66,9 @@ const RegenStealth: NextPage = () => {
     console.log("guardian length: ", guardian_len);
 
 
-    let shards = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: 10, threshold: 3 });
+      console.log("key: ", account.stealth.encrypt_key);
+
+    let shards = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: MAX_GUARDIANS, threshold: threshold });
     console.log(shards);
 
     

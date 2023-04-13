@@ -184,7 +184,10 @@ const Guardian: NextPage = () => {
     }
     console.log("regenning boys");
     const encryption_key = randomBytes(16);
+    console.log("old key: ", account.stealth.encrypt_key);
+    console.log("new key: ", encryption_key);
     account.stealth.encrypt_key = base58.encode(encryption_key);
+    console.log("new key2: ", account.stealth.encrypt_key);
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
     const encrypted = aesCtr.encrypt(base58.decode(account.stealth.priv_scan));
