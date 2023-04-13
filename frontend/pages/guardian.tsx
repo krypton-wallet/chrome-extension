@@ -59,7 +59,7 @@ const Guardian: NextPage = () => {
 
       // generate shards from encryption key
       const { encrypt_key } = account.stealth;
-      const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
+      const shares = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: MAX_GUARDIANS, threshold });
       setShards(shares.map((share) => base58.encode(share)));
 
       const guardians_tmp: PublicKey[] = [];
@@ -277,7 +277,7 @@ const Guardian: NextPage = () => {
     const pda_data = pda_account?.data ?? Buffer.from("");
     const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const { encrypt_key } = account.stealth;
-    const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
+    const shares = split(Buffer.from(base58.decode(encrypt_key)), { shares: MAX_GUARDIANS, threshold });
     setShards(shares);
   };
 

@@ -68,12 +68,24 @@ const RegenStealth: NextPage = () => {
 
       console.log("key: ", account.stealth.encrypt_key);
 
+      let shard1 = Buffer.from(base58.decode(values.shard1));
+      let shard2 = Buffer.from(base58.decode(values.shard2));
+
+
+    let shareds = [shard1,shard2];
     let shards = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: MAX_GUARDIANS, threshold: threshold });
     console.log(shards);
+    console.log("this",shards.slice(2,6));
+    console.log("shard1: ",shard1);
+    console.log("shard2: ",shard2);
+    console.log("shareds: ",shareds);
+
 
     
-    const result = combine(shards.slice(2, 6));
+    const result = combine(shards.slice(2, 4));
     console.log("result: ", result);
+    const result2 = combine(shareds);
+    console.log("result2: ", result2);
     const aesCtr = new aesjs.ModeOfOperation.ctr(result);
     const res2 = aesCtr.decrypt(base58.decode(priv_scan_enc));
     console.log("privscan: ", base58.encode(res2));
@@ -97,7 +109,7 @@ const RegenStealth: NextPage = () => {
           onFinish={handleOk}
         >
           <Form.Item
-            name="scankey"
+            name="shard1"
             rules={[
               {
                 required: true,
@@ -117,7 +129,7 @@ const RegenStealth: NextPage = () => {
             ]}
           >
             <Input
-              placeholder="Recipient's Scan Key"
+              placeholder="Shard 1"
               style={{
                 minWidth: "300px",
                 backgroundColor: "rgb(34, 34, 34)",
@@ -127,7 +139,7 @@ const RegenStealth: NextPage = () => {
             />
           </Form.Item>
           <Form.Item
-            name="spendkey"
+            name="shard2"
             rules={[
               {
                 required: true,
@@ -147,42 +159,9 @@ const RegenStealth: NextPage = () => {
             ]}
           >
             <Input
-              placeholder="Recipient's Spend Key"
+              placeholder="Shard 2"
               style={{
                 minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="amount"
-            rules={[
-              {
-                required: true,
-                message: "Please enter amount in SOL",
-              },
-              {
-                validator(_, value) {
-                  if (!isNumber(value)) {
-                    return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > (balance ?? 0)) {
-                    return Promise.reject(
-                      new Error("Cannot transfer more SOL than balance")
-                    );
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder=""
-              suffix="SOL"
-              style={{
                 backgroundColor: "rgb(34, 34, 34)",
                 color: "#d3d3d3",
                 border: "1px solid #d3d3d3",
