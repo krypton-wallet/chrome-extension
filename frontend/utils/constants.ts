@@ -2,7 +2,9 @@ import { PublicKey } from "@solana/web3.js";
 
 export const guardShardMap = new Map<number, PublicKey>();
 //export const WALLET_PROGRAM_ID = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
-export const WALLET_PROGRAM_ID = new PublicKey("ACzMztGYvhBWj4y3jvHmjmr6gLFHgaXih1ZuqZiR8evz"); //shard support
+export const WALLET_PROGRAM_ID = new PublicKey(
+  "ACzMztGYvhBWj4y3jvHmjmr6gLFHgaXih1ZuqZiR8evz"
+); //shard support
 export const TX_FEE = 5000;
 export const MIN_KEYPAIR_BALANCE = 1e8;
 export const REFILL_TO_BALANCE = 2e8;

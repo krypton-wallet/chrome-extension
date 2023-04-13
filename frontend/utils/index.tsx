@@ -209,7 +209,7 @@ const getAccountFromPkString = async (
           stealth: {
             priv_scan: res.priv_scan,
             priv_spend: res.priv_spend,
-            encrypt_key: res.encrypt_key,
+            shards: res.shards,
           } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
@@ -280,7 +280,7 @@ const getAccountFromPkString = async (
           stealth: {
             priv_scan: res.priv_scan,
             priv_spend: res.priv_spend,
-            encrypt_key: res.encrypt_key,
+            shards: res.shards,
           } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
@@ -320,7 +320,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           stealth: {
             priv_scan: res.priv_scan,
             priv_spend: res.priv_spend,
-            encrypt_key: res.encrypt_key,
+            shards: res.shards,
           } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,
@@ -385,7 +385,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           stealth: {
             priv_scan: res.priv_scan,
             priv_spend: res.priv_spend,
-            encrypt_key: res.encrypt_key,
+            shards: res.shards,
           } as StealthInfo,
           ...(res.stealth_accounts && {
             stealth_accounts: res.stealth_accounts,

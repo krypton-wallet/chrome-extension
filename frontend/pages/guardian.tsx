@@ -58,9 +58,8 @@ const Guardian: NextPage = () => {
       console.log("All Guardians:");
 
       // generate shards from encryption key
-      const { encrypt_key } = account.stealth;
-      const shares = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: MAX_GUARDIANS, threshold });
-      setShards(shares.map((share) => base58.encode(share)));
+      const { shards } = account.stealth;
+      setShards(shards);
 
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
@@ -184,32 +183,6 @@ const Guardian: NextPage = () => {
     }
     console.log("regenning boys");
     const encryption_key = randomBytes(16);
-    const prevAccount = account;
-    prevAccount.stealth.encrypt_key = base58.encode(encryption_key);
-    setAccount(prevAccount);
-
-    await chrome.storage.local
-      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
-      .then(async (result) => {
-        const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
-        const old =
-          result["mode"] === 0
-            ? JSON.parse(result["accounts"])
-            : JSON.parse(result["y_accounts"]);
-        old[id].encrypt_key = prevAccount.stealth.encrypt_key;
-        const accs = JSON.stringify(old);
-
-        if (result["mode"] === 0) {
-          chrome.storage.local.set({
-            accounts: accs,
-          });
-        } else if (result["mode"] === 1) {
-          chrome.storage.local.set({
-            y_accounts: accs,
-          });
-        }
-      });
-
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
     const encrypted = aesCtr.encrypt(base58.decode(account.stealth.priv_scan));
     const encrypted2 = aesCtr.encrypt(
@@ -276,9 +249,37 @@ const Guardian: NextPage = () => {
     );
     const pda_data = pda_account?.data ?? Buffer.from("");
     const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
-    const { encrypt_key } = account.stealth;
-    const shares = split(Buffer.from(base58.decode(encrypt_key)), { shares: MAX_GUARDIANS, threshold });
-    setShards(shares);
+    const shares = split(encryption_key, { shares: MAX_GUARDIANS, threshold });
+    const shards = shares.map((share) => base58.encode(share));
+    await chrome.storage.local
+      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+      .then(async (result) => {
+        const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
+        const old =
+          result["mode"] === 0
+            ? JSON.parse(result["accounts"])
+            : JSON.parse(result["y_accounts"]);
+        const { shards: _, ...rest } = old[id];
+        old[id] = {
+          shards,
+          ...rest,
+        };
+        const accs = JSON.stringify(old);
+
+        if (result["mode"] === 0) {
+          chrome.storage.local.set({
+            accounts: accs,
+          });
+        } else if (result["mode"] === 1) {
+          chrome.storage.local.set({
+            y_accounts: accs,
+          });
+        }
+      });
+    const prevAccount = account;
+    prevAccount.stealth.shards = shards;
+    setAccount(prevAccount);
+    setShards(shards);
   };
 
   return (

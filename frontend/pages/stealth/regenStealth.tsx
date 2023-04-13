@@ -42,56 +42,49 @@ const RegenStealth: NextPage = () => {
   const handleOk = async (values: any) => {
     setLoading(true);
     console.log("WTFFFF");
-    if(!account) {
+    if (!account) {
       return;
     }
     console.log("stealth scan: ", account.stealth.priv_scan);
-    console.log("stealth spend: ",account.stealth.priv_spend);
+    console.log("stealth spend: ", account.stealth.priv_spend);
 
-    
     const pda_account = await connection.getAccountInfo(
       new PublicKey(account.pda) ?? PublicKey.default
     );
     const pda_data = pda_account?.data ?? Buffer.from("");
     const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
     const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
-    const priv_scan_enc = base58.encode(pda_data.subarray(33*guardian_len +13,33*guardian_len +45));
-    const priv_spend_enc = base58.encode(pda_data.subarray(33*guardian_len +49,33*guardian_len +81));
+    const priv_scan_enc = base58.encode(
+      pda_data.subarray(33 * guardian_len + 13, 33 * guardian_len + 45)
+    );
+    const priv_spend_enc = base58.encode(
+      pda_data.subarray(33 * guardian_len + 49, 33 * guardian_len + 81)
+    );
     console.log("full data: ", pda_data);
-    console.log("something: ", pda_data.subarray(33*guardian_len +9,33*guardian_len +13));
+    console.log(
+      "something: ",
+      pda_data.subarray(33 * guardian_len + 9, 33 * guardian_len + 13)
+    );
     console.log("something2: ", priv_scan_enc);
-      
 
     console.log("threshold: ", threshold);
     console.log("guardian length: ", guardian_len);
 
 
-      console.log("key: ", account.stealth.encrypt_key);
 
       let shard1 = Buffer.from(base58.decode(values.shard1));
       let shard2 = Buffer.from(base58.decode(values.shard2));
 
 
-    let shareds = [shard1,shard2];
-    let shards = split(Buffer.from(base58.decode(account.stealth.encrypt_key)), { shares: MAX_GUARDIANS, threshold: threshold });
-    console.log(shards);
-    console.log("this",shards.slice(2,6));
-    console.log("shard1: ",shard1);
-    console.log("shard2: ",shard2);
-    console.log("shareds: ",shareds);
-
-
+    let shards = [shard1,shard2];
     
-    const result = combine(shards.slice(2, 4));
+    const result = combine(shards);
     console.log("result: ", result);
-    const result2 = combine(shareds);
-    console.log("result2: ", result2);
     const aesCtr = new aesjs.ModeOfOperation.ctr(result);
     const res2 = aesCtr.decrypt(base58.decode(priv_scan_enc));
     console.log("privscan: ", base58.encode(res2));
     const res3 = aesCtr.decrypt(base58.decode(priv_spend_enc));
     console.log("privspend: ", base58.encode(res3));
-
 
     setLoading(false);
     setFinished(true);

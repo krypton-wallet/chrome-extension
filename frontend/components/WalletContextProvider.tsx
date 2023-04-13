@@ -4,7 +4,7 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider as AntDesignWalletModalProvider } from '@solana/wallet-adapter-ant-design';
+import { WalletModalProvider as AntDesignWalletModalProvider } from "@solana/wallet-adapter-ant-design";
 import { clusterApiUrl } from "@solana/web3.js";
 
 import {
@@ -36,9 +36,7 @@ const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} onError={onError} autoConnect>
-        <AntDesignWalletModalProvider>
-          {children}
-        </AntDesignWalletModalProvider>
+        <AntDesignWalletModalProvider>{children}</AntDesignWalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

@@ -75,7 +75,9 @@ const GenerateRecover: NextPage = () => {
     const res_data = res.data[0];
     if (res_data !== undefined && res_data["pk"] === pk.toBase58()) {
       setCanGenerate(false);
-      setErr("Duplicate recovery request! Please enter a different public key to recover");
+      setErr(
+        "Duplicate recovery request! Please enter a different public key to recover"
+      );
       return;
     }
 
