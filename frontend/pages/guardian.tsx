@@ -22,10 +22,10 @@ import {
 import { split } from "shamirs-secret-sharing-ts";
 import { randomBytes } from "crypto";
 import * as aesjs from "aes-js";
-import bs58 from "bs58";
 
 const Guardian: NextPage = () => {
-  const { setGuardians, guardians, account, network } = useGlobalState();
+  const { setGuardians, guardians, account, setAccount, network } =
+    useGlobalState();
   const [shards, setShards] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
@@ -60,7 +60,7 @@ const Guardian: NextPage = () => {
       // generate shards from encryption key
       const { encrypt_key } = account.stealth;
       const shares = split(encrypt_key, { shares: MAX_GUARDIANS, threshold });
-      setShards(shares.map((share) => bs58.encode(share)));
+      setShards(shares.map((share) => base58.encode(share)));
 
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
@@ -184,10 +184,31 @@ const Guardian: NextPage = () => {
     }
     console.log("regenning boys");
     const encryption_key = randomBytes(16);
-    console.log("old key: ", account.stealth.encrypt_key);
-    console.log("new key: ", encryption_key);
-    account.stealth.encrypt_key = base58.encode(encryption_key);
-    console.log("new key2: ", account.stealth.encrypt_key);
+    const prevAccount = account;
+    prevAccount.stealth.encrypt_key = base58.encode(encryption_key);
+    setAccount(prevAccount);
+
+    await chrome.storage.local
+      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+      .then(async (result) => {
+        const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
+        const old =
+          result["mode"] === 0
+            ? JSON.parse(result["accounts"])
+            : JSON.parse(result["y_accounts"]);
+        old[id].encrypt_key = prevAccount.stealth.encrypt_key;
+        const accs = JSON.stringify(old);
+
+        if (result["mode"] === 0) {
+          chrome.storage.local.set({
+            accounts: accs,
+          });
+        } else if (result["mode"] === 1) {
+          chrome.storage.local.set({
+            y_accounts: accs,
+          });
+        }
+      });
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
     const encrypted = aesCtr.encrypt(base58.decode(account.stealth.priv_scan));
