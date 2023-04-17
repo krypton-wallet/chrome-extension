@@ -31,6 +31,7 @@
     "babel-preset-es2015": "^6.24.1",
     "bip39": "^3.0.4",
     "bloss-js": "^0.1.0",
+    "bn.js": "^5.2.1",
     "bs58": "^5.0.0",
     "ed25519-hd-key": "^1.3.0",
     "esbuild": "^0.17.12",
@@ -46,7 +47,7 @@
     "secret-sharing.js": "^1.3.1",
     "secrets.js-grempe": "^2.0.0",
     "shamirs-secret-sharing-ts": "^1.0.2",
-    "solana-stealth": "^1.0.18",
+    "solana-stealth": "^1.0.19",
     "solmate-wallet-standard": "^0.0.4",
     "styled-components": "^5.3.1",
     "tweetnacl": "^1.0.3"
