@@ -82,26 +82,19 @@ const Stealth: NextPage = () => {
     router.push("/stealth/fromstealth");
   };
 
-  const handleSendToStealth = () => {
-    router.push("/stealth/tostealth");
+  const handleScan = () => {
+    router.push("/stealth/scan");
   };
 
   const handleAddAccount = () => {
     router.push("/stealth/addstealth");
   };
 
-  console.log("shhh2: ", stealthAccounts);
   return (
     <>
       {account && (
         <Dashboard>
           <h1 style={{ marginBottom: 0, color: "#fff" }}>Stealth</h1>
-          <Paragraph
-            copyable={{ text: account.pda, tooltips: `Copy` }}
-            style={{ margin: 0, color: "#fff" }}
-          >
-            {`${displayAddress(account.pda)}`}
-          </Paragraph>
           <div
             style={{
               display: "flex",
@@ -163,9 +156,9 @@ const Stealth: NextPage = () => {
               type="primary"
               shape="default"
               style={{ width: "140px", height: "40px", fontSize: "17px" }}
-              onClick={handleSendToStealth}
+              onClick={handleScan}
             >
-              Send
+              Scan
             </Button>
           </div>
 
