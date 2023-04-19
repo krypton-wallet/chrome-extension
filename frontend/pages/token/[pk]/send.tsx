@@ -31,7 +31,7 @@ import {
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
 import { WALLET_PROGRAM_ID } from "../../../utils/constants";
-import { stealthTokenTransferInstruction, stealthTokenTransferTransaction } from "solana-stealth";
+import { stealthTokenTransferTransaction } from "solana-stealth";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);

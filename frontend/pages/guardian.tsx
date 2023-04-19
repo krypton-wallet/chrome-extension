@@ -203,7 +203,7 @@ const Guardian: NextPage = () => {
     const message2 = encrypted2;
 
     const publicKey = new PublicKey(account.pk);
-    console.log("Adding guardian for account " + publicKey + "...");
+    console.log("Regenerating shards for account " + publicKey + "...");
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const latestBlockhash = await connection.getLatestBlockhash();
     const idx8 = Buffer.from(new Uint8Array([8]));

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NextPage } from "next";
-import { Button, Form, Input, Result } from "antd";
+import { Button, Checkbox, Col, Form, Input, Result, Row, Typography } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import styles from "../../components/Layout/index.module.css";
@@ -31,6 +31,7 @@ const RegenStealth: NextPage = () => {
   const { account, setAccount, balance, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
   const connection = new Connection(clusterApiUrl(network), "confirmed");
+  const customFields = [""];
 
   const [form] = Form.useForm();
   const router = useRouter();
@@ -40,6 +41,9 @@ const RegenStealth: NextPage = () => {
   };
 
   const handleOk = async (values: any) => {
+
+    console.log("values here: ", values);
+
     setLoading(true);
     console.log("WTFFFF");
     if (!account) {
@@ -101,7 +105,8 @@ const RegenStealth: NextPage = () => {
           requiredMark={false}
           onFinish={handleOk}
         >
-          <Form.Item
+          
+          {/* <Form.Item
             name="shard1"
             rules={[
               {
@@ -130,8 +135,67 @@ const RegenStealth: NextPage = () => {
                 border: "1px solid #d3d3d3",
               }}
             />
-          </Form.Item>
-          <Form.Item
+          </Form.Item> */}
+
+          <Form.List
+        name="things"
+        //initialValue={["ok","ok2","not doing ok I'm actually going through a lot rn"        ]}
+      >
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name }) => (
+              
+                
+                  <Form.Item key={key}
+                    name={name}
+                    rules={[
+                      { required: true, message: 'Phone no is required.' },
+                    ]}
+                    label="Phone No"
+                  >
+                    <Input />
+                  </Form.Item>
+                
+                
+            ))}
+            <Form.Item>
+              <Button
+                type="dashed"
+                onClick={() => add()}
+                icon="+"
+                block
+                size="large"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                Add another contact
+              </Button>
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type="dashed"
+                onClick={() => remove(fields.length-1)}
+                icon="-"
+                block
+                size="large"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                Remove
+              </Button>
+            </Form.Item>
+          </>
+          
+        )}
+      </Form.List>
+          
+          {/* <Form.Item
             name="shard2"
             rules={[
               {
@@ -160,7 +224,7 @@ const RegenStealth: NextPage = () => {
                 border: "1px solid #d3d3d3",
               }}
             />
-          </Form.Item>
+          </Form.Item> */}
 
           <div
             style={{

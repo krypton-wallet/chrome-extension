@@ -38,7 +38,8 @@ const AddStealth: NextPage = () => {
   );
 
   const handleCancel = () => {
-    router.push("/stealth");
+    //router.push("/stealth");
+    router.push("/stealth/regenStealth");
   };
 
   const handleOk = async (values: any) => {
