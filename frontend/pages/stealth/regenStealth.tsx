@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import {
   Button,
@@ -34,23 +34,65 @@ import { combine, split } from "shamirs-secret-sharing-ts";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
 import { MAX_GUARDIANS } from "../../utils/constants";
+import { genShards } from "../../utils/stealth";
 
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { account, setAccount, balance, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
+  const [thres, setThres] = useState<number>(0);
+  const [privScan, setPrivScan] = useState<string>("");
+  const [privSpend, setPrivSpend] = useState<string>("");
   const connection = new Connection(clusterApiUrl(network), "confirmed");
-  const customFields = [""];
 
   const [form] = Form.useForm();
   const router = useRouter();
 
-  const handleCancel = () => {
+
+  useEffect(() => {
+    // Fetching all guardians from PDA
+    const getGuardians = async () => {
+      if (!account) {
+        return;
+      }
+
+      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const publicKey = new PublicKey(account.pk);
+      console.log("account pk: ", publicKey.toBase58());
+      console.log("PDA: ", account.pda);
+      const pda_account = await connection.getAccountInfo(
+        new PublicKey(account.pda) ?? PublicKey.default
+      );
+      const pda_data = pda_account?.data ?? Buffer.from("");
+      const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
+      const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
+      console.log("threshold: ", threshold);
+      console.log("guardian length: ", guardian_len);
+      
+      const pScan = base58.encode(pda_data.subarray(33*guardian_len +13, 33*guardian_len +45 ));
+      const pSpend = base58.encode(pda_data.subarray(33*guardian_len +49, 33*guardian_len +81 ));
+
+      setThres(threshold);
+      setPrivScan(pScan);
+      setPrivSpend(pSpend);
+      
+    };
+    getGuardians();
+  }, [account, network]);
+
+
+  const handleCancel = async () => {
+    if (!account) {
+      router.push("/stealth");
+      return;
+    }
+    const shards_buffs = account.stealth.shards.map((str) => Buffer.from(str)); 
+    const encryption_key = combine(shards_buffs);
+    const [acc,_]  = await genShards(encryption_key,account,network);
+    setAccount(acc);
     router.push("/stealth");
   };
 
-  //TODO: shards[] of len threshold
-  const thres = 10;
 
   const handleOk = async (values: any) => {
     console.log("values here: ", values);
@@ -59,40 +101,17 @@ const RegenStealth: NextPage = () => {
       console.log(key, val);
     });
 
+    let shards = Object.entries(values).map(([key,val])=>Buffer.from(base58.decode(val as string)) );
+    console.log("shards:", shards);
     setLoading(true);
-    console.log("WTFFFF");
     if (!account) {
       return;
     }
     console.log("stealth scan: ", account.stealth.priv_scan);
     console.log("stealth spend: ", account.stealth.priv_spend);
 
-    const pda_account = await connection.getAccountInfo(
-      new PublicKey(account.pda) ?? PublicKey.default
-    );
-    const pda_data = pda_account?.data ?? Buffer.from("");
-    const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
-    const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
-    const priv_scan_enc = base58.encode(
-      pda_data.subarray(33 * guardian_len + 13, 33 * guardian_len + 45)
-    );
-    const priv_spend_enc = base58.encode(
-      pda_data.subarray(33 * guardian_len + 49, 33 * guardian_len + 81)
-    );
-    console.log("full data: ", pda_data);
-    console.log(
-      "something: ",
-      pda_data.subarray(33 * guardian_len + 9, 33 * guardian_len + 13)
-    );
-    console.log("something2: ", priv_scan_enc);
-
-    console.log("threshold: ", threshold);
-    console.log("guardian length: ", guardian_len);
-
-    let shard1 = Buffer.from(base58.decode(values.shard1));
-    let shard2 = Buffer.from(base58.decode(values.shard2));
-
-    let shards = [shard1, shard2];
+    const priv_scan_enc = privScan;
+    const priv_spend_enc = privSpend;
 
     const result = combine(shards);
     console.log("result: ", result);
@@ -101,6 +120,11 @@ const RegenStealth: NextPage = () => {
     console.log("privscan: ", base58.encode(res2));
     const res3 = aesCtr.decrypt(base58.decode(priv_spend_enc));
     console.log("privspend: ", base58.encode(res3));
+
+    let prev_acc = account;
+    prev_acc.stealth.priv_scan = base58.encode(res2);
+    prev_acc.stealth.priv_spend = base58.encode(res3);
+    setAccount(prev_acc);
 
     setLoading(false);
     setFinished(true);
@@ -120,8 +144,7 @@ const RegenStealth: NextPage = () => {
           <div
             style={{ overflowY: "auto", height: "250px", padding: "0 10px" }}
           >
-            {[...new Array(thres)].map((_, idx, arr) => {
-              console.log(arr, idx, _);
+            {[...new Array(thres)].map((_, idx) => {
               return (
                 <Form.Item
                   key={idx}

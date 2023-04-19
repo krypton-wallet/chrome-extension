@@ -81,8 +81,8 @@ const Stealth: NextPage = () => {
       const res = await scan(
         connection,
         account.stealth.priv_scan,
-        spend_key.toBase58()
-      );
+        spend_key.toBase58(),{limit: 300}
+      ); //modify this for speed
 
       let stealth_accs: string[] = [];
       if (account.stealth_accounts && account.stealth_accounts.length > 0) {
@@ -178,12 +178,6 @@ const Stealth: NextPage = () => {
       {account && !finished && (
         <Dashboard>
           <h1 style={{ marginBottom: 0, color: "#fff" }}>Scan</h1>
-          <Paragraph
-            copyable={{ text: account.pda, tooltips: `Copy` }}
-            style={{ margin: 0, color: "#fff" }}
-          >
-            {`${displayAddress(account.pda)}`}
-          </Paragraph>
           <div
             style={{
               display: "flex",
