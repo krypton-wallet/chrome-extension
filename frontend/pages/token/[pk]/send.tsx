@@ -114,12 +114,8 @@ const Send: NextPage = () => {
     let closingAccount: PublicKey;
     const feePayerPk = new PublicKey(account.pk);
     if (stealthMode) {
-
       console.log("getting associated");
-      closingAccount = await getAssociatedTokenAddress(
-        mint_pk,
-        feePayerPk,
-      );
+      closingAccount = await getAssociatedTokenAddress(mint_pk, feePayerPk);
       let temp = await getAssociatedTokenAddress(
         mint_pk,
         new PublicKey(account.pda),
@@ -129,12 +125,16 @@ const Send: NextPage = () => {
       console.log("not closing: ", temp.toBase58());
 
       const notifyinfo = await connection.getAccountInfo(closingAccount);
-    console.log(notifyinfo);
-    closeIx = createCloseAccountInstruction(closingAccount,feePayerPk,feePayerPk);
+      console.log(notifyinfo);
+      closeIx = createCloseAccountInstruction(
+        closingAccount,
+        feePayerPk,
+        feePayerPk
+      );
 
-    if (!notifyinfo) {
-      console.log("got associated: ", closingAccount.toBase58());
-      
+      if (!notifyinfo) {
+        console.log("got associated: ", closingAccount.toBase58());
+
         console.log("Creating token account for notify...");
 
         const recentBlockhash = await connection.getLatestBlockhash();
@@ -153,7 +153,7 @@ const Send: NextPage = () => {
             TOKEN_PROGRAM_ID
           )
         );
-        
+
         await sendAndConfirmTransactionWithAccount(
           connection,
           createTA_tx,
@@ -165,31 +165,41 @@ const Send: NextPage = () => {
           }
         );
 
-      console.log("created?");
+        console.log("created?");
+      }
+
+      notifyTx = await stealthTokenTransferTransaction(
+        feePayerPk,
+        mint_pk,
+        values.scankey,
+        values.spendkey,
+        0
+      );
+      for (let i = 0; i < notifyTx.instructions.length; i++) {
+        for (let j = 0; j < notifyTx.instructions[i].keys.length; j++) {
+          console.log("i ", i);
+          console.log("j ", j);
+          console.log(
+            "key at i,j ",
+            notifyTx.instructions[i].keys[j].pubkey.toBase58()
+          );
         }
+      }
+      dest_pda = notifyTx.instructions[1].keys[1].pubkey;
+      console.log("dest pda: ", dest_pda.toBase58());
 
-
-        notifyTx = await stealthTokenTransferTransaction(feePayerPk,mint_pk,values.scankey,values.spendkey,0);
-        for (let i = 0; i < notifyTx.instructions.length; i++){
-          for (let j = 0; j < notifyTx.instructions[i].keys.length; j++){
-            console.log('i ',i);
-            console.log('j ',j);
-            console.log('key at i,j ',notifyTx.instructions[i].keys[j].pubkey.toBase58());
-          }
-        }
-        dest_pda = notifyTx.instructions[1].keys[1].pubkey;
-        console.log("dest pda: ", dest_pda.toBase58());
-
-
-        const block = await connection.getLatestBlockhash();
-        notifyTx.recentBlockhash = block.blockhash;
-        notifyTx.lastValidBlockHeight = block.lastValidBlockHeight;
-        notifyTx.feePayer = feePayerPk;
-        console.log("sending notify");
-        let res = await sendAndConfirmTransactionWithAccount(connection,notifyTx,[account]);
-        console.log(res);
-        console.log("done notify");
-
+      const block = await connection.getLatestBlockhash();
+      notifyTx.recentBlockhash = block.blockhash;
+      notifyTx.lastValidBlockHeight = block.lastValidBlockHeight;
+      notifyTx.feePayer = feePayerPk;
+      console.log("sending notify");
+      let res = await sendAndConfirmTransactionWithAccount(
+        connection,
+        notifyTx,
+        [account]
+      );
+      console.log(res);
+      console.log("done notify");
     } else {
       dest_pda = new PublicKey(values.pk);
       console.log("Getting dest associated token address...");
@@ -220,8 +230,6 @@ const Send: NextPage = () => {
     );
     console.log(`Src Token Account: ${srcTokenAccount.address.toBase58()}`);
 
-
-
     const destTAInfo = await connection.getAccountInfo(associatedToken);
     console.log(destTAInfo);
     if (!destTAInfo) {
@@ -243,7 +251,6 @@ const Send: NextPage = () => {
         )
       );
 
-
       await sendAndConfirmTransactionWithAccount(
         connection,
         createTA_tx,
@@ -255,7 +262,6 @@ const Send: NextPage = () => {
         }
       );
     }
-
 
     console.log("Getting dest token account...");
     const destTokenAccount = await getAccount(
@@ -323,10 +329,9 @@ const Send: NextPage = () => {
       console.log("closing account: ", smth.address);
       console.log("closing account: ", smth.address.toBase58());
       console.log("********with amount: ", smth.amount);
-      smth
+      smth;
       //transferTokenTx.add(closeIx!);
     }
-
 
     console.log("Transfering token...");
     const txid = await sendAndConfirmTransactionWithAccount(
@@ -342,7 +347,6 @@ const Send: NextPage = () => {
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     if (stealthMode) {
-
       const closeTx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
@@ -350,17 +354,19 @@ const Send: NextPage = () => {
       closeTx.add(closeIx!);
 
       console.log("Transfering token...");
-    const txid = await sendAndConfirmTransactionWithAccount(
-      connection,
-      closeTx,
-      [account],
-      {
-        skipPreflight: true,
-        preflightCommitment: "confirmed",
-        commitment: "confirmed",
-      }
-    );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
+      const txid = await sendAndConfirmTransactionWithAccount(
+        connection,
+        closeTx,
+        [account],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        }
+      );
+      console.log(
+        `https://explorer.solana.com/tx/${txid}?cluster=${network}\n`
+      );
     }
 
     setLoading(false);

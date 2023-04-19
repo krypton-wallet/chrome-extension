@@ -12,7 +12,11 @@ import {
 } from "antd";
 import { useRouter } from "next/router";
 
-import { ArrowLeftOutlined, ArrowRightOutlined, LoadingOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import {
   clusterApiUrl,
   Connection,
@@ -74,7 +78,11 @@ const Stealth: NextPage = () => {
 
       const connection = new Connection(clusterApiUrl(network), "confirmed");
       const found_accs: Array<[string, number | undefined, PublicKey]> = [];
-      const res = await scan(connection, account.stealth.priv_scan, spend_key.toBase58());
+      const res = await scan(
+        connection,
+        account.stealth.priv_scan,
+        spend_key.toBase58()
+      );
 
       let stealth_accs: string[] = [];
       if (account.stealth_accounts && account.stealth_accounts.length > 0) {

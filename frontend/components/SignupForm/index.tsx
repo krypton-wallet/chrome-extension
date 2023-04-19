@@ -137,15 +137,13 @@ const SignupForm = ({
 
     const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
 
-    
     //should fix not size 32 issue
 
     let encrypted = new Uint8Array(32);
     encrypted.set(aesCtr.encrypt(base58.decode(keys.privScan)));
-    
+
     let encrypted2 = new Uint8Array(32);
     encrypted2.set(aesCtr.encrypt(base58.decode(keys.privSpend)));
-    
 
     const messageLen = Buffer.from(
       new Uint8Array(new BN(encrypted.length).toArray("le", 4))

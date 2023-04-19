@@ -48,7 +48,7 @@ const Transfer: NextPage = () => {
 
     let dest_pda: PublicKey;
     let notifyIx: TransactionInstruction;
-    if (stealthMode){
+    if (stealthMode) {
       notifyIx = await stealthTransferIx(
         new PublicKey(account.pk),
         values.scankey,
@@ -56,7 +56,7 @@ const Transfer: NextPage = () => {
         0
       );
       dest_pda = notifyIx.keys[1].pubkey;
-    }else{
+    } else {
       dest_pda = new PublicKey(values.pk);
     }
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
@@ -107,8 +107,8 @@ const Transfer: NextPage = () => {
       })
     );
 
-    if (stealthMode){ 
-      transferSOLTx.add(notifyIx!)
+    if (stealthMode) {
+      transferSOLTx.add(notifyIx!);
     }
 
     console.log("Transfering native SOL...");

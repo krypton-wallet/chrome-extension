@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { NextPage } from "next";
-import { Button, Checkbox, Col, Form, Input, Result, Row, Typography } from "antd";
+import {
+  Button,
+  Checkbox,
+  Col,
+  Form,
+  Input,
+  Result,
+  Row,
+  Typography,
+} from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import styles from "../../components/Layout/index.module.css";
@@ -40,9 +49,15 @@ const RegenStealth: NextPage = () => {
     router.push("/stealth");
   };
 
-  const handleOk = async (values: any) => {
+  //TODO: shards[] of len threshold
+  const thres = 10;
 
+  const handleOk = async (values: any) => {
     console.log("values here: ", values);
+
+    Object.entries(values).forEach(([key, val]) => {
+      console.log(key, val);
+    });
 
     setLoading(true);
     console.log("WTFFFF");
@@ -74,14 +89,11 @@ const RegenStealth: NextPage = () => {
     console.log("threshold: ", threshold);
     console.log("guardian length: ", guardian_len);
 
+    let shard1 = Buffer.from(base58.decode(values.shard1));
+    let shard2 = Buffer.from(base58.decode(values.shard2));
 
+    let shards = [shard1, shard2];
 
-      let shard1 = Buffer.from(base58.decode(values.shard1));
-      let shard2 = Buffer.from(base58.decode(values.shard2));
-
-
-    let shards = [shard1,shard2];
-    
     const result = combine(shards);
     console.log("result: ", result);
     const aesCtr = new aesjs.ModeOfOperation.ctr(result);
@@ -105,126 +117,35 @@ const RegenStealth: NextPage = () => {
           requiredMark={false}
           onFinish={handleOk}
         >
-          
-          {/* <Form.Item
-            name="shard1"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the recipient's scan key",
-              },
-              // {
-              //   async validator(_, value) {
-              //     const pdaInfo = await connection.getAccountInfo(
-              //       new PublicKey(value)
-              //     );
-              //     if (pdaInfo) {
-              //       return Promise.resolve();
-              //     }
-              //     return Promise.reject(new Error("Invalid public key"));
-              //   },
-              // },
-            ]}
+          <div
+            style={{ overflowY: "auto", height: "250px", padding: "0 10px" }}
           >
-            <Input
-              placeholder="Shard 1"
-              style={{
-                minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item> */}
-
-          <Form.List
-        name="things"
-        //initialValue={["ok","ok2","not doing ok I'm actually going through a lot rn"        ]}
-      >
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map(({ key, name }) => (
-              
-                
-                  <Form.Item key={key}
-                    name={name}
-                    rules={[
-                      { required: true, message: 'Phone no is required.' },
-                    ]}
-                    label="Phone No"
-                  >
-                    <Input />
-                  </Form.Item>
-                
-                
-            ))}
-            <Form.Item>
-              <Button
-                type="dashed"
-                onClick={() => add()}
-                icon="+"
-                block
-                size="large"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                Add another contact
-              </Button>
-            </Form.Item>
-            <Form.Item>
-              <Button
-                type="dashed"
-                onClick={() => remove(fields.length-1)}
-                icon="-"
-                block
-                size="large"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                Remove
-              </Button>
-            </Form.Item>
-          </>
-          
-        )}
-      </Form.List>
-          
-          {/* <Form.Item
-            name="shard2"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the recipient's spend key",
-              },
-              // {
-              //   async validator(_, value) {
-              //     const pdaInfo = await connection.getAccountInfo(
-              //       new PublicKey(value)
-              //     );
-              //     if (pdaInfo) {
-              //       return Promise.resolve();
-              //     }
-              //     return Promise.reject(new Error("Invalid public key"));
-              //   },
-              // },
-            ]}
-          >
-            <Input
-              placeholder="Shard 2"
-              style={{
-                minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
-            />
-          </Form.Item> */}
+            {[...new Array(thres)].map((_, idx, arr) => {
+              console.log(arr, idx, _);
+              return (
+                <Form.Item
+                  key={idx}
+                  name={idx}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter the shard",
+                    },
+                  ]}
+                >
+                  <Input
+                    placeholder={`Shard ${idx + 1}`}
+                    style={{
+                      minWidth: "300px",
+                      backgroundColor: "rgb(34, 34, 34)",
+                      color: "#d3d3d3",
+                      border: "1px solid #d3d3d3",
+                    }}
+                  />
+                </Form.Item>
+              );
+            })}
+          </div>
 
           <div
             style={{
