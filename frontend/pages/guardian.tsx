@@ -29,7 +29,7 @@ const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, setAccount, network } =
     useGlobalState();
   const [shards, setShards] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<number>(0);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
@@ -93,7 +93,7 @@ const Guardian: NextPage = () => {
 
     console.log("=====ADDING GUARDIAN======");
     console.log("Values received:", values);
-    setLoading(true);
+    setLoading((prev) => prev + 1);
     form.resetFields();
 
     let shard_idx = 11;
@@ -165,7 +165,7 @@ const Guardian: NextPage = () => {
       console.log("something went wrong, shard_idx = 11");
     }
 
-    setLoading(false);
+    setLoading((prev) => prev - 1);
     setIsModalOpen(false);
     setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
     form.resetFields();
@@ -179,15 +179,18 @@ const Guardian: NextPage = () => {
   const toggleEditmode = () => {
     setEditmode(!editmode);
   };
+
   const regenShards = async () => {
     if (!account) {
       return;
     }
+    setLoading((prev) => prev + 1);
     console.log("regenning boys");
     const encryption_key = randomBytes(16);
-    const [acc,shards]  = await genShards(encryption_key,account,network);
+    const [acc, shards] = await genShards(encryption_key, account, network);
     setAccount(acc);
     setShards(shards);
+    setLoading((prev) => prev - 1);
   };
 
   return (
@@ -214,6 +217,7 @@ const Guardian: NextPage = () => {
               shard={shards[idx]}
               shardIdx={idx}
               editMode={editmode}
+              setDeleteLoading={setLoading}
             />
           );
         })}
@@ -233,10 +237,12 @@ const Guardian: NextPage = () => {
       <div style={{ display: "flex", position: "absolute", bottom: "90px" }}>
         <Button
           type="primary"
-          icon={editmode? <EditOutlined /> : <UserAddOutlined />}
+          icon={editmode ? <EditOutlined /> : <UserAddOutlined />}
           onClick={editmode ? regenShards : showModal}
           size="middle"
           style={{ width: "168px", marginRight: "20px" }}
+          loading={loading != 0}
+          disabled={editmode && guardians.length === 0}
         >
           {editmode ? "Regen Shards" : "Add"}
         </Button>
@@ -248,6 +254,7 @@ const Guardian: NextPage = () => {
           style={{ width: "168px" }}
           danger
           className="edit-btn"
+          loading={loading != 0}
           disabled={!editmode && guardians.length === 0}
         >
           {editmode ? "Finish" : "Edit"}
@@ -259,7 +266,7 @@ const Guardian: NextPage = () => {
         open={isModalOpen}
         onOk={form.submit}
         onCancel={handleModalCancel}
-        confirmLoading={loading}
+        confirmLoading={loading != 0}
         okButtonProps={{ disabled: !isPkValid }}
       >
         {!loading && (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Dispatch, SetStateAction, useState } from "react";
 import { Button } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
@@ -23,11 +23,13 @@ const GuardianBox = ({
   shard,
   shardIdx,
   editMode,
+  setDeleteLoading,
 }: {
   guardian: PublicKey;
   shard: string;
   shardIdx: number;
   editMode: boolean;
+  setDeleteLoading: Dispatch<SetStateAction<number>>;
 }) => {
   const { setGuardians, guardians, account, network } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
@@ -36,6 +38,8 @@ const GuardianBox = ({
     if (!account) {
       return;
     }
+
+    setDeleteLoading((prev) => prev + 1);
     setLoading(true);
     const connection = new Connection(clusterApiUrl(network), "confirmed");
     const feePayerPK = new PublicKey(account.pk);
@@ -88,13 +92,14 @@ const GuardianBox = ({
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    const newGuard = guardians.filter((g) => {
-      return g.toBase58() !== guardian.toBase58();
-    });
-    console.log(newGuard);
     guardShardMap.delete(shardIdx);
-    setGuardians(newGuard);
+    setGuardians((prev) =>
+      prev.filter((g) => {
+        return g.toBase58() !== guardian.toBase58();
+      })
+    );
     setLoading(false);
+    setDeleteLoading((prev) => prev - 1);
   };
 
   return (
