@@ -86,7 +86,7 @@ const RegenStealth: NextPage = () => {
       router.push("/stealth");
       return;
     }
-    const shards_buffs = account.stealth.shards.map((str) => Buffer.from(str)); 
+    const shards_buffs = account.stealth.shards.map((str) => Buffer.from(base58.decode(str))); 
     const encryption_key = combine(shards_buffs);
     const [acc,_]  = await genShards(encryption_key,account,network);
     setAccount(acc);
