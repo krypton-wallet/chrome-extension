@@ -51,13 +51,13 @@ const Account: NextPage = () => {
         selectedMode === 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         const old = JSON.parse(accountRes);
-        for (const key in old) {
-          if (key === id) {
-            old[id]["name"] = newName;
-            setAccountName(newName);
-            break;
-          }
+        const key = id as string;
+        if (Object.keys(old).indexOf(key) === -1) {
+          return false;
         }
+        setAccountName(newName);
+
+        old[key]["name"] = newName;
         const values = JSON.stringify(old);
         if (selectedMode === 0) {
           chrome.storage.local.set({ accounts: values });
@@ -76,30 +76,23 @@ const Account: NextPage = () => {
         selectedMode === 0 ? res["accounts"] : res["y_accounts"];
       if (accountRes != null) {
         const old = JSON.parse(accountRes);
-
-        for (const key in old) {
-          if (key === id) {
-            delete old[id];
-            const standardAccountRes = JSON.parse(res["accounts"]);
-            const standardAccountFirstId = Number(
-              Object.keys(standardAccountRes)[0]
-            );
-            // const firstAccountId = selectedMode === 0 ? Number(Object.keys(old)[0]) : standardAccountFirstId;
-            chrome.storage.local.set({
-              currId: standardAccountFirstId,
-              pk: standardAccountRes[standardAccountFirstId]["pk"],
-              mode: 0,
-            });
-            const values = JSON.stringify(old);
-            if (selectedMode === 0) {
-              chrome.storage.local.set({ accounts: values });
-            } else if (selectedMode === 1) {
-              chrome.storage.local.set({ y_accounts: values });
-            }
-            router.push("/accounts");
-            break;
-          }
+        const { [id as string]: accountToDel, ...rest } = old;
+        if (!accountToDel) {
+          return false;
         }
+        const standardAccountFirstId = Number(Object.keys(rest)[0]);
+        chrome.storage.local.set({
+          currId: standardAccountFirstId,
+          pk: rest[standardAccountFirstId]["pk"],
+          mode: 0,
+        });
+        const values = JSON.stringify(rest);
+        if (selectedMode === 0) {
+          chrome.storage.local.set({ accounts: values });
+        } else if (selectedMode === 1) {
+          chrome.storage.local.set({ y_accounts: values });
+        }
+        router.push("/accounts");
       } else {
         return false;
       }
@@ -158,7 +151,12 @@ const Account: NextPage = () => {
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
         <Link href="/accounts" passHref>
           <a
             style={{
@@ -174,51 +172,60 @@ const Account: NextPage = () => {
 
         <h1 className={"title"}>Account Info</h1>
       </div>
-
-      <EditableBox
-        fieldName="Name"
-        value={accountName}
-        handleChange={handleNameChange}
-      />
-      <CopyableBox
-        fieldName="Wallet Address"
-        value={displayAddress(pda)}
-        copyableValue={pda}
-      />
-      <CopyableBox
-        fieldName="Keypair Address"
-        value={displayAddress(pk)}
-        copyableValue={pk}
-      />
-      <InfoBox fieldName="Keypair Balance" value={`${keypairBalance} SOL`} />
-      <CopyableBox
-        fieldName="Private Scan Key"
-        value={displayAddress(privateScan)}
-        copyableValue={privateScan}
-      />
-      <Image
-        width={"23%"}
+      <div
         style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          overflowY: "auto",
           alignItems: "center",
-          marginTop: "15px",
         }}
-        alt="profile avatar"
-        src={avatar ? avatar : "/static/images/profile.png"}
-        onError={() => {
-          console.log("error");
-          setAvatar(undefined);
-        }}
-      />
-      {!oneAccountLeft && (
-        <Button
-          type="primary"
-          onClick={handleDelete}
-          style={{ marginTop: "20px" }}
-          danger
-        >
-          Delete
-        </Button>
-      )}
+      >
+        <EditableBox
+          fieldName="Name"
+          value={accountName}
+          handleChange={handleNameChange}
+        />
+        <CopyableBox
+          fieldName="Wallet Address"
+          value={displayAddress(pda)}
+          copyableValue={pda}
+        />
+        <CopyableBox
+          fieldName="Keypair Address"
+          value={displayAddress(pk)}
+          copyableValue={pk}
+        />
+        <InfoBox fieldName="Keypair Balance" value={`${keypairBalance} SOL`} />
+        <CopyableBox
+          fieldName="Private Scan Key"
+          value={displayAddress(privateScan)}
+          copyableValue={privateScan}
+        />
+        <Image
+          width={"23%"}
+          style={{
+            alignItems: "center",
+            marginTop: "15px",
+          }}
+          alt="profile avatar"
+          src={avatar ? avatar : "/static/images/profile.png"}
+          onError={() => {
+            console.log("error");
+            setAvatar(undefined);
+          }}
+        />
+        {!oneAccountLeft && (
+          <Button
+            type="primary"
+            onClick={handleDelete}
+            style={{ marginTop: "20px" }}
+            danger
+          >
+            Delete
+          </Button>
+        )}
+      </div>
     </>
   );
 };

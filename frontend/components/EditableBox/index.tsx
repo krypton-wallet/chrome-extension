@@ -13,15 +13,17 @@ const EditableBox = ({
   handleChange: (s: string) => void;
 }) => {
   return (
-    <Box style={{ display: "flex" }}>
-      <Paragraph>{fieldName}</Paragraph>
+    <Box
+      style={{ display: "flex", justifyContent: "flex-end", padding: "1em" }}
+    >
+      <Paragraph style={{ marginBottom: 0 }}>{fieldName}</Paragraph>
       <Paragraph
-        style={{ position: "absolute", right: "55px" }}
         editable={{
           onChange: handleChange,
           autoSize: true,
           enterIcon: <EnterOutlined style={{ color: "#fff" }} />,
         }}
+        style={{ display: "flex", marginLeft: "auto", marginBottom: 0 }}
       >
         {value}
       </Paragraph>
