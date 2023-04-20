@@ -126,6 +126,37 @@ const RegenStealth: NextPage = () => {
     prev_acc.stealth.priv_spend = base58.encode(res3);
     setAccount(prev_acc);
 
+
+    await chrome.storage.local
+      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+      .then(async (result) => {
+        const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
+        const old =
+          result["mode"] === 0
+            ? JSON.parse(result["accounts"])
+            : JSON.parse(result["y_accounts"]);
+      
+        
+        const { priv_scan: _, priv_spend:__, ...rest } = old[id];
+        old[id] = {
+          priv_scan: prev_acc.stealth.priv_scan,
+          priv_spend: prev_acc.stealth.priv_spend,
+          ...rest,
+        };
+        const accs = JSON.stringify(old);
+
+        if (result["mode"] === 0) {
+          chrome.storage.local.set({
+            accounts: accs,
+          });
+        } else if (result["mode"] === 1) {
+          chrome.storage.local.set({
+            y_accounts: accs,
+          });
+        }
+      });
+
+
     setLoading(false);
     setFinished(true);
   };

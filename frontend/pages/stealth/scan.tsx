@@ -70,12 +70,6 @@ const Stealth: NextPage = () => {
       const spend_key = await spend.getPublicKey();
       setPublicSpend(spend_key.toBase58());
 
-      if (!account.stealth_accounts || account.stealth_accounts.length <= 0) {
-        setFoundAccounts([]);
-        setSpinning(false);
-        return;
-      }
-
       const connection = new Connection(clusterApiUrl(network), "confirmed");
       const found_accs: Array<[string, number | undefined, PublicKey]> = [];
       const res = await scan(
