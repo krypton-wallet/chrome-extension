@@ -1,6 +1,5 @@
 import {
   Cluster,
-  clusterApiUrl,
   ConfirmOptions,
   Connection,
   Keypair,
@@ -22,7 +21,8 @@ import {
 import { GlobalModalContext } from "../components/GlobalModal";
 import PinentryModal from "../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
-import { PDA_RENT_EXEMPT_FEE, WALLET_PROGRAM_ID } from "./constants";
+import { PDA_RENT_EXEMPT_FEE, RPC_URL, WALLET_PROGRAM_ID } from "./constants";
+const BN = require("bn.js");
 
 // implement a function that gets an account's balance
 const refreshBalance = async (
@@ -33,7 +33,7 @@ const refreshBalance = async (
   if (!publicKey) return 0;
 
   try {
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const profile_pda = getProfilePDA(publicKey);
     const balance = await connection.getBalance(profile_pda[0]);
     if (balance - PDA_RENT_EXEMPT_FEE <= 0) return 0;
@@ -52,7 +52,7 @@ const handleAirdrop = async (network: Cluster, publicKey: PublicKey | null) => {
   if (!publicKey) return;
 
   try {
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const profile_pda = getProfilePDA(publicKey);
     const confirmation = await connection.requestAirdrop(
       profile_pda[0],
@@ -359,6 +359,23 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
   return account;
 };
 
+const parsePubkey = (rawPubkey: any) => {
+  const num = new BN(0);
+  num.words = rawPubkey._bn.words;
+  num.length = rawPubkey._bn.length;
+  num.red = rawPubkey._bn.red;
+  num.negative = rawPubkey._bn.negative;
+  return new PublicKey(num);
+};
+
+const JSONtoUInt8Array = (obj: any) => {
+  const tmpArray = [];
+  for (var key in obj) {
+    tmpArray.push(obj[key]);
+  }
+  return new Uint8Array(tmpArray);
+};
+
 export {
   refreshBalance,
   handleAirdrop,
@@ -371,4 +388,6 @@ export {
   getAccountFromPkString,
   getCurrentAccount,
   generateAvatar,
+  parsePubkey,
+  JSONtoUInt8Array,
 };

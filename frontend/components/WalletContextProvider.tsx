@@ -5,7 +5,6 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider as AntDesignWalletModalProvider } from '@solana/wallet-adapter-ant-design';
-import { clusterApiUrl } from "@solana/web3.js";
 
 import {
   PhantomWalletAdapter,
@@ -14,10 +13,11 @@ import {
   SolletWalletAdapter,
   TorusWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import { RPC_URL } from "../utils/constants";
 
 const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const endpoint = useMemo(() => RPC_URL(network), [network]);
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),

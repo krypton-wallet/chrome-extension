@@ -20,7 +20,6 @@ import {
 } from "../utils";
 import { Dashboard } from "../styles/StyledComponents.styles";
 import {
-  clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -32,6 +31,7 @@ import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import {
   MIN_KEYPAIR_BALANCE,
   REFILL_TO_BALANCE,
+  RPC_URL,
   WALLET_PROGRAM_ID,
 } from "../utils/constants";
 import BN from "bn.js";
@@ -71,7 +71,7 @@ const Wallet: NextPage = () => {
 
     // Fetching all tokens from PDA and filter out fungible tokens
     const getTokens = async () => {
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
       console.log("account pk: ", publicKey.toBase58());
       const profile_pda = new PublicKey(account.pda);
@@ -110,7 +110,7 @@ const Wallet: NextPage = () => {
     }
 
     const checkReimburse = async () => {
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const connection = new Connection(RPC_URL(network), "confirmed");
       const keypairPK = new PublicKey(account.pk);
       const keypairBalance = await connection.getBalance(keypairPK);
       if (keypairBalance < MIN_KEYPAIR_BALANCE) {

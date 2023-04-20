@@ -6,7 +6,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import styles from "../../../components/Layout/index.module.css";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -25,7 +24,7 @@ import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
-import { WALLET_PROGRAM_ID } from "../../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../../utils/constants";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,7 +32,7 @@ const Send: NextPage = () => {
   const [finished, setFinished] = useState<boolean>(false);
 
   const [form] = Form.useForm();
-  const connection = new Connection(clusterApiUrl(network), "confirmed");
+  const connection = new Connection(RPC_URL(network), "confirmed");
 
   const router = useRouter();
   let { pk } = router.query;

@@ -7,7 +7,6 @@ import Axios from "axios";
 import useInterval from "@use-it/interval";
 import {
   AccountMeta,
-  clusterApiUrl,
   Connection,
   Keypair,
   NONCE_ACCOUNT_LENGTH,
@@ -28,7 +27,7 @@ import {
   sendAndConfirmTransactionWithAccount,
 } from "../utils";
 import { KeypairSigner } from "../types/account";
-import { WALLET_PROGRAM_ID } from "../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -75,7 +74,9 @@ const GenerateRecover: NextPage = () => {
     const res_data = res.data[0];
     if (res_data !== undefined && res_data["pk"] === pk.toBase58()) {
       setCanGenerate(false);
-      setErr("Duplicate recovery request! Please enter a different public key to recover");
+      setErr(
+        "Duplicate recovery request! Please enter a different public key to recover"
+      );
       return;
     }
 
@@ -83,7 +84,7 @@ const GenerateRecover: NextPage = () => {
     setLoading(true);
     setRecoverPk(pk);
 
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const newFeePayer = account;
     const newPublicKey = await newFeePayer.getPublicKey();
     const nonceAccount = new Keypair();

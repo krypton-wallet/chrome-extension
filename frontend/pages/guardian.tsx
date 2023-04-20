@@ -4,7 +4,6 @@ import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
 import { useGlobalState } from "../context";
 import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -14,7 +13,7 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { WALLET_PROGRAM_ID } from "../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Guardian: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,7 +32,7 @@ const Guardian: NextPage = () => {
       if (!account) {
         return;
       }
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
       console.log("account pk: ", publicKey.toBase58());
       console.log("PDA: ", account.pda);
@@ -77,7 +76,7 @@ const Guardian: NextPage = () => {
     // Instr Add
     const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
@@ -247,7 +246,7 @@ const Guardian: NextPage = () => {
                     }
 
                     const connection = new Connection(
-                      clusterApiUrl(network),
+                      RPC_URL(network),
                       "confirmed"
                     );
                     const pda_account = await connection.getAccountInfo(

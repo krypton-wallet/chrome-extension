@@ -19,7 +19,6 @@ import {
 import { displayAddress, getAccountFromPkString } from "../../utils";
 import { useRouter } from "next/router";
 import {
-  clusterApiUrl,
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -27,7 +26,7 @@ import {
 import Link from "next/link";
 import { getAvatar } from "../../utils/avatar";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const AccountList: NextPage = () => {
   const { network, setBalance, setAccount, setCurrId } = useGlobalState();
@@ -94,10 +93,7 @@ const AccountList: NextPage = () => {
             const name = accountObj[id].name;
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
-              const connection = new Connection(
-                clusterApiUrl(network),
-                "confirmed"
-              );
+              const connection = new Connection(RPC_URL(network), "confirmed");
               const avatarData = await getAvatar(
                 connection,
                 new PublicKey(accountObj[id].avatar)
@@ -121,10 +117,7 @@ const AccountList: NextPage = () => {
             const name = accountObj[id].name;
             const pda = accountObj[id].pda;
             if (accountObj[id].avatar) {
-              const connection = new Connection(
-                clusterApiUrl(network),
-                "confirmed"
-              );
+              const connection = new Connection(RPC_URL(network), "confirmed");
               const avatarData = await getAvatar(
                 connection,
                 new PublicKey(accountObj[id].avatar)
@@ -230,7 +223,7 @@ const AccountList: NextPage = () => {
                     }
                     setAccount(curr);
                     const connection = new Connection(
-                      clusterApiUrl(network),
+                      RPC_URL(network),
                       "confirmed"
                     );
                     const balance1 = await connection.getBalance(

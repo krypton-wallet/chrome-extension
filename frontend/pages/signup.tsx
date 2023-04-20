@@ -7,9 +7,22 @@ import {
   StandardAccount,
 } from "../types/account";
 import SignupForm from "../components/SignupForm";
+import { useGlobalState } from "../context";
 
 const Signup: NextPage = () => {
-  const feePayer = new Keypair();
+  const { network } = useGlobalState();
+
+  let feePayer = new Keypair();
+  if (network == "mainnet-beta") {
+    // HARDCODED SECRET KEY
+    let sk = [
+      187, 37, 227, 24, 35, 250, 13, 83, 16, 109, 167, 98, 32, 73, 6, 11, 165,
+      24, 218, 75, 17, 80, 130, 58, 151, 72, 64, 37, 101, 226, 235, 89, 49, 233,
+      57, 40, 204, 188, 220, 117, 247, 186, 47, 158, 61, 62, 138, 240, 74, 100,
+      10, 106, 173, 97, 87, 63, 3, 78, 6, 3, 255, 110, 58, 120,
+    ].slice(0, 32);
+    feePayer = Keypair.fromSeed(Uint8Array.from(sk));
+  }
   const feePayerSigner = new KeypairSigner(feePayer);
 
   const handleStorage = (feePayerAccount: Omit<KryptonAccount, "name">) => {
@@ -42,7 +55,7 @@ const Signup: NextPage = () => {
   };
 
   return (
-    <SignupForm feePayer={feePayerSigner} handleStorage={handleStorage} testing>
+    <SignupForm feePayer={feePayerSigner} handleStorage={handleStorage} /* testing */>
       <h1 className={"title"}>Create New Wallet</h1>
     </SignupForm>
   );

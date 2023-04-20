@@ -6,7 +6,6 @@ import styles from "../Layout/index.module.css";
 
 import Link from "next/link";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   SystemProgram,
@@ -26,6 +25,7 @@ import {
 import OnboardingSteps from "../OnboardingSteps";
 import {
   REFILL_TO_BALANCE,
+  RPC_URL,
   TEST_INITIAL_BALANCE_FAILURE,
   WALLET_PROGRAM_ID,
 } from "../../utils/constants";
@@ -80,28 +80,30 @@ const SignupForm = ({
       pk: feePayerPK.toBase58(),
       pda: profile_pda[0].toBase58(),
     };
-    console.log(feePayerAccount);
+    console.log("feePayer Account: ", feePayerAccount);
 
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
 
     console.log("pk: ", feePayerPK.toBase58());
     console.log("PDA: ", profile_pda[0].toBase58());
     console.log("program id: ", WALLET_PROGRAM_ID.toBase58());
 
-    console.log("Requesting Airdrop of 0.2 SOL...");
-    const signature = await connection.requestAirdrop(
-      feePayerPK,
-      REFILL_TO_BALANCE
-    );
-    let recentBlockhash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction(
-      {
-        blockhash: recentBlockhash.blockhash,
-        lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
-        signature,
-      },
-      "confirmed"
-    );
+    if(network == "devnet") {
+      console.log("Requesting Airdrop of 0.2 SOL...");
+      const signature = await connection.requestAirdrop(
+        feePayerPK,
+        REFILL_TO_BALANCE
+      );
+      let recentBlockhash = await connection.getLatestBlockhash();
+      await connection.confirmTransaction(
+        {
+          blockhash: recentBlockhash.blockhash,
+          lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+          signature,
+        },
+        "confirmed"
+      );
+    }
 
     // instr 1: initialize social recovery wallet
     const idx = Buffer.from(new Uint8Array([0]));
@@ -134,10 +136,10 @@ const SignupForm = ({
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);
 
-    recentBlockhash = await connection.getLatestBlockhash();
+    let recentBlockhash1 = await connection.getLatestBlockhash();
     const tx = new Transaction({
       feePayer: feePayerPK,
-      ...recentBlockhash,
+      ...recentBlockhash1,
     });
     tx.add(initializeSocialWalletIx);
     /* Versioned TX

@@ -12,10 +12,11 @@ import {
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
-import { Cluster, clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { Cluster, Connection, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../utils/avatar";
 import { getCurrentAccount } from "../../utils";
 import { useGlobalModalContext } from "../GlobalModal";
+import { RPC_URL } from "../../utils/constants";
 
 type DomEvent = {
   domEvent: BaseSyntheticEvent;
@@ -114,10 +115,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
         }
         setAccount(curr);
         if (curr.avatar) {
-          const connection = new Connection(
-            clusterApiUrl(network),
-            "confirmed"
-          );
+          const connection = new Connection(RPC_URL(network), "confirmed");
           const avatarData = await getAvatar(
             connection,
             new PublicKey(curr.avatar)
@@ -231,7 +229,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
                     className="ant-dropdown-link"
                     onClick={(e) => e.preventDefault()}
                   >
-                    {network === "devnet" ? "Devnet" : "Devnet"}{" "}
+                    {network}{" "}
                     <DownOutlined />
                   </a>
                 </Dropdown>
