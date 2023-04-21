@@ -4,7 +4,6 @@ import { NextPage } from "next";
 import { Button } from "antd";
 import bs58 from "bs58";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   VersionedMessage,
@@ -14,6 +13,7 @@ import { useGlobalModalContext } from "../../components/GlobalModal";
 import { getAccountFromPkString, partialSign } from "../../utils";
 import { useGlobalState } from "../../context";
 import { Signer } from "../../types/account";
+import { RPC_URL } from "../../utils/constants";
 
 const SignAndSendTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -61,7 +61,7 @@ const SignAndSendTransaction: NextPage = () => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const { blockhash } = await connection.getLatestBlockhash();
 
     const signer = (await getAccountFromPkString(
