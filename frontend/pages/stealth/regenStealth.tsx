@@ -35,6 +35,7 @@ import * as aesjs from "aes-js";
 import base58 from "bs58";
 import { MAX_GUARDIANS } from "../../utils/constants";
 import { genShards } from "../../utils/stealth";
+import { StealthSigner } from "../../types/account";
 
 const RegenStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,6 +44,7 @@ const RegenStealth: NextPage = () => {
   const [thres, setThres] = useState<number>(0);
   const [privScan, setPrivScan] = useState<string>("");
   const [privSpend, setPrivSpend] = useState<string>("");
+  const [succeeded, setSucceeded] = useState<boolean>(false);
   const connection = new Connection(clusterApiUrl(network), "confirmed");
 
   const [form] = Form.useForm();
@@ -101,13 +103,17 @@ const RegenStealth: NextPage = () => {
       console.log(key, val);
     });
 
+
+    if (!account) {
+      return;
+    }
+    let newPrivScan: string;
+    let newPrivSpend: string;
+    try {
     let shards = Object.entries(values).map(([key,val])=>Buffer.from(base58.decode(val as string)) );
     console.log("shards:", shards);
     setLoading(true);
     setFinished(false)
-    if (!account) {
-      return;
-    }
     console.log("stealth scan: ", account.stealth.priv_scan);
     console.log("stealth spend: ", account.stealth.priv_spend);
 
@@ -117,14 +123,37 @@ const RegenStealth: NextPage = () => {
     const result = combine(shards);
     console.log("result: ", result);
     const aesCtr = new aesjs.ModeOfOperation.ctr(result);
-    const res2 = aesCtr.decrypt(base58.decode(priv_scan_enc));
-    console.log("privscan: ", base58.encode(res2));
-    const res3 = aesCtr.decrypt(base58.decode(priv_spend_enc));
-    console.log("privspend: ", base58.encode(res3));
+    newPrivScan = base58.encode(aesCtr.decrypt(base58.decode(priv_scan_enc)));
+    console.log("privscan: ", newPrivScan);
+    newPrivSpend = base58.encode(aesCtr.decrypt(base58.decode(priv_spend_enc)));
+    console.log("privspend: ", newPrivSpend);
+
+
+
+    //checking validity 
+
+      const pubscan = await new StealthSigner(newPrivScan).getPublicKey(); 
+      console.log("Pub Scan: ",pubscan);
+      const pubspend = await new StealthSigner(newPrivSpend).getPublicKey(); 
+      console.log("Pub Spend: ",pubspend);
+      
+    }catch {
+      console.log("invalid shards");
+      console.log("refreshing shards instead");
+      const shards_buffs = account.stealth.shards.map((str) => Buffer.from(base58.decode(str))); 
+      const encryption_key = combine(shards_buffs);
+      const [acc,_]  = await genShards(encryption_key,account,network);
+      setAccount(acc);
+      setSucceeded(false);
+      setLoading(false);
+      setFinished(true);
+      return;
+      
+    }
 
     let prev_acc = account;
-    prev_acc.stealth.priv_scan = base58.encode(res2);
-    prev_acc.stealth.priv_spend = base58.encode(res3);
+    prev_acc.stealth.priv_scan = newPrivScan;
+    prev_acc.stealth.priv_spend = newPrivSpend;
     setAccount(prev_acc);
 
 
@@ -160,6 +189,7 @@ const RegenStealth: NextPage = () => {
     
     setLoading(false);
     setFinished(true);
+    setSucceeded(true);
   };
 
   return (
@@ -235,9 +265,20 @@ const RegenStealth: NextPage = () => {
           </div>
         </StyledForm>
       )}
-      {finished && (
+      {finished && succeeded &&(
         <>
-          <Result status="success" title="Sent!" />
+          <Result status="success" title="Recovered!" />
+          <Link href="/stealth" passHref>
+            <a className={styles.back}>
+              <ArrowLeftOutlined /> Back Home
+            </a>
+          </Link>
+        </>
+      )}
+      {finished && !succeeded &&(
+        <>
+          <Result status="error" title="Failed" subTitle="Your stealth account could not be recovered"/>
+
           <Link href="/stealth" passHref>
             <a className={styles.back}>
               <ArrowLeftOutlined /> Back Home
