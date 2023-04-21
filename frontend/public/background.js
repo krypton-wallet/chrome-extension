@@ -1,6 +1,5 @@
-import { Keypair } from "@solana/web3.js";
-import bs58 from "bs58";
 import { PublicKey } from "@solana/web3.js";
+import { Buffer } from "buffer";
 
 const responseHandlers = new Map();
 
@@ -10,14 +9,20 @@ const handleConnect = async (message, sender, sendResponse) => {
       console.log("pk not found");
       return;
     }
-    console.log("background PK: ", result.pk);
+    const pk = new PublicKey(result.pk);
+    const pda = PublicKey.findProgramAddressSync(
+      [Buffer.from("profile", "utf-8"), pk.toBuffer()],
+      // SWITCH programId for corresponding network
+      new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL")
+      // new PublicKey("4eHGeN4mBXdJUAbb7iF8LL5Hj75GBxskXGPLcTH2MQHc")
+    );
     const callback = async (data, id) => {
       await sendResponse(data, id);
     };
     await callback({
       method: "connected",
       params: {
-        publicKey: new PublicKey(result.pk),
+        publicKey: pda[0],
       },
       id: message.data.id,
     });

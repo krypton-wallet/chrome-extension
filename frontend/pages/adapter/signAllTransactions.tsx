@@ -8,6 +8,7 @@ import { PublicKey } from "@solana/web3.js";
 import { useGlobalModalContext } from "../../components/GlobalModal";
 import { getAccountFromPkString } from "../../utils";
 import { Signer } from "../../types/account";
+import { WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const SignAllTransactions: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -61,12 +62,17 @@ const SignAllTransactions: NextPage = () => {
       const sigEncoded = bs58.encode(sig);
       sigs.push(sigEncoded);
     }
+    const pda = PublicKey.findProgramAddressSync(
+      [Buffer.from("profile", "utf-8"), pk.toBuffer()],
+      WALLET_PROGRAM_ID
+    );
 
     postMessage({
       method: "signAllTransactions",
       result: {
         signatures: sigs,
         publicKey: pk,
+        pda: pda[0],
       },
       id: id,
     });
