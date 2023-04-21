@@ -14,7 +14,7 @@ const Signup: NextPage = () => {
 
   let feePayer = new Keypair();
   if (network == "mainnet-beta") {
-    // NOTE: HARDCODED SECRET KEY
+    // NOTE: HARDCODED SECRET KEY, REPLACE WITH YOUR OWN SK FOR TESTING ON MAINNET
     let sk = [
       187, 37, 227, 24, 35, 250, 13, 83, 16, 109, 167, 98, 32, 73, 6, 11, 165,
       24, 218, 75, 17, 80, 130, 58, 151, 72, 64, 37, 101, 226, 235, 89, 49, 233,
