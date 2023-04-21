@@ -12,7 +12,7 @@ const handleConnect = async (message, sender, sendResponse) => {
     const pk = new PublicKey(result.pk);
     const pda = PublicKey.findProgramAddressSync(
       [Buffer.from("profile", "utf-8"), pk.toBuffer()],
-      // SWITCH programId for corresponding network
+      // NOTE: SWITCH programId for corresponding network
       new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL")
       // new PublicKey("4eHGeN4mBXdJUAbb7iF8LL5Hj75GBxskXGPLcTH2MQHc")
     );
