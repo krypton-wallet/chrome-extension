@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { NextPage } from "next";
-import { Button, Form, Input, Result } from "antd";
+import { Button, Form, Input, Result, Switch } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
@@ -21,9 +21,11 @@ import { useGlobalState } from "../../context";
 import { StyledForm } from "../../styles/StyledComponents.styles";
 import { StealthSigner, KeypairSigner, Signer } from "../../types/account";
 import { sendAndConfirmTransactionWithAccount, isNumber } from "../../utils";
+import { stealthTransferIx } from "solana-stealth";
 
 const FromStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [stealthMode, setStealthMode] = useState<boolean>(false);
   const { network, account, stealth, stealthBalance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
 
@@ -46,7 +48,7 @@ const FromStealth: NextPage = () => {
 
     setLoading(true);
     console.log(values);
-    const dest = new PublicKey(values.pk);
+
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
 
     let stealthsig = new StealthSigner(stealth);
@@ -65,13 +67,25 @@ const FromStealth: NextPage = () => {
     if (!newaccount) {
       newaccount = new KeypairSigner(new Keypair());
     }
-    transferSOLTx.add(
-      SystemProgram.transfer({
-        fromPubkey: pk,
-        toPubkey: dest,
-        lamports: amount,
-      })
-    );
+
+    if(stealth){
+      const sendIx = await stealthTransferIx(
+        pk,
+        values.scankey,
+        values.spendkey,
+        amount
+      );
+      transferSOLTx.add(sendIx);
+    }else{
+      const dest = new PublicKey(values.pk);
+      transferSOLTx.add(
+        SystemProgram.transfer({
+          fromPubkey: pk,
+          toPubkey: dest,
+          lamports: amount,
+        })
+      );
+    }
 
     console.log("Transfering native SOL...");
 
@@ -104,36 +118,107 @@ const FromStealth: NextPage = () => {
           requiredMark={false}
           onFinish={handleOk}
         >
-          <Form.Item
-            name="pk"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the recipient's address",
-              },
-              {
-                async validator(_, value) {
-                  const pkInfo = await connection.getAccountInfo(
-                    new PublicKey(value)
-                  );
-                  if (pkInfo) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("Invalid public key"));
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder="Recipient's Address"
-              style={{
-                minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <p style={{ marginRight: "10px" }}>Stealth Mode: </p>
+            <Switch
+              checkedChildren="on"
+              unCheckedChildren="off"
+              checked={stealthMode}
+              onChange={() => setStealthMode((prev) => !prev)}
             />
-          </Form.Item>
+          </div>
+          {!stealthMode && (
+            <Form.Item
+              name="pk"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's address",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = await connection.getAccountInfo(
+                      new PublicKey(value)
+                    );
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Address"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="scankey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's scan key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Scan Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="spendkey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's spend key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Spend Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="amount"
@@ -146,8 +231,9 @@ const FromStealth: NextPage = () => {
                 validator(_, value) {
                   if (!isNumber(value)) {
                     return Promise.reject(new Error("Not a number"));
-                  }
-                  if (Number(value) > (stealthBalance ?? 0)) {
+                  } else if (Number(value) <= 0) {
+                    return Promise.reject(new Error("Amount must be positive"));
+                  } else if (Number(value) > (stealthBalance ?? 0)) {
                     return Promise.reject(
                       new Error("Cannot transfer more SOL than balance")
                     );
@@ -167,6 +253,17 @@ const FromStealth: NextPage = () => {
               }}
             />
           </Form.Item>
+
+          <span
+            style={{
+              opacity: "60%",
+              color: "white",
+              marginTop: "2px",
+              alignSelf: "flex-end",
+            }}
+          >
+            balance: {stealthBalance!}
+          </span>
 
           <div
             style={{
