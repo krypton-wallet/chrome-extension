@@ -30,6 +30,12 @@ const PATHS_WITHOUT_HEADER_AND_FOOTER = [
   "/accounts/yubikey/signup",
 ];
 
+const NETWORK_LOWER_TO_UPPER_MAP = {
+  "devnet": "Devnet",
+  "mainnet-beta": "Mainnet",
+  "testnet": "Testnet"
+}
+
 const Layout = ({ children }: { children: JSX.Element }) => {
   const { network, setNetwork, account, setAccount } = useGlobalState();
   const [avatar, setAvatar] = useState<string>();
@@ -41,6 +47,9 @@ const Layout = ({ children }: { children: JSX.Element }) => {
     const networks: Array<Cluster> = ["mainnet-beta", "devnet", "testnet"];
     const selectedNetwork = networks[parseInt(e.key) - 1];
     setNetwork(selectedNetwork);
+    chrome.storage.local.set({
+      network: selectedNetwork,
+    });
   };
 
   const items: MenuProps["items"] = [
@@ -229,8 +238,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
                     className="ant-dropdown-link"
                     onClick={(e) => e.preventDefault()}
                   >
-                    {network}{" "}
-                    <DownOutlined />
+                    {NETWORK_LOWER_TO_UPPER_MAP[network!]} <DownOutlined />
                   </a>
                 </Dropdown>
                 <Dropdown

@@ -10,13 +10,13 @@ import { useGlobalModalContext } from "../components/GlobalModal";
 
 const Home: NextPage = () => {
   const router = useRouter();
-  const { setAccount } = useGlobalState();
+  const { setAccount, setNetwork } = useGlobalState();
   const [visible, setVisible] = useState<boolean>(false);
 
   const modalContext = useGlobalModalContext();
 
   useEffect(() => {
-    chrome.storage.local.get(["pk", "mode"]).then(async (result) => {
+    chrome.storage.local.get(["pk", "mode", "network"]).then(async (result) => {
       if (result.pk == undefined) {
         chrome.storage.local.set({
           counter: 1,
@@ -26,6 +26,7 @@ const Home: NextPage = () => {
           y_id: 1,
           y_accounts: "{}",
           mode: 0,
+          network: "devnet"
         });
         setVisible(true);
         return;
@@ -38,6 +39,7 @@ const Home: NextPage = () => {
       }
       console.log(currKeypair);
       setAccount(currKeypair);
+      setNetwork(result.network);
       router.push("/wallet");
     });
   }, [modalContext, router, setAccount]);
