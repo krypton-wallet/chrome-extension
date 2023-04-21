@@ -1,6 +1,7 @@
 import { Cluster, PublicKey, clusterApiUrl } from "@solana/web3.js";
 
-export const DEVNET_WALLET_PROGRAM_ID = new PublicKey("4eHGeN4mBXdJUAbb7iF8LL5Hj75GBxskXGPLcTH2MQHc");
+// SWITCH programId for corresponding network
+// export const WALLET_PROGRAM_ID = new PublicKey("4eHGeN4mBXdJUAbb7iF8LL5Hj75GBxskXGPLcTH2MQHc");
 export const WALLET_PROGRAM_ID = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 //export const WALLET_PROGRAM_ID = network == "mainnet-beta" ? MAINNET_WALLET_PROGRAM_ID : DEVNET_WALLET_PROGRAM_ID;
 export const TX_FEE = 5000;
