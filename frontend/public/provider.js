@@ -1,6 +1,11 @@
 import EventEmitter from "eventemitter3";
 import bs58 from "bs58";
-import { PublicKey } from "@solana/web3.js";
+import {
+  PublicKey,
+  VersionedTransaction,
+  VersionedMessage,
+  Message,
+} from "@solana/web3.js";
 
 export class SolanaProvider extends EventEmitter {
   #publicKey = null;
@@ -94,14 +99,73 @@ export class SolanaProvider extends EventEmitter {
   };
 
   signTransaction = async (transaction, network) => {
+    console.log("========== signTransaction ==============");
+    console.log("initial TX: ", transaction);
+    console.log(
+      "feepayer: ",
+      transaction.message.staticAccountKeys.map((ak) => ak.toBase58())
+    );
+    console.log("signing....");
     const { result } = await this.sendRequest("signTransaction", {
+      transaction: transaction,
       message: this.#encodeTransaction(transaction),
       network,
     });
-    const signature = bs58.decode(result.signature);
-    const publicKey = new PublicKey(result.publicKey);
-    transaction.addSignature(publicKey, signature);
-    return transaction;
+    console.log("signed!");
+    console.log("SIGNATUR: ", result.signature);
+    console.log("CURR PK: ", result.publicKey);
+    console.log("CURR PDA: ", result.pda);
+
+    // Message deserializing
+    console.log("CURR msg: ", result.message.data);
+    const messageArray = new Uint8Array(result.message.data);
+    const message_deserialized = Message.from(messageArray);
+    console.log("message deserialized:", message_deserialized);
+
+    // signatures deserializing
+    const signaturesArray = [];
+    console.log("result signatures: ", result.transaction.signatures);
+    for (var key in result.transaction.signatures) {
+      const tmpArray2 = [];
+      const signature = result.transaction.signatures[key];
+      for (var key2 in signature) {
+        tmpArray2.push(signature[key2]);
+      }
+      const signatureArray = new Uint8Array(tmpArray2);
+      signaturesArray.push(signatureArray);
+    }
+
+    console.log("signatures array: ", signaturesArray);
+    const final_parsed = new VersionedTransaction(
+      message_deserialized,
+      signaturesArray
+    );
+    console.log("final TX parsed: ", final_parsed);
+    // console.log("PDA bytes: ", pda.toBytes())
+    // const oldtx_cloned = structuredClone(transaction);
+    // console.log("TX before: ", oldtx_cloned)
+
+    // const signerPubkeys = transaction.message.staticAccountKeys.slice(
+    //   0,
+    //   transaction.message.header.numRequiredSignatures,
+    // );
+    // const signerIndex = signerPubkeys.findIndex(pubkey =>
+    //   pubkey.equals(pda)
+    // );
+    // console.log("ACCT before: ", transaction.message.staticAccountKeys[signerIndex])
+    // console.log("ACCT before bs58: ", transaction.message.staticAccountKeys[signerIndex].toBase58())
+    // console.log("SIG before: ", bs58.encode(transaction.signatures[signerIndex]))
+
+    // transaction.message.staticAccountKeys[signerIndex] = publicKey;
+    // transaction.signatures[signerIndex] = signature;
+    // console.log("ACCT after: ", transaction.message.staticAccountKeys[signerIndex])
+    // console.log("ACCT after bs58: ", transaction.message.staticAccountKeys[signerIndex].toBase58())
+    // console.log("SIG after: ", transaction.signatures[signerIndex])
+    // console.log("SIG after encoded: ", bs58.encode(transaction.signatures[signerIndex]))
+    // console.log("TX after: ", transaction)
+
+    // transaction.addSignature(publicKey, signature);
+    return final_parsed;
   };
 
   signAllTransactions = async (transactions, network) => {
@@ -111,8 +175,23 @@ export class SolanaProvider extends EventEmitter {
     });
     const signatures = result.signatures.map((s) => bs58.decode(s));
     const publicKey = new PublicKey(result.publicKey);
+    const pda = new PublicKey(result.pda);
     transactions = transactions.map((tx, idx) => {
-      tx.addSignature(publicKey, signatures[idx]);
+      console.log("tx before:", tx);
+      console.log("OLD FP: ", tx.feePayer);
+      tx.feePayer = pda;
+      console.log("NEW FP: ", tx.feePayer);
+      // const signerPubkeys = tx._message.staticAccountKeys.slice(
+      //   0,
+      //   tx._message.header.numRequiredSignatures,
+      // );
+      // const signerIndex = signerPubkeys.findIndex(pubkey =>
+      //   pubkey.equals(pda)
+      // );
+      // tx._message.staticAccountKeys[signerIndex] = publicKey;
+      tx.signatures[signerIndex] = signatures[idx];
+      //tx.addSignature(publicKey, signatures[idx]);
+      console.log("TX after: ", tx);
       return tx;
     });
     return transactions;
