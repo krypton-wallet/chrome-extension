@@ -12,10 +12,11 @@ import {
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
 import { useRouter } from "next/router";
-import { Cluster, clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { Cluster, Connection, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../utils/avatar";
 import { getCurrentAccount } from "../../utils";
 import { useGlobalModalContext } from "../GlobalModal";
+import { RPC_URL } from "../../utils/constants";
 
 type DomEvent = {
   domEvent: BaseSyntheticEvent;
@@ -29,6 +30,12 @@ const PATHS_WITHOUT_HEADER_AND_FOOTER = [
   "/accounts/yubikey/signup",
 ];
 
+const NETWORK_LOWER_TO_UPPER_MAP = {
+  "devnet": "Devnet",
+  "mainnet-beta": "Mainnet",
+  "testnet": "Testnet"
+}
+
 const Layout = ({ children }: { children: JSX.Element }) => {
   const { network, setNetwork, account, setAccount } = useGlobalState();
   const [avatar, setAvatar] = useState<string>();
@@ -40,6 +47,9 @@ const Layout = ({ children }: { children: JSX.Element }) => {
     const networks: Array<Cluster> = ["mainnet-beta", "devnet", "testnet"];
     const selectedNetwork = networks[parseInt(e.key) - 1];
     setNetwork(selectedNetwork);
+    chrome.storage.local.set({
+      network: selectedNetwork,
+    });
   };
 
   const items: MenuProps["items"] = [
@@ -114,10 +124,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
         }
         setAccount(curr);
         if (curr.avatar) {
-          const connection = new Connection(
-            clusterApiUrl(network),
-            "confirmed"
-          );
+          const connection = new Connection(RPC_URL(network), "confirmed");
           const avatarData = await getAvatar(
             connection,
             new PublicKey(curr.avatar)
@@ -231,8 +238,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
                     className="ant-dropdown-link"
                     onClick={(e) => e.preventDefault()}
                   >
-                    {network === "devnet" ? "Devnet" : "Devnet"}{" "}
-                    <DownOutlined />
+                    {NETWORK_LOWER_TO_UPPER_MAP[network!]} <DownOutlined />
                   </a>
                 </Dropdown>
                 <Dropdown

@@ -5,7 +5,7 @@ import { Button } from "antd";
 import { useGlobalState } from "../../../context";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { displayAddress } from "../../../utils";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import styles from "../../../components/Layout/index.module.css";
 import {
   TOKEN_PROGRAM_ID,
@@ -14,6 +14,7 @@ import {
   getMint,
 } from "@solana/spl-token";
 import Link from "next/link";
+import { RPC_URL } from "../../../utils/constants";
 
 const Token: NextPage = () => {
   const router = useRouter();
@@ -31,7 +32,7 @@ const Token: NextPage = () => {
     [pk]
   );
   const connection = useMemo(
-    () => new Connection(clusterApiUrl(network), "confirmed"),
+    () => new Connection(RPC_URL(network), "confirmed"),
     [network]
   );
 

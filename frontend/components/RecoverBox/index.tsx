@@ -3,7 +3,6 @@ import { Button, Result } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -25,7 +24,7 @@ import {
 import BN from "bn.js";
 import Paragraph from "antd/lib/typography/Paragraph";
 import Text from "antd/lib/typography/Text";
-import { WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
   const { account } = useGlobalState();
@@ -34,7 +33,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
   const [succeeded, setSucceeded] = useState<boolean>(false);
   const [msg, setMsg] = useState<any>("");
   const { network } = useGlobalState();
-  const connection = new Connection(clusterApiUrl(network), "confirmed");
+  const connection = new Connection(RPC_URL(network), "confirmed");
 
   if (!account) {
     return <></>;

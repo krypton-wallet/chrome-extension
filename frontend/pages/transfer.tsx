@@ -6,7 +6,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../styles/StyledComponents.styles";
 import styles from "../components/Layout/index.module.css";
 import {
-  clusterApiUrl,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -20,13 +19,13 @@ import BN from "bn.js";
 import { useRouter } from "next/router";
 import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 import { KeypairSigner, Signer } from "../types/account";
-import { WALLET_PROGRAM_ID } from "../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { account, network, balance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
-  const connection = new Connection(clusterApiUrl(network), "confirmed");
+  const connection = new Connection(RPC_URL(network), "confirmed");
 
   const [form] = Form.useForm();
   const router = useRouter();
@@ -45,7 +44,7 @@ const Transfer: NextPage = () => {
     console.log(values);
     const dest_pda = new PublicKey(values.pk);
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
 
     /* TRANSACTION: Transfer Native SOL */
     const idx = Buffer.from(new Uint8Array([7]));

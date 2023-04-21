@@ -3,7 +3,6 @@ import { Button } from "antd";
 import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
-  clusterApiUrl,
   Connection,
   PublicKey,
   Transaction,
@@ -16,7 +15,7 @@ import {
 } from "../../utils";
 import BN from "bn.js";
 import Paragraph from "antd/lib/typography/Paragraph";
-import { WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
@@ -33,7 +32,7 @@ const GuardianBox = ({
       return;
     }
     setLoading(true);
-    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const connection = new Connection(RPC_URL(network), "confirmed");
     const feePayerPK = new PublicKey(account.pk);
     const defaultpk = PublicKey.default;
 
@@ -106,20 +105,13 @@ const GuardianBox = ({
       </Paragraph>
 
       {!loading && editMode && (
-        <Button
-          type="primary"
-          onClick={onDelete}
-          danger
-        >
+        <Button type="primary" onClick={onDelete} danger>
           Delete
         </Button>
       )}
 
       {loading && editMode && (
-        <LoadingOutlined
-          style={{ fontSize: 24, color: "#fff" }}
-          spin
-        />
+        <LoadingOutlined style={{ fontSize: 24, color: "#fff" }} spin />
       )}
     </Box>
   );

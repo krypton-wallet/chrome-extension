@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { List, Avatar, Skeleton, Empty } from "antd";
 import { useGlobalState } from "../../context";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { displayAddress } from "../../utils";
 import { useRouter } from "next/router";
-import { WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 
 const NFT: NextPage = () => {
   const { network, setTokens, account } = useGlobalState();
@@ -20,7 +20,7 @@ const NFT: NextPage = () => {
     }
     // Fetching all tokens from PDA
     const getTokens = async () => {
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
+      const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
       console.log("account: ", publicKey.toBase58());
       console.log("PDA: ", account.pda);

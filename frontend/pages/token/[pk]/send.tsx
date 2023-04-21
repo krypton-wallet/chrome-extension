@@ -6,7 +6,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { StyledForm } from "../../../styles/StyledComponents.styles";
 import styles from "../../../components/Layout/index.module.css";
 import {
-  clusterApiUrl,
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
@@ -28,7 +27,7 @@ import {
   isNumber,
   sendAndConfirmTransactionWithAccount,
 } from "../../../utils";
-import { WALLET_PROGRAM_ID } from "../../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID } from "../../../utils/constants";
 
 const Send: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,7 +45,7 @@ const Send: NextPage = () => {
   }
 
   const connection = useMemo(
-    () => new Connection(clusterApiUrl(network), "confirmed"),
+    () => new Connection(RPC_URL(network), "confirmed"),
     [network]
   );
   const mint_pk = useMemo(
