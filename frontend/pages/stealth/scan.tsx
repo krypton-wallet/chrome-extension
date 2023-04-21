@@ -75,7 +75,7 @@ const Stealth: NextPage = () => {
       const res = await scan(
         connection,
         account.stealth.priv_scan,
-        spend_key.toBase58(),{limit: 100}
+        spend_key.toBase58(),{limit: 30}
       ); //modify this for speed
 
       let stealth_accs: string[] = [];

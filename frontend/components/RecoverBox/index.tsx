@@ -361,7 +361,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
               status="success"
               title="Successfully Recovered!"
               subTitle="Select an option below">
-                <Button type="primary" onClick={refreshSecret}>
+                <Button type="primary" onClick={refreshSecret} style={{marginBottom: "5px"}}>
               Continue
             </Button>
                 <Button type="primary" onClick={onRecoverStealth}>

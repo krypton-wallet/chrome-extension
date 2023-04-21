@@ -104,6 +104,7 @@ const RegenStealth: NextPage = () => {
     let shards = Object.entries(values).map(([key,val])=>Buffer.from(base58.decode(val as string)) );
     console.log("shards:", shards);
     setLoading(true);
+    setFinished(false)
     if (!account) {
       return;
     }
@@ -156,7 +157,7 @@ const RegenStealth: NextPage = () => {
         }
       });
 
-
+    
     setLoading(false);
     setFinished(true);
   };

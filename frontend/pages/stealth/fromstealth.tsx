@@ -48,6 +48,7 @@ const FromStealth: NextPage = () => {
 
     setLoading(true);
     console.log(values);
+    console.log("stealth:",stealth);
 
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
 
@@ -68,7 +69,7 @@ const FromStealth: NextPage = () => {
       newaccount = new KeypairSigner(new Keypair());
     }
 
-    if(stealth){
+    if(stealthMode){
       const sendIx = await stealthTransferIx(
         pk,
         values.scankey,
