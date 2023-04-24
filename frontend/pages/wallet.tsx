@@ -37,6 +37,11 @@ import {
 import BN from "bn.js";
 import { KeypairSigner, Signer } from "../types/account";
 import Paragraph from "antd/lib/typography/Paragraph";
+import {
+  getTokenIconString,
+  getTokenMap,
+  getTokenName,
+} from "../utils/tokenIcon";
 
 const Wallet: NextPage = () => {
   const { network, balance, setBalance, account, setTokens, currId } =
@@ -46,7 +51,7 @@ const Wallet: NextPage = () => {
   const [canReimburse, setCanReimburse] = useState<boolean>(true);
   const [reimburseMsg, setReimburseMsg] = useState<ReactNode>("");
   const [fungibleTokens, setFungibleTokens] = useState<
-    Array<[PublicKey, bigint, number]>
+    Array<[PublicKey, bigint, number, string | null, string | null]>
   >([]);
   const [airdropLoading, setAirdropLoading] = useState<boolean>(false);
 
@@ -76,12 +81,14 @@ const Wallet: NextPage = () => {
       console.log("account pk: ", publicKey.toBase58());
       const profile_pda = new PublicKey(account.pda);
       const tokens_tmp: Array<[PublicKey, bigint, number]> = [];
-      const fungible_tokens_tmp: Array<[PublicKey, bigint, number]> = [
-        [PublicKey.default, BigInt(0), 0],
-      ];
+      const fungible_tokens_tmp: Array<
+        [PublicKey, bigint, number, string | null, string | null]
+      > = [[PublicKey.default, BigInt(0), 0, null, null]];
       const allTA_res = await connection.getTokenAccountsByOwner(profile_pda, {
         programId: TOKEN_PROGRAM_ID,
       });
+
+      const tokenMap = await getTokenMap(network);
 
       for (const e of allTA_res.value) {
         const accountInfo = AccountLayout.decode(e.account.data);
@@ -93,11 +100,30 @@ const Wallet: NextPage = () => {
         tokens_tmp.push([mint, amount, decimals]);
         if (decimals > 0) {
           console.log(`mint: ${mint}`);
-          fungible_tokens_tmp.push([mint, amount, decimals]);
+          const iconStr = await getTokenIconString(mint.toBase58(), tokenMap);
+          const name = await getTokenName(mint.toBase58(), tokenMap);
+          fungible_tokens_tmp.push([mint, amount, decimals, name ?? "Unknown Token", iconStr ?? "/static/images/token.png"]);
         }
       }
+
+      // sort all tokens based on name
+      const sortedFungibleTokensSlice = fungible_tokens_tmp
+        .slice(1)
+        .sort((t1, t2) => {
+          const t1Name = t1[3] ?? "";
+          const t2Name = t2[3] ?? "";
+          if (t1Name > t2Name) {
+            return 1;
+          } else if (t1Name < t2Name) {
+            return -1;
+          }
+          return 0;
+        });
+      const finalFungibleTokens = [fungible_tokens_tmp[0]].concat(
+        sortedFungibleTokensSlice
+      );
       setTokens(tokens_tmp);
-      setFungibleTokens(fungible_tokens_tmp);
+      setFungibleTokens(finalFungibleTokens);
       setSpinning(false);
     };
     getTokens();
@@ -313,12 +339,12 @@ const Wallet: NextPage = () => {
             style={{
               marginLeft: "30px",
               marginRight: "30px",
-              marginTop: "23px",
+              marginTop: "21px",
               width: "77%",
               padding: "0.2rem 0.7rem",
               backgroundColor: "rgb(42, 42, 42)",
               overflowY: "auto",
-              maxHeight: "275px",
+              maxHeight: "278px",
             }}
           >
             <List
@@ -346,13 +372,11 @@ const Wallet: NextPage = () => {
                         src={
                           item[0] === PublicKey.default
                             ? "/static/images/solana.png"
-                            : "/static/images/token.png"
+                            : item[4]
                         }
                       />
                     }
-                    title={
-                      item[0] === PublicKey.default ? "Solana" : "Unknown Token"
-                    }
+                    title={item[0] === PublicKey.default ? "Solana" : item[3]}
                     description={
                       item[0] === PublicKey.default
                         ? `${balance} SOL`
