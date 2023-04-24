@@ -100,6 +100,8 @@ const Stealth: NextPage = () => {
         let lamps = (await connection.getAccountInfo(pubkey))?.lamports;
         if (lamps) {
           lamps /= LAMPORTS_PER_SOL;
+        }else{
+          continue; //0 sol accounts aren't needed to be shown
         }
         found_accs.push([key, lamps, pubkey]);
       }
