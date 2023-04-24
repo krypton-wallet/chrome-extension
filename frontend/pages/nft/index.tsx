@@ -7,10 +7,13 @@ import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { displayAddress } from "../../utils";
 import { useRouter } from "next/router";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
+import { Metaplex } from "@metaplex-foundation/js";
 
 const NFT: NextPage = () => {
   const { network, setTokens, account } = useGlobalState();
-  const [nfts, setNfts] = useState<Array<[PublicKey, bigint, number]>>([]);
+  const [nfts, setNfts] = useState<
+    Array<[PublicKey, bigint, number, string, string]>
+  >([]);
   const [spinning, setSpinning] = useState<boolean>(true);
   const router = useRouter();
 
@@ -22,11 +25,12 @@ const NFT: NextPage = () => {
     const getTokens = async () => {
       const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
+      const pda = new PublicKey(account.pda);
       console.log("account: ", publicKey.toBase58());
       console.log("PDA: ", account.pda);
 
       const tokens_tmp: Array<[PublicKey, bigint, number]> = [];
-      const nfts_tmp: Array<[PublicKey, bigint, number]> = [];
+      const nfts_tmp: Array<[PublicKey, bigint, number, string, string]> = [];
       const allTA_res = await connection.getTokenAccountsByOwner(
         new PublicKey(account.pda),
         {
@@ -45,7 +49,29 @@ const NFT: NextPage = () => {
         tokens_tmp.push([mint, amount, decimals]);
         if (decimals === 0 && Number(amount) != 0) {
           console.log(`mint: ${mint}`);
-          nfts_tmp.push([mint, amount, decimals]);
+          if (network == "mainnet-beta") {
+            let metaplex = Metaplex.make(connection);
+            const nft = await metaplex
+              .nfts()
+              .findByMint({ mintAddress: mint, tokenOwner: pda });
+            const name = nft.name;
+            const imageUri = nft.json?.image;
+            nfts_tmp.push([
+              mint,
+              amount,
+              decimals,
+              name,
+              imageUri ?? "/static/images/token.png",
+            ]);
+          } else {
+            nfts_tmp.push([
+              mint,
+              amount,
+              decimals,
+              "Unknown NFT",
+              "/static/images/token.png",
+            ]);
+          }
         }
       }
       setTokens(tokens_tmp);
@@ -75,8 +101,8 @@ const NFT: NextPage = () => {
               }}
             >
               <List.Item.Meta
-                avatar={<Avatar src={"/static/images/token.png"} />}
-                title="Unknown Token"
+                avatar={<Avatar src={item[4]} />}
+                title={item[3] ?? "Unknown NFT"}
                 description={displayAddress(item[0].toBase58())}
               />
             </List.Item>

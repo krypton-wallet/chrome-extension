@@ -55,7 +55,8 @@ const Signup: NextPage = () => {
   };
 
   return (
-    <SignupForm feePayer={feePayerSigner} handleStorage={handleStorage} /* testing */>
+    // NOTE: if testing with tokens, pass testing info SignupForm
+    <SignupForm feePayer={feePayerSigner} handleStorage={handleStorage} testing>
       <h1 className={"title"}>Create New Wallet</h1>
     </SignupForm>
   );

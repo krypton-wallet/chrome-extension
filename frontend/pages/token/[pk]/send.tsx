@@ -103,7 +103,7 @@ const Send: NextPage = () => {
     console.log(account);
     const dest_pda = new PublicKey(values.pk);
     const feePayerPk = new PublicKey(account.pk);
-    const amount = Number(values.amount) * LAMPORTS_PER_SOL;
+    const amount = Number(values.amount) * Math.pow(10, decimals);
 
     console.log("Getting src token account...");
     const srcAssociatedToken = await getAssociatedTokenAddress(
