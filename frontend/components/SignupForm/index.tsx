@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { ReactNode, useState } from "react";
 import { ArrowLeftOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import styles from "../Layout/index.module.css";
+import { genKeys, StealthKeys } from "solana-stealth";
 
 import Link from "next/link";
 import {
@@ -24,6 +25,7 @@ import {
 } from "../../utils";
 import OnboardingSteps from "../OnboardingSteps";
 import {
+  MAX_GUARDIANS,
   REFILL_TO_BALANCE,
   RPC_URL,
   TEST_INITIAL_BALANCE_FAILURE,
@@ -39,6 +41,10 @@ import {
   setAuthority,
   AuthorityType,
 } from "@solana/spl-token";
+import { randomBytes } from "tweetnacl";
+import * as aesjs from "aes-js";
+import base58 from "bs58";
+import { split } from "shamirs-secret-sharing-ts";
 
 const SignupForm = ({
   feePayer,
@@ -75,10 +81,29 @@ const SignupForm = ({
     const profile_pda = getProfilePDA(feePayerPK);
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
+
+    // Generating Stealth
+    const utf8 = new TextEncoder();
+    const message = utf8.encode(
+      "Signing this message is equivalent to generating your private keys. Do not sign this once you have already generated your private keys."
+    );
+    const sig = await feePayer.signMessage(message);
+    const keys: StealthKeys = await genKeys(sig);
+    const encryption_key = randomBytes(16);
+    const shares = split(Buffer.from(encryption_key), {
+      shares: MAX_GUARDIANS,
+      threshold: thres,
+    });
+    const shards = shares.map((share) => base58.encode(share));
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
       pda: profile_pda[0].toBase58(),
+      stealth: {
+        priv_scan: keys.privScan,
+        priv_spend: keys.privSpend,
+        shards,
+      },
     };
     console.log("feePayer Account: ", feePayerAccount);
 
@@ -112,6 +137,29 @@ const SignupForm = ({
       new Uint8Array(new BN(thres).toArray("le", 1))
     );
 
+    const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
+
+    //should fix not size 32 issue
+
+    let encrypted = new Uint8Array(32);
+    encrypted.set(aesCtr.encrypt(base58.decode(keys.privScan)));
+
+    let encrypted2 = new Uint8Array(32);
+    encrypted2.set(aesCtr.encrypt(base58.decode(keys.privSpend)));
+
+    const messageLen = Buffer.from(
+      new Uint8Array(new BN(encrypted.length).toArray("le", 4))
+    );
+    console.log("message len: ", messageLen);
+    console.log("message: ", encrypted);
+    const message3 = encrypted;
+    const messageLen2 = Buffer.from(
+      new Uint8Array(new BN(encrypted2.length).toArray("le", 4))
+    );
+    console.log("message len2: ", messageLen2);
+    console.log("message: ", encrypted2);
+    const message2 = encrypted2;
+
     const initializeSocialWalletIx = new TransactionInstruction({
       keys: [
         {
@@ -131,7 +179,15 @@ const SignupForm = ({
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx, acct_len, recovery_threshold]),
+      data: Buffer.concat([
+        idx,
+        acct_len,
+        recovery_threshold,
+        messageLen,
+        message3,
+        messageLen2,
+        message2,
+      ]),
     });
     console.log("Initializing social wallet...");
     setCurrStep((prev) => prev + 1);

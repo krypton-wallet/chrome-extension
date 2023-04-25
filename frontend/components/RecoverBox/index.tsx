@@ -24,21 +24,43 @@ import {
 import BN from "bn.js";
 import Paragraph from "antd/lib/typography/Paragraph";
 import Text from "antd/lib/typography/Text";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, MAX_GUARDIANS, WALLET_PROGRAM_ID } from "../../utils/constants";
+import base58 from "bs58";
+import { combine, split } from "shamirs-secret-sharing-ts";
+import { randomBytes } from "tweetnacl";
+import * as aesjs from "aes-js";
+import { genShards } from "../../utils/stealth";
+import router from "next/router";
 
 const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
-  const { account } = useGlobalState();
+  const { account, setAccount } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
   const [succeeded, setSucceeded] = useState<boolean>(false);
   const [msg, setMsg] = useState<any>("");
   const { network } = useGlobalState();
+
   const connection = new Connection(RPC_URL(network), "confirmed");
+  const defaultpk = PublicKey.default;
 
   if (!account) {
     return <></>;
   }
 
+  const refreshSecret = async () => {
+    if (!account) {
+      return;
+    }
+    console.log("refreshing boys");
+
+    const shards_buffs = account.stealth.shards.map((str) => Buffer.from(base58.decode(str))); 
+    const encryption_key = combine(shards_buffs);
+    const [acc,_]  = await genShards(encryption_key,account,network);
+    setAccount(acc);
+  }
+  const onRecoverStealth = async () => {
+    router.push("/stealth/regenStealth");
+  }
   const onRecover = async () => {
     try {
       console.log("\n=====RECOVERING======");
@@ -133,6 +155,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
           )
         );
 
+        console.log("about to send");
         await sendAndConfirmTransactionWithAccount(
           connection,
           createTA_tx,
@@ -142,8 +165,9 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
             preflightCommitment: "confirmed",
             commitment: "confirmed",
           }
-        );
-
+          );
+          
+          console.log("sent");
         // const newTokenAccount = await getOrCreateAssociatedTokenAccount(
         //   connection,
         //   account ?? new Keypair(),
@@ -337,8 +361,15 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
             <Result
               status="success"
               title="Successfully Recovered!"
-              subTitle="Start using your new wallet now"
-            />
+              subTitle="Select an option below">
+                <Button type="primary" onClick={refreshSecret} style={{marginBottom: "5px"}}>
+              Continue
+            </Button>
+                <Button type="primary" onClick={onRecoverStealth}>
+              Recover Stealth
+            </Button>
+              </Result>
+            
           )}
           {!succeeded && (
             <Result

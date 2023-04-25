@@ -36,9 +36,7 @@ const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} onError={onError} autoConnect>
-        <AntDesignWalletModalProvider>
-          {children}
-        </AntDesignWalletModalProvider>
+        <AntDesignWalletModalProvider>{children}</AntDesignWalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

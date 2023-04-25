@@ -1,6 +1,3 @@
-import React, { useState } from "react";
-import { Button } from "antd";
-import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
 import {
   Connection,
@@ -8,21 +5,30 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { Button } from "antd";
+import Paragraph from "antd/lib/typography/Paragraph";
+import BN from "bn.js";
+import { Dispatch, SetStateAction, useState } from "react";
 import { useGlobalState } from "../../context";
+import { Box } from "../../styles/StyledComponents.styles";
 import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
 } from "../../utils";
-import BN from "bn.js";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
+  shard,
+  shardIdx,
   editMode,
+  setDeleteLoading,
 }: {
   guardian: PublicKey;
+  shard: string;
+  shardIdx: number;
   editMode: boolean;
+  setDeleteLoading: Dispatch<SetStateAction<number>>;
 }) => {
   const { setGuardians, guardians, account, network } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
@@ -31,6 +37,8 @@ const GuardianBox = ({
     if (!account) {
       return;
     }
+
+    setDeleteLoading((prev) => prev + 1);
     setLoading(true);
     const connection = new Connection(RPC_URL(network), "confirmed");
     const feePayerPK = new PublicKey(account.pk);
@@ -83,12 +91,14 @@ const GuardianBox = ({
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    const newGuard = guardians.filter((g) => {
-      return g.toBase58() !== guardian.toBase58();
-    });
-    console.log(newGuard);
-    setGuardians(newGuard);
+    guardShardMap.delete(shardIdx);
+    setGuardians((prev) =>
+      prev.filter((g) => {
+        return g.toBase58() !== guardian.toBase58();
+      })
+    );
     setLoading(false);
+    setDeleteLoading((prev) => prev - 1);
   };
 
   return (
@@ -96,14 +106,48 @@ const GuardianBox = ({
       style={{
         display: "flex",
         width: "350px",
-        justifyContent: "space-evenly",
         marginTop: "10px",
+        justifyContent: "space-evenly",
+        alignItems: "center",
       }}
     >
-      <Paragraph copyable={{ text: guardian.toBase58(), tooltips: `Copy` }}>
-        {displayAddress(guardian.toBase58())}
-      </Paragraph>
-
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "space-evenly",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <Paragraph
+            copyable={{ text: guardian.toBase58(), tooltips: `Copy` }}
+            style={{ marginBottom: 0 }}
+          >
+            {displayAddress(guardian.toBase58())}
+          </Paragraph>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <p style={{ margin: "0", color: "#bababa", fontSize: "12px" }}>
+            Shard:
+          </p>
+          <Paragraph
+            code
+            copyable={{ text: shard, tooltips: `Copy` }}
+            style={{ color: "#bababa", marginBottom: 0 }}
+          >
+            {displayAddress(shard)}
+          </Paragraph>
+        </div>
+      </div>
       {!loading && editMode && (
         <Button type="primary" onClick={onDelete} danger>
           Delete

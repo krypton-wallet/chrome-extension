@@ -12,12 +12,14 @@ const CopyableBox = ({
   copyableValue: string;
 }) => {
   return (
-    <Box style={{ display: "flex" }}>
-      <Paragraph>{fieldName}</Paragraph>
+    <Box
+      style={{ display: "flex", justifyContent: "flex-end", padding: "1em" }}
+    >
+      <Paragraph style={{ marginBottom: 0 }}>{fieldName}</Paragraph>
       <Divider type="vertical" />
       <Paragraph
-        style={{ position: "absolute", right: "55px" }}
         copyable={{ text: copyableValue, tooltips: `Copy` }}
+        style={{ display: "flex", marginLeft: "auto", marginBottom: 0 }}
       >
         {value}
       </Paragraph>

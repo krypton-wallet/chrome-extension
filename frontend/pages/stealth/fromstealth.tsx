@@ -1,120 +1,99 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result, Switch } from "antd";
 import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../styles/StyledComponents.styles";
-import styles from "../components/Layout/index.module.css";
+
+import styles from "../../components/Layout/index.module.css";
 import {
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  SystemProgram,
   Transaction,
-  TransactionInstruction,
+  clusterApiUrl,
 } from "@solana/web3.js";
-import { useGlobalState } from "../context";
 
 import BN from "bn.js";
 import { useRouter } from "next/router";
-import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
-import { KeypairSigner, Signer } from "../types/account";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
+import { useGlobalState } from "../../context";
+import { StyledForm } from "../../styles/StyledComponents.styles";
+import { StealthSigner, KeypairSigner, Signer } from "../../types/account";
+import { sendAndConfirmTransactionWithAccount, isNumber } from "../../utils";
 import { stealthTransferIx } from "solana-stealth";
 
-const Transfer: NextPage = () => {
+const FromStealth: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [stealthMode, setStealthMode] = useState<boolean>(false);
-  const { account, network, balance } = useGlobalState();
+  const { network, account, stealth, stealthBalance } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
-  const connection = new Connection(RPC_URL(network), "confirmed");
 
   const [form] = Form.useForm();
   const router = useRouter();
 
+  const connection = useMemo(
+    () => new Connection(clusterApiUrl(network), "confirmed"),
+    [network]
+  );
+
   const handleCancel = () => {
-    router.push("/wallet");
+    router.push("/stealth");
   };
 
   const handleOk = async (values: any) => {
-    console.log("ok2", account);
-    if (!account) {
+    if (!account || !stealth) {
       return;
     }
 
     setLoading(true);
     console.log(values);
+    console.log("stealth:",stealth);
 
-    let dest_pda: PublicKey;
-    let notifyIx: TransactionInstruction;
-    if (stealthMode) {
-      notifyIx = await stealthTransferIx(
-        new PublicKey(account.pk),
-        values.scankey,
-        values.spendkey,
-        0
-      );
-      dest_pda = notifyIx.keys[1].pubkey;
-    } else {
-      dest_pda = new PublicKey(values.pk);
-    }
     const amount = Number(values.amount) * LAMPORTS_PER_SOL;
-    const connection = new Connection(RPC_URL(network), "confirmed");
 
+    let stealthsig = new StealthSigner(stealth);
     /* TRANSACTION: Transfer Native SOL */
-    const idx = Buffer.from(new Uint8Array([7]));
     console.log("amt: ", amount);
-    console.log("pda: ", account.pda);
+    console.log("stealth: ", stealth);
     console.log("account: ", account.pk);
-    const amountBuf = Buffer.from(
-      new Uint8Array(new BN(amount).toArray("le", 8))
-    );
-    //console.log("amt bn: ", new BN(amount))
-    const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
 
+    const pk = await stealthsig.getPublicKey();
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO:  Check if Yubikey is connected
     const transferSOLTx = new Transaction({
-      feePayer: await account.getPublicKey(),
+      feePayer: pk,
       ...recentBlockhash,
     });
     let newaccount = account as Signer;
     if (!newaccount) {
       newaccount = new KeypairSigner(new Keypair());
     }
-    transferSOLTx.add(
-      new TransactionInstruction({
-        keys: [
-          {
-            pubkey: new PublicKey(account.pda) ?? PublicKey.default,
-            isSigner: false,
-            isWritable: true,
-          },
-          {
-            pubkey: dest_pda,
-            isSigner: false,
-            isWritable: true,
-          },
-          {
-            pubkey: new PublicKey(account.pk),
-            isSigner: true,
-            isWritable: true,
-          },
-        ],
-        programId: WALLET_PROGRAM_ID,
-        data: Buffer.concat([idx, amountBuf, recoveryModeBuf]),
-      })
-    );
 
-    if (stealthMode) {
-      transferSOLTx.add(notifyIx!);
+    if(stealthMode){
+      const sendIx = await stealthTransferIx(
+        pk,
+        values.scankey,
+        values.spendkey,
+        amount
+      );
+      transferSOLTx.add(sendIx);
+    }else{
+      const dest = new PublicKey(values.pk);
+      transferSOLTx.add(
+        SystemProgram.transfer({
+          fromPubkey: pk,
+          toPubkey: dest,
+          lamports: amount,
+        })
+      );
     }
 
     console.log("Transfering native SOL...");
-    const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+
+    let transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
       connection,
       transferSOLTx,
-      [newaccount],
+      [stealthsig],
       {
         skipPreflight: true,
         preflightCommitment: "confirmed",
@@ -255,7 +234,7 @@ const Transfer: NextPage = () => {
                     return Promise.reject(new Error("Not a number"));
                   } else if (Number(value) <= 0) {
                     return Promise.reject(new Error("Amount must be positive"));
-                  } else if (Number(value) > (balance ?? 0)) {
+                  } else if (Number(value) > (stealthBalance ?? 0)) {
                     return Promise.reject(
                       new Error("Cannot transfer more SOL than balance")
                     );
@@ -284,7 +263,7 @@ const Transfer: NextPage = () => {
               alignSelf: "flex-end",
             }}
           >
-            balance: {balance!}
+            balance: {stealthBalance!}
           </span>
 
           <div
@@ -323,7 +302,7 @@ const Transfer: NextPage = () => {
       {finished && (
         <>
           <Result status="success" title="Sent!" />
-          <Link href="/wallet" passHref>
+          <Link href="/stealth" passHref>
             <a className={styles.back}>
               <ArrowLeftOutlined /> Back Home
             </a>
@@ -334,4 +313,4 @@ const Transfer: NextPage = () => {
   );
 };
 
-export default Transfer;
+export default FromStealth;

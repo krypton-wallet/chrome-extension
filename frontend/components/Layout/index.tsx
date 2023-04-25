@@ -89,7 +89,7 @@ const Layout = ({ children }: { children: JSX.Element }) => {
     {
       key: "swap",
       icon: <SwapOutlined style={{ fontSize: "23px" }} />,
-      target: "/",
+      target: "/stealth",
     },
     {
       key: "guardian",

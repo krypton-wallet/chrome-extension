@@ -17,11 +17,17 @@ export type GlobalContextType = {
   recoverPk: PublicKey | null;
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   tokens: Array<[PublicKey, bigint, number]>;
-  setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint, number]>>>;
+  setTokens: React.Dispatch<
+    React.SetStateAction<Array<[PublicKey, bigint, number]>>
+  >;
   currId: number | null;
   setCurrId: React.Dispatch<React.SetStateAction<number | null>>;
   yubikeyInfo: PgpCardInfo | null;
   setYubikeyInfo: React.Dispatch<React.SetStateAction<PgpCardInfo | null>>;
+  stealth: string | null;
+  setStealth: React.Dispatch<React.SetStateAction<string | null>>;
+  stealthBalance: number | undefined;
+  setStealthBalance: React.Dispatch<React.SetStateAction<number | undefined>>;
 };
 
 export const GlobalContext = createContext<GlobalContextType>({
@@ -43,6 +49,10 @@ export const GlobalContext = createContext<GlobalContextType>({
   setCurrId: () => null,
   yubikeyInfo: null,
   setYubikeyInfo: () => null,
+  stealth: null,
+  setStealth: () => null,
+  stealthBalance: undefined,
+  setStealthBalance: () => undefined,
 });
 
 export const useGlobalState = () => useContext(GlobalContext);

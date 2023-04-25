@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { NextPage } from "next";
 import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
 import { useGlobalState } from "../context";
@@ -13,14 +13,26 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
+import {
+  RPC_URL,
+  MAX_GUARDIANS,
+  WALLET_PROGRAM_ID,
+  guardShardMap,
+} from "../utils/constants";
+import { split } from "shamirs-secret-sharing-ts";
+import { randomBytes } from "crypto";
+import * as aesjs from "aes-js";
+import { genShards } from "../utils/stealth";
+import { KryptonAccount } from "../types/account";
 
 const Guardian: NextPage = () => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const { setGuardians, guardians, account, setAccount, network } =
+    useGlobalState();
+  const [shards, setShards] = useState<string[]>([]);
+  const [loading, setLoading] = useState<number>(0);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
-  const { setGuardians, guardians, account, network } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
@@ -45,19 +57,29 @@ const Guardian: NextPage = () => {
       console.log("threshold: ", threshold);
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
+
+      // generate shards from encryption key
+      const { shards } = account.stealth;
+      setShards(shards);
+
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
         const guard = new PublicKey(
           base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
         );
+        const shard_idx = pda_data
+          .subarray(5 + 32 * guardian_len + 4 + i)
+          .readUInt8();
         console.log(`guard ${i + 1}: `, guard.toBase58());
+        console.log(`shard ${i + 1}: `, shard_idx);
         guardians_tmp.push(guard);
+        guardShardMap.set(shard_idx, guard);
       }
       setThres(threshold);
       setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, [account, network, setGuardians]);
+  }, [account, network, setGuardians, setShards]);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -70,14 +92,25 @@ const Guardian: NextPage = () => {
 
     console.log("=====ADDING GUARDIAN======");
     console.log("Values received:", values);
-    setLoading(true);
+    setLoading((prev) => prev + 1);
     form.resetFields();
+
+    let shard_idx = 11;
+
+    for (let i = 0; i < shards.length; ++i) {
+      if (!guardShardMap.has(i)) {
+        shard_idx = i;
+        break;
+      }
+    }
 
     // Instr Add
     const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection(RPC_URL(network), "confirmed");
     const idx1 = Buffer.from(new Uint8Array([1]));
+    const idx_shard = Buffer.from(new Uint8Array([shard_idx]));
+    const len = Buffer.from(new Uint8Array(new BN(1).toArray("le", 4)));
     const new_acct_len = Buffer.from(
       new Uint8Array(new BN(1).toArray("le", 1))
     );
@@ -102,7 +135,7 @@ const Guardian: NextPage = () => {
         },
       ],
       programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx1, new_acct_len]),
+      data: Buffer.concat([idx1, new_acct_len, len, idx_shard]),
     });
 
     // TODO: Check if Yubikey is connected
@@ -124,7 +157,14 @@ const Guardian: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    setLoading(false);
+    // set new shard idx
+    if (shard_idx != 11) {
+      guardShardMap.set(shard_idx, new PublicKey(values.guardian));
+    } else {
+      console.log("something went wrong, shard_idx = 11");
+    }
+
+    setLoading((prev) => prev - 1);
     setIsModalOpen(false);
     setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
     form.resetFields();
@@ -137,6 +177,19 @@ const Guardian: NextPage = () => {
 
   const toggleEditmode = () => {
     setEditmode(!editmode);
+  };
+
+  const regenShards = async () => {
+    if (!account) {
+      return;
+    }
+    setLoading((prev) => prev + 1);
+    console.log("regenning boys");
+    const encryption_key = randomBytes(16);
+    const [acc, shards] = await genShards(encryption_key, account, network);
+    setAccount(acc);
+    setShards(shards);
+    setLoading((prev) => prev - 1);
   };
 
   return (
@@ -155,13 +208,16 @@ const Guardian: NextPage = () => {
       </div>
 
       <div style={{ overflow: "auto", height: "250px" }}>
-        {guardians?.map((g) => {
+        {[...guardShardMap].map(([idx, g]) => {
           return (
             <GuardianBox
               key={g.toBase58()}
               guardian={g}
+              shard={shards[idx]}
+              shardIdx={idx}
               editMode={editmode}
-            ></GuardianBox>
+              setDeleteLoading={setLoading}
+            />
           );
         })}
       </div>
@@ -180,40 +236,28 @@ const Guardian: NextPage = () => {
       <div style={{ display: "flex", position: "absolute", bottom: "90px" }}>
         <Button
           type="primary"
-          icon={<UserAddOutlined />}
-          onClick={showModal}
+          icon={editmode ? <EditOutlined /> : <UserAddOutlined />}
+          onClick={editmode ? regenShards : showModal}
           size="middle"
           style={{ width: "168px", marginRight: "20px" }}
+          loading={loading != 0}
+          disabled={editmode && guardians.length === 0}
         >
-          Add
+          {editmode ? "Regen Shards" : "Add"}
         </Button>
-
-        {!editmode && (
-          <Button
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            className="edit-btn"
-            danger
-          >
-            Edit
-          </Button>
-        )}
-
-        {editmode && (
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            danger
-            className="edit-btn"
-          >
-            Finish
-          </Button>
-        )}
+        <Button
+          type={editmode ? "primary" : undefined}
+          icon={<EditOutlined />}
+          onClick={toggleEditmode}
+          size="middle"
+          style={{ width: "168px" }}
+          danger
+          className="edit-btn"
+          loading={loading != 0}
+          disabled={!editmode && guardians.length === 0}
+        >
+          {editmode ? "Finish" : "Edit"}
+        </Button>
       </div>
 
       <Modal
@@ -221,7 +265,7 @@ const Guardian: NextPage = () => {
         open={isModalOpen}
         onOk={form.submit}
         onCancel={handleModalCancel}
-        confirmLoading={loading}
+        confirmLoading={loading != 0}
         okButtonProps={{ disabled: !isPkValid }}
       >
         {!loading && (

@@ -4,6 +4,12 @@ import { Cluster, PublicKey, clusterApiUrl } from "@solana/web3.js";
 // export const WALLET_PROGRAM_ID = new PublicKey("4eHGeN4mBXdJUAbb7iF8LL5Hj75GBxskXGPLcTH2MQHc");
 export const WALLET_PROGRAM_ID = new PublicKey("2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL");
 //export const WALLET_PROGRAM_ID = network == "mainnet-beta" ? MAINNET_WALLET_PROGRAM_ID : DEVNET_WALLET_PROGRAM_ID;
+// export const WALLET_PROGRAM_ID = new PublicKey(
+//   "ACzMztGYvhBWj4y3jvHmjmr6gLFHgaXih1ZuqZiR8evz"
+// ); //shard support
+export const guardShardMap = new Map<number, PublicKey>();
+
+export const CJ_ID = new PublicKey("F1TiLbWFWuKtYhZpzPqiBuTqzpRx4Eb14eaME6XPvP7p");
 export const TX_FEE = 5000;
 export const MIN_KEYPAIR_BALANCE = 1e8;
 export const REFILL_TO_BALANCE = 2e8;
@@ -24,3 +30,4 @@ export const RPC_URL = (network: Cluster | undefined) => {
         return TESTNET_RPC_URL;
     }
 }
+export const MAX_GUARDIANS = 10;

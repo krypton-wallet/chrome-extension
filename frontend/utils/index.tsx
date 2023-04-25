@@ -16,12 +16,17 @@ import {
   KeypairSigner,
   KryptonAccount,
   Signer,
+  StealthInfo,
   YubikeySigner,
 } from "../types/account";
 import { GlobalModalContext } from "../components/GlobalModal";
 import PinentryModal from "../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
-import { PDA_RENT_EXEMPT_FEE, RPC_URL, WALLET_PROGRAM_ID } from "./constants";
+import {
+  guardShardMap,
+  PDA_RENT_EXEMPT_FEE,
+  RPC_URL, WALLET_PROGRAM_ID,
+} from "./constants";
 const BN = require("bn.js");
 
 // implement a function that gets an account's balance
@@ -201,6 +206,14 @@ const getAccountFromPkString = async (
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            shards: res.shards,
+          } as StealthInfo,
+          ...(res.stealth_accounts && {
+            stealth_accounts: res.stealth_accounts,
+          }),
         };
       }
 
@@ -264,10 +277,19 @@ const getAccountFromPkString = async (
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            shards: res.shards,
+          } as StealthInfo,
+          ...(res.stealth_accounts && {
+            stealth_accounts: res.stealth_accounts,
+          }),
         };
       }
     });
   console.log(account);
+  guardShardMap.clear();
   return account;
 };
 
@@ -295,6 +317,14 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            shards: res.shards,
+          } as StealthInfo,
+          ...(res.stealth_accounts && {
+            stealth_accounts: res.stealth_accounts,
+          }),
         };
       }
 
@@ -352,10 +382,19 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
+          stealth: {
+            priv_scan: res.priv_scan,
+            priv_spend: res.priv_spend,
+            shards: res.shards,
+          } as StealthInfo,
+          ...(res.stealth_accounts && {
+            stealth_accounts: res.stealth_accounts,
+          }),
         };
       }
     });
   console.log(account);
+  guardShardMap.clear();
   return account;
 };
 
