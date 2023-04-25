@@ -8,10 +8,15 @@ import {
   Avatar,
   Skeleton,
   Empty,
+  Form,
+  Modal,
+  Input,
+  Result,
 } from "antd";
 import { useRouter } from "next/router";
+import styles from "../../components/Layout/index.module.css";
 
-import { ArrowRightOutlined, EditOutlined, LoadingOutlined, UserAddOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, ArrowRightOutlined, EditOutlined, LoadingOutlined, UserAddOutlined } from "@ant-design/icons";
 import {
   clusterApiUrl,
   Connection,
@@ -30,14 +35,20 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import { CJ_ID } from "../../utils/constants";
 import BN from "bn.js";
 import base58 from "bs58";
+import Link from "next/link";
 
 const Stealth: NextPage = () => {
   const { network, account, setStealth, setStealthBalance } = useGlobalState();
   const [spinning, setSpinning] = useState<boolean>(true);
   const [joining, setJoining] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [finished, setFinished] = useState<boolean>(false);
   const [fromAccs, setFromAccs] = useState<Map<string, number>>(() => new Map<string, number>());
   const [publicScan, setPublicScan] = useState<string>("");
   const [publicSpend, setPublicSpend] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPkValid, setIsPkValid] = useState<boolean>(false);
+  const [form] = Form.useForm();
   const [stealthAccounts, setStealthAccounts] = useState<
     Array<[string, number | undefined, PublicKey]>
   >([]);
@@ -170,6 +181,38 @@ const Stealth: NextPage = () => {
     return smartDepositIx;
   }
 
+  const getStealthAccounts = async () => {
+    if (!account) return;
+    const scan = new StealthSigner(account.stealth.priv_scan);
+    const scan_key = await scan.getPublicKey();
+    setPublicScan(scan_key.toBase58());
+
+    const spend = new StealthSigner(account.stealth.priv_spend);
+    const spend_key = await spend.getPublicKey();
+    setPublicSpend(spend_key.toBase58());
+
+    if (!account.stealth_accounts || account.stealth_accounts.length <= 0) {
+      setStealthAccounts([]);
+      setSpinning(false);
+      return;
+    }
+
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
+    const stealth_accs: Array<[string, number | undefined, PublicKey]> = [];
+    for (const priv of account.stealth_accounts) {
+      const signer = new StealthSigner(priv);
+      const pubkey = await signer.getPublicKey();
+      let lamps = (await connection.getAccountInfo(pubkey))?.lamports;
+      if (lamps) {
+        lamps /= LAMPORTS_PER_SOL;
+      }
+      stealth_accs.push([priv, lamps, pubkey]);
+    }
+
+    setStealthAccounts(stealth_accs);
+    setSpinning(false);
+  };
+
   useEffect(() => {
     console.log("============STEALTH PAGE=================");
     setSpinning(true);
@@ -180,36 +223,7 @@ const Stealth: NextPage = () => {
       return;
     }
 
-    const getStealthAccounts = async () => {
-      const scan = new StealthSigner(account.stealth.priv_scan);
-      const scan_key = await scan.getPublicKey();
-      setPublicScan(scan_key.toBase58());
 
-      const spend = new StealthSigner(account.stealth.priv_spend);
-      const spend_key = await spend.getPublicKey();
-      setPublicSpend(spend_key.toBase58());
-
-      if (!account.stealth_accounts || account.stealth_accounts.length <= 0) {
-        setStealthAccounts([]);
-        setSpinning(false);
-        return;
-      }
-
-      const connection = new Connection(clusterApiUrl(network), "confirmed");
-      const stealth_accs: Array<[string, number | undefined, PublicKey]> = [];
-      for (const priv of account.stealth_accounts) {
-        const signer = new StealthSigner(priv);
-        const pubkey = await signer.getPublicKey();
-        let lamps = (await connection.getAccountInfo(pubkey))?.lamports;
-        if (lamps) {
-          lamps /= LAMPORTS_PER_SOL;
-        }
-        stealth_accs.push([priv, lamps, pubkey]);
-      }
-
-      setStealthAccounts(stealth_accs);
-      setSpinning(false);
-    };
     getStealthAccounts();
   }, [account, network, router]);
 
@@ -223,6 +237,11 @@ const Stealth: NextPage = () => {
     router.push("/stealth/scan");
   };
 
+  const handleModalCancel = () => {
+    setIsModalOpen(false);
+    form.resetFields();
+  };
+
 
   const joiningClick = () => {
     console.log("joining");
@@ -233,13 +252,19 @@ const Stealth: NextPage = () => {
 
   }
 
-  const finishJoin = async () => {
+
+  const finishJoin = () => {
+    setIsModalOpen(true);
+  }
+
+  const onFinish = async (values: any) => {
 
 
     if (!account) {
       return;
     }
-
+    setLoading(true);
+    const dest = values.dest;
     const idx1 = Buffer.from(new Uint8Array([1]));
     const idx11 = Buffer.from(new Uint8Array([11]));
     const idx4 = Buffer.from(new Uint8Array([4]));
@@ -314,7 +339,7 @@ const Stealth: NextPage = () => {
 
     setupTx.add(
       genInitializeOutputIx(authorized_buffer_key, feePayer, CJ_ID,
-        account.pda, Buffer.from(new Uint8Array((new BN(totalAmt)).toArray("le", 8))), bufferSeed, false, "")
+        dest, Buffer.from(new Uint8Array((new BN(totalAmt)).toArray("le", 8))), bufferSeed, false, "")
     );
     console.log("account.pda: ", account.pda);
     setupTx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
@@ -331,7 +356,6 @@ const Stealth: NextPage = () => {
     );
 
     console.log("finished setup");
-    await new Promise(f => setTimeout(f, 2000));
     console.log("starting deposits");
 
     let depositTx = new Transaction();
@@ -362,14 +386,13 @@ const Stealth: NextPage = () => {
     );
 
     console.log("deposit result: ", txid2);
-    await new Promise(f => setTimeout(f, 2000));
     console.log("starting withdraw + close");
 
     let withdrawAndCloseTx = new Transaction();
 
     withdrawAndCloseTx.add(
       genWithdraw1Ix(authorized_buffer_key, feePayer, CJ_ID,
-        new PublicKey(account.pda), Buffer.from(new Uint8Array((new BN(totalAmt)).toArray("le", 8))), bufferSeed)
+        new PublicKey(dest), Buffer.from(new Uint8Array((new BN(totalAmt)).toArray("le", 8))), bufferSeed)
     );
 
     let closeIx = new TransactionInstruction({
@@ -391,28 +414,28 @@ const Stealth: NextPage = () => {
         },
       ],
       programId: CJ_ID,
-      data: Buffer.concat([idx1,bufferSeed]),
+      data: Buffer.concat([idx1, bufferSeed]),
     });
 
-      withdrawAndCloseTx.add(closeIx);
-      withdrawAndCloseTx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-      withdrawAndCloseTx.feePayer = feePayer;
+    withdrawAndCloseTx.add(closeIx);
+    withdrawAndCloseTx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    withdrawAndCloseTx.feePayer = feePayer;
 
-      let txid3 = await sendAndConfirmTransactionWithAccount(
-        connection,
-        withdrawAndCloseTx,
-        [account],
-        {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
-        }
-      );
-      console.log("final result: ", txid3);
+    let txid3 = await sendAndConfirmTransactionWithAccount(
+      connection,
+      withdrawAndCloseTx,
+      [account],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+      }
+    );
+    console.log("final result: ", txid3);
 
 
-      console.log("cleaning up");
+    console.log("cleaning up");
 
-      await chrome.storage.local
+    await chrome.storage.local
       .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
       .then(async (result) => {
         const id = result["mode"] === 0 ? result["currId"] : result["y_id"];
@@ -422,7 +445,7 @@ const Stealth: NextPage = () => {
             : JSON.parse(result["y_accounts"]);
         let stealth_accs: string[] = [];
         if (account.stealth_accounts && account.stealth_accounts.length > 0) {
-          stealth_accs = account.stealth_accounts.filter((acc)=>{!fromAccs.has(acc)});
+          stealth_accs = account.stealth_accounts.filter((acc) => { return (!fromAccs.has(acc)); });
         }
         const { stealth_accounts: _, ...rest } = old[id];
         old[id] = {
@@ -440,10 +463,13 @@ const Stealth: NextPage = () => {
             y_accounts: accs,
           });
         }
+        getStealthAccounts();
       });
 
+
     console.log("You did it! :)");
-    
+    setLoading(false);
+      setFinished(true);
   }
 
   const addInput = ([key, amount, pubkey]: [string, number | undefined, PublicKey]) => {
@@ -451,7 +477,7 @@ const Stealth: NextPage = () => {
       return;
     }
 
-    console.log("amt: ",amount);
+    console.log("amt: ", amount);
     setFromAccs((prev) => prev.delete(key) ? new Map(prev) : new Map(prev.set(key, amount * LAMPORTS_PER_SOL)));
 
 
@@ -464,7 +490,7 @@ const Stealth: NextPage = () => {
   console.log("len", fromAccs.size);
   return (
     <>
-      {account && (
+      {account && !finished &&(
         <Dashboard>
           <h1 style={{ marginBottom: 0, color: "#fff" }}>Stealth</h1>
           <div
@@ -521,7 +547,7 @@ const Stealth: NextPage = () => {
               Add Account
             </Button>
             <Tooltip
-              title="Click to receive 1 devnet SOL into your account"
+              title="Add stealth account by ephemeral key"
               placement="right"
             ></Tooltip>
             <Button
@@ -554,6 +580,7 @@ const Stealth: NextPage = () => {
               renderItem={(item) => (
                 <List.Item
                   key={item[0]}
+                  style={{ backgroundColor: fromAccs.has(item[0]) ? "#464646" : "#2A2A2A" }}
                   onClick={() => {
                     joining ? addInput(item) :
                       handleSendFromStealth(item);
@@ -563,7 +590,7 @@ const Stealth: NextPage = () => {
                     avatar={<Avatar src={"/static/images/solana.png"} />}
                     title={displayAddress(item[2].toBase58())}
                     description={`${item[1] ? item[1] : "-"} SOL`}
-                    style={{ backgroundColor: fromAccs.has(item[0]) ? "blue" : "black" }}
+                    //style={{ backgroundColor: fromAccs.has(item[0]) ? "#464646" : "#2A2A2A" }}
                   />
                 </List.Item>
               )}
@@ -595,7 +622,70 @@ const Stealth: NextPage = () => {
               {joining ? "Finish" : "Join"}
             </Button>
           </div>
+
+
+          <Modal
+            title="Combined Stealth Send"
+            open={isModalOpen}
+            onOk={form.submit}
+            onCancel={handleModalCancel}
+            okButtonProps={{ disabled: !isPkValid }}
+            confirmLoading = {loading}
+          >
+            <Form
+              form={form}
+              layout="vertical"
+              name="form_in_modal"
+              initialValues={{ modifier: "ff" }}
+              onFinish={onFinish}
+            >
+              <Form.Item
+                name="dest"
+                label="Destination"
+                rules={[
+                  {
+                    async validator(_, value) {
+
+
+                      const connection = new Connection(
+                        clusterApiUrl(network),
+                        "confirmed"
+                      );
+                      const pda_account = await connection.getAccountInfo(
+                        new PublicKey(value)
+                      );
+                      console.log("checking if PDA is valid: ", pda_account);
+                      if (PublicKey.isOnCurve(value) || pda_account != null) {
+                        setIsPkValid(true);
+                        return Promise.resolve();
+                      }
+                      setIsPkValid(false);
+                      return Promise.reject(new Error("Invalid public key"));
+                    },
+                  },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Form>
+          </Modal>
+
         </Dashboard>
+      )}
+      {finished && (
+        <>
+          <Result status="success" title="Sent!" />
+          <Link href="/wallet" passHref>
+            <a className={styles.back}>
+              <ArrowLeftOutlined /> Back Home
+            </a>
+          </Link>
+          {/* <Button onClick={()=> {setFinished(false); setLoading(false); setIsModalOpen(false);}}>
+            <a className={styles.back}>
+              <ArrowLeftOutlined /> Back Home
+            </a>
+          </Button> */}
+        </>
       )}
     </>
   );
