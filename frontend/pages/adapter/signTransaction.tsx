@@ -25,6 +25,7 @@ import { Signer } from "../../types/account";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 import { useGlobalState } from "../../context";
 import BN from "bn.js";
+// import { displayPkList } from "../../utils/logging";
 
 const SignTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -230,12 +231,34 @@ const SignTransaction: NextPage = () => {
     }
     console.log("========================");
 
+    // console.log("all aCCTS before compile: ");
+    // displayPkList(allAccounts);
+    // let signerPubkeys = allAccounts.slice(0, numRequiredSignatures);
+    // for (let i = 0; i < signerPubkeys.length; i++) {
+    //   console.log("i: ", signerPubkeys[i].toBase58());
+    //   console.log("pda: ", pda[0].toBase58());
+    //   if (signerPubkeys[i].toBase58() === pda[0].toBase58()) {
+    //     console.log("found");
+    //     signerPubkeys[i] = pk;
+    //     break;
+    //   }
+    // }
+    // console.log("keys in correct order: ");
+    // displayPkList(signerPubkeys);
     const recentBlockhash = await connection.getLatestBlockhash();
     const messageLegacy = new TransactionMessage({
       payerKey: pk,
       recentBlockhash: recentBlockhash.blockhash,
       instructions: allInstructions,
     }).compileToLegacyMessage();
+    // console.log("num required signautres: ", numRequiredSignatures);
+    // messageLegacy.accountKeys.splice(
+    //   0,
+    //   numRequiredSignatures,
+    //   ...signerPubkeys
+    // );
+    // console.log("all aCCTS after compile: ");
+    // displayPkList(messageLegacy.accountKeys);
     const wrapSignTx = new VersionedTransaction(messageLegacy);
     wrapSignTx.signatures = txSignatures;
 
