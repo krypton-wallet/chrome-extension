@@ -92,6 +92,9 @@ const SignupForm = ({
       console.log("Requesting Airdrop of 0.2 SOL...");
       const signature = await connection.requestAirdrop(
         feePayerPK,
+        // NOTE: for testing reimbursement, change REFILL_TO_BALANCE to
+          // TEST_INITIAL_BALANCE_FAILURE if testing with mint
+          // TEST_INITIAL_BALANCE_FAILURE_WITHOUT_MINTING if testing without mint
         REFILL_TO_BALANCE
       );
       let recentBlockhash = await connection.getLatestBlockhash();
