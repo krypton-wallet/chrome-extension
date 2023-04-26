@@ -28,6 +28,8 @@ import {
 } from "../utils";
 import { KeypairSigner } from "../types/account";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
+import { getGuardianListFromPDA, parseDataFromPDA } from "../types/pda";
+import { displayPkList } from "../utils/logging";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -102,18 +104,13 @@ const GenerateRecover: NextPage = () => {
     const pda_account = await connection.getAccountInfo(profile_pda[0]);
     const pda_data = pda_account?.data ?? Buffer.from("");
     console.log("PDA Data: ", pda_data);
-    const thres = new BN(pda_data.subarray(0, 1), "le").toNumber();
-    const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
+    const pdaDataObj = parseDataFromPDA(pda_data);
+    const thres = pdaDataObj.recoveryThreshold;
+    const guardian_len = pdaDataObj.guardiansLen;
     console.log("guardian length: ", guardian_len);
     console.log("All Guardians:");
-    const guardians: PublicKey[] = [];
-    for (let i = 0; i < guardian_len; i++) {
-      const guard = new PublicKey(
-        base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
-      );
-      console.log(`guard ${i + 1}: `, guard.toBase58());
-      guardians.push(guard);
-    }
+    const guardians: PublicKey[] = getGuardianListFromPDA(pdaDataObj);
+    displayPkList(guardians);
 
     // Transaction 1: setup nonce
     const recentBlockhash = await connection.getLatestBlockhash();

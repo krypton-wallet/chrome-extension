@@ -13,17 +13,13 @@ import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
 import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import {
-  RPC_URL,
-  MAX_GUARDIANS,
-  WALLET_PROGRAM_ID,
-  guardShardMap,
-} from "../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../utils/constants";
 import { split } from "shamirs-secret-sharing-ts";
 import { randomBytes } from "crypto";
 import * as aesjs from "aes-js";
 import { genShards } from "../utils/stealth";
 import { KryptonAccount } from "../types/account";
+import { parseDataFromPDA } from "../types/pda";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, setAccount, network } =
@@ -52,8 +48,9 @@ const Guardian: NextPage = () => {
         new PublicKey(account.pda) ?? PublicKey.default
       );
       const pda_data = pda_account?.data ?? Buffer.from("");
-      const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
-      const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
+      const pdaDataObj = parseDataFromPDA(pda_data);
+      const threshold = pdaDataObj.recoveryThreshold;
+      const guardian_len = pdaDataObj.guardiansLen;
       console.log("threshold: ", threshold);
       console.log("guardian length: ", guardian_len);
       console.log("All Guardians:");
@@ -64,12 +61,9 @@ const Guardian: NextPage = () => {
 
       const guardians_tmp: PublicKey[] = [];
       for (let i = 0; i < guardian_len; i++) {
-        const guard = new PublicKey(
-          base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
-        );
-        const shard_idx = pda_data
-          .subarray(5 + 32 * guardian_len + 4 + i)
-          .readUInt8();
+        const guardianObj = pdaDataObj.guardians[i];
+        const guard = guardianObj.pubkey;
+        const shard_idx = guardianObj.shardIdx;
         console.log(`guard ${i + 1}: `, guard.toBase58());
         console.log(`shard ${i + 1}: `, shard_idx);
         guardians_tmp.push(guard);

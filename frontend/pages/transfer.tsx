@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { NextPage } from "next";
 import { Button, Form, Input, Result, Switch } from "antd";
 import Link from "next/link";

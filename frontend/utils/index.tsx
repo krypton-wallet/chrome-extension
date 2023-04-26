@@ -25,7 +25,8 @@ import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
 import {
   guardShardMap,
   PDA_RENT_EXEMPT_FEE,
-  RPC_URL, WALLET_PROGRAM_ID,
+  RPC_URL,
+  WALLET_PROGRAM_ID,
 } from "./constants";
 const BN = require("bn.js");
 

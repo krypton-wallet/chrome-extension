@@ -31,3 +31,6 @@ export const RPC_URL = (network: Cluster | undefined) => {
     }
 }
 export const MAX_GUARDIANS = 10;
+
+export const PDA_DATA_LEN = 32 + 1 + 4 + 34 * 10 + 32 * 2 + 32;
+export const PK_SIZE = 32;

@@ -6,6 +6,7 @@ import { Cluster, clusterApiUrl, Connection, PublicKey, Transaction, Transaction
 import { MAX_GUARDIANS, WALLET_PROGRAM_ID } from "../constants";
 import { sendAndConfirmTransactionWithAccount } from "..";
 import { split } from "shamirs-secret-sharing-ts";
+import { parseDataFromPDA } from "../../types/pda";
 
 export const genShards = async (encryption_key: Buffer, account: KryptonAccount, network: Cluster | undefined)
 : Promise<[KryptonAccount, string[]]> => {
@@ -74,7 +75,8 @@ export const genShards = async (encryption_key: Buffer, account: KryptonAccount,
       new PublicKey(account.pda) ?? PublicKey.default
     );
     const pda_data = pda_account?.data ?? Buffer.from("");
-    const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
+    const pdaDataObj = parseDataFromPDA(pda_data);
+    const threshold = pdaDataObj.recoveryThreshold;
     const shares = split(encryption_key, { shares: MAX_GUARDIANS, threshold });
     const shards = shares.map((share) => base58.encode(share));
     await chrome.storage.local
