@@ -46,16 +46,17 @@
     "react-dom": "17.0.2",
     "react-scripts": "^5.0.1",
     "salmon-wallet-standard": "^0.0.6",
-    "solana-data-program": "^1.0.4",
     "secret-sharing.js": "^1.3.1",
     "secrets.js-grempe": "^2.0.0",
     "shamirs-secret-sharing-ts": "^1.0.2",
+    "solana-data-program": "^1.0.4",
     "solana-stealth": "^1.0.20",
     "solmate-wallet-standard": "^0.0.4",
     "styled-components": "^5.3.1",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
+    "@metaplex-foundation/amman": "^0.12.1",
     "@parcel/config-webextension": "^2.8.3",
     "@types/aes-js": "^3.1.1",
     "@types/bn.js": "^5.1.1",

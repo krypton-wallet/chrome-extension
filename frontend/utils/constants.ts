@@ -19,7 +19,8 @@ export const TEST_INITIAL_BALANCE_FAILURE = 110204700;
 export const TEST_INITIAL_BALANCE_FAILURE_WITHOUT_MINTING = 103157881;
 // NOTE: REPLACE WITH YOUR OWN MAINNET RPC
 export const MAINNET_RPC_URL = "https://quiet-frequent-uranium.solana-mainnet.discover.quiknode.pro/f8eb81b2bfacb3927a408859daf26cc178fca7b7/";
-export const DEVNET_RPC_URL = clusterApiUrl("devnet");
+// export const DEVNET_RPC_URL = clusterApiUrl("devnet");
+export const DEVNET_RPC_URL = "http://localhost:8899"
 export const TESTNET_RPC_URL = clusterApiUrl("testnet");
 export const RPC_URL = (network: Cluster | undefined) => {
     if(network === "mainnet-beta") {

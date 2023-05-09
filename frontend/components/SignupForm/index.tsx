@@ -45,6 +45,7 @@ import { randomBytes } from "tweetnacl";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
 import { split } from "shamirs-secret-sharing-ts";
+import * as krypton from '../../js/src/generated';
 
 const SignupForm = ({
   feePayer,
@@ -78,7 +79,7 @@ const SignupForm = ({
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
     const feePayerPK = await feePayer.getPublicKey();
-    const profile_pda = getProfilePDA(feePayerPK);
+    const [profileAddress, profileBump] = getProfilePDA(feePayerPK);
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
 
@@ -98,7 +99,7 @@ const SignupForm = ({
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
-      pda: profile_pda[0].toBase58(),
+      pda: profileAddress.toBase58(),
       stealth: {
         priv_scan: keys.privScan,
         priv_spend: keys.privSpend,
@@ -110,7 +111,7 @@ const SignupForm = ({
     const connection = new Connection(RPC_URL(network), "confirmed");
 
     console.log("pk: ", feePayerPK.toBase58());
-    console.log("PDA: ", profile_pda[0].toBase58());
+    console.log("PDA: ", profileAddress.toBase58());
     console.log("program id: ", WALLET_PROGRAM_ID.toBase58());
 
     if(network == "devnet") {
@@ -160,43 +161,26 @@ const SignupForm = ({
     console.log("message: ", encrypted2);
     const message2 = encrypted2;
 
-    const initializeSocialWalletIx = new TransactionInstruction({
-      keys: [
-        {
-          pubkey: profile_pda[0],
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: feePayerPK,
-          isSigner: true,
-          isWritable: true,
-        },
-        {
-          pubkey: SystemProgram.programId,
-          isSigner: false,
-          isWritable: false,
-        },
-      ],
-      programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([
-        idx,
-        acct_len,
-        recovery_threshold,
-        messageLen,
-        message3,
-        messageLen2,
-        message2,
-      ]),
+    const initializeSocialWalletIx = krypton.createInitializeWalletInstruction({
+      profileInfo: profileAddress,
+      authorityInfo: feePayerPK
+    }, {
+      initializeWalletArgs: {
+        recoveryThreshold: thres,
+        privScan: encrypted,
+        privSpend: encrypted2 
+      }
     });
-    console.log("Initializing social wallet...");
-    setCurrStep((prev) => prev + 1);
+
+    console.log('init ix');
+    console.log(initializeSocialWalletIx);
 
     let recentBlockhash1 = await connection.getLatestBlockhash();
     const tx = new Transaction({
       feePayer: feePayerPK,
       ...recentBlockhash1,
     });
+
     tx.add(initializeSocialWalletIx);
     /* Versioned TX
     const recentBlockhash = await connection.getLatestBlockhash();
@@ -209,6 +193,9 @@ const SignupForm = ({
     tx.sign([feePayer]);
     */
 
+
+    console.log("sending TX!");
+
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
@@ -219,7 +206,8 @@ const SignupForm = ({
         commitment: "confirmed",
       }
     );
-    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
+    console.log("txid", txid);
+    // console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
 
@@ -249,12 +237,12 @@ const SignupForm = ({
       //   "token account created: " + senderTokenAccount.address.toBase58() + "\n"
       // );
 
-      console.log(profile_pda);
-
+      console.log(profileAddress);
+ 
       console.log("Getting associated token address...");
       const associatedToken = await getAssociatedTokenAddress(
         customMint,
-        profile_pda[0],
+        profileAddress,
         true,
         TOKEN_PROGRAM_ID
       );
@@ -270,7 +258,7 @@ const SignupForm = ({
         createAssociatedTokenAccountInstruction(
           feePayerPK,
           associatedToken,
-          profile_pda[0],
+          profileAddress,
           customMint,
           TOKEN_PROGRAM_ID
         )
@@ -333,7 +321,7 @@ const SignupForm = ({
       console.log("Getting associated token address...");
       const associatedNFTToken = await getAssociatedTokenAddress(
         nftMint,
-        profile_pda[0],
+        profileAddress,
         true,
         TOKEN_PROGRAM_ID
       );
@@ -348,7 +336,7 @@ const SignupForm = ({
         createAssociatedTokenAccountInstruction(
           feePayerPK,
           associatedNFTToken,
-          profile_pda[0],
+          profileAddress,
           nftMint,
           TOKEN_PROGRAM_ID
         )
@@ -422,13 +410,13 @@ const SignupForm = ({
 
     // Generating Avatar
     if (genStep === 0) {
-      console.log(`generating avatar for ${profile_pda[0]}...`);
+      console.log(`generating avatar for ${profileAddress}...`);
       setCurrStep((prev) => prev + 1);
       const avatarPK = await generateAvatar(
         network ?? "devnet",
         connection,
         feePayer,
-        profile_pda[0],
+        profileAddress,
         () => setGenStep((prev) => prev + 1)
       );
       feePayerAccount.avatar = avatarPK.toBase58();
