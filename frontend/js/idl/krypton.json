@@ -552,10 +552,6 @@
             "type": "publicKey"
           },
           {
-            "name": "shardIdx",
-            "type": "u8"
-          },
-          {
             "name": "hasSigned",
             "type": "bool"
           }
