@@ -114,7 +114,7 @@ const SignupForm = ({
     console.log("PDA: ", profileAddress.toBase58());
     console.log("program id: ", WALLET_PROGRAM_ID.toBase58());
 
-    if(network == "devnet") {
+    if (network == "devnet") {
       console.log("Requesting Airdrop of 0.2 SOL...");
       const signature = await connection.requestAirdrop(
         feePayerPK,
@@ -167,8 +167,6 @@ const SignupForm = ({
     }, {
       initializeWalletArgs: {
         recoveryThreshold: thres,
-        privScan: encrypted,
-        privSpend: encrypted2 
       }
     });
 
@@ -206,6 +204,7 @@ const SignupForm = ({
         commitment: "confirmed",
       }
     );
+    setCurrStep((prev) => prev + 1);
     console.log("txid", txid);
     // console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
@@ -237,8 +236,9 @@ const SignupForm = ({
       //   "token account created: " + senderTokenAccount.address.toBase58() + "\n"
       // );
 
+      console.log("profile address");
       console.log(profileAddress);
- 
+
       console.log("Getting associated token address...");
       const associatedToken = await getAssociatedTokenAddress(
         customMint,
@@ -363,8 +363,8 @@ const SignupForm = ({
 
       console.log(
         "NFT token account created: " +
-          senderNFTTokenAccount.address.toBase58() +
-          "\n"
+        senderNFTTokenAccount.address.toBase58() +
+        "\n"
       );
 
       // Mint to NFT token account (MINTING)
