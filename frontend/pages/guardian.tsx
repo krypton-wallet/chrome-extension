@@ -34,8 +34,6 @@ const Guardian: NextPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
-  const defaultpk = PublicKey.default;
-
   useEffect(() => {
     // Fetching all guardians from PDA
     const getGuardians = async () => {
@@ -147,7 +145,7 @@ const Guardian: NextPage = () => {
       </div>
 
       <div style={{ overflow: "auto", height: "250px" }}>
-        {guardians.map((g, idx) => {
+        {guardians.map((g) => {
           return (
             <GuardianBox
               key={g.toBase58()}
@@ -170,7 +168,7 @@ const Guardian: NextPage = () => {
       )}
 
       <div style={{ display: "flex", position: "absolute", bottom: "90px" }}>
-        <Button
+        {editmode ? null : <Button
           type="primary"
           icon={editmode ? <EditOutlined /> : <UserAddOutlined />}
           onClick={editmode ? () => { console.log("fudding your bags") } : showModal}
@@ -179,8 +177,8 @@ const Guardian: NextPage = () => {
           loading={loading != 0}
           disabled={editmode && guardians.length === 0}
         >
-          {editmode ? "Regen Shards" : "Add"}
-        </Button>
+          Add
+        </Button>}
         <Button
           type={editmode ? "primary" : undefined}
           icon={<EditOutlined />}

@@ -13,6 +13,7 @@ import { useGlobalState } from "../../context";
 import { Box } from "../../styles/StyledComponents.styles";
 import {
   displayAddress,
+  getProfilePDA,
   sendAndConfirmTransactionWithAccount,
 } from "../../utils";
 import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../../utils/constants";
@@ -37,37 +38,49 @@ const GuardianBox = ({
 
     setDeleteLoading((prev) => prev + 1);
     setLoading(true);
+
     const connection = new Connection(RPC_URL(network), "confirmed");
     const feePayerPK = new PublicKey(account.pk);
-    const defaultpk = PublicKey.default;
+    const [profileAddress] = getProfilePDA(feePayerPK);
 
-    const idx3 = Buffer.from(new Uint8Array([3]));
-    const new_acct_len = Buffer.from(
-      new Uint8Array(new BN(1).toArray("le", 1))
-    );
+    // const defaultpk = PublicKey.default;
 
-    // const deleteFromRecoveryInstruction = krypton.createRemoveRecoveryGuardiansInstruction()
-    const deleteFromRecoveryIx = new TransactionInstruction({
-      keys: [
-        {
-          pubkey: new PublicKey(account.pda) ?? defaultpk,
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: feePayerPK,
-          isSigner: true,
-          isWritable: true,
-        },
-        {
-          pubkey: guardian,
-          isSigner: false,
-          isWritable: false,
-        },
-      ],
-      programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx3, new_acct_len]),
+    // const idx3 = Buffer.from(new Uint8Array([3]));
+    // const new_acct_len = Buffer.from(
+    // new Uint8Array(new BN(1).toArray("le", 1))
+    // );
+
+    const deleteFromRecoveryIx = krypton.createRemoveRecoveryGuardiansInstruction({
+      profileInfo: profileAddress,
+      authorityInfo: feePayerPK,
+      guardian
+    }, {
+      removeRecoveryGuardianArgs: {
+        numGuardians: 1
+      }
     });
+
+    // const deleteFromRecoveryIx = new TransactionInstruction({
+    //   keys: [
+    //     {
+    //       pubkey: new PublicKey(account.pda) ?? defaultpk,
+    //       isSigner: false,
+    //       isWritable: true,
+    //     },
+    //     {
+    //       pubkey: feePayerPK,
+    //       isSigner: true,
+    //       isWritable: true,
+    //     },
+    //     {
+    //       pubkey: guardian,
+    //       isSigner: false,
+    //       isWritable: false,
+    //     },
+    //   ],
+    //   programId: WALLET_PROGRAM_ID,
+    //   data: Buffer.concat([idx3, new_acct_len]),
+    // });
 
     const recentBlockhash = await connection.getLatestBlockhash();
     // TODO: Check if Yubikey is connected
@@ -89,11 +102,11 @@ const GuardianBox = ({
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    // setGuardians((prev) =>
-    //   prev.filter((g) => {
-    //     return g.toBase58() !== guardian.toBase58();
-    //   })
-    // );
+    setGuardians((prev) =>
+      prev.filter((g) => {
+        return g.toBase58() !== guardian.toBase58();
+      })
+    );
     setLoading(false);
     setDeleteLoading((prev) => prev - 1);
   };
