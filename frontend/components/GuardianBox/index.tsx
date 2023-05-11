@@ -16,17 +16,14 @@ import {
   sendAndConfirmTransactionWithAccount,
 } from "../../utils";
 import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../../utils/constants";
+import * as krypton from "../../js/src/generated";
 
 const GuardianBox = ({
   guardian,
-  shard,
-  shardIdx,
   editMode,
   setDeleteLoading,
 }: {
   guardian: PublicKey;
-  shard: string;
-  shardIdx: number;
   editMode: boolean;
   setDeleteLoading: Dispatch<SetStateAction<number>>;
 }) => {
@@ -49,6 +46,7 @@ const GuardianBox = ({
       new Uint8Array(new BN(1).toArray("le", 1))
     );
 
+    // const deleteFromRecoveryInstruction = krypton.createRemoveRecoveryGuardiansInstruction()
     const deleteFromRecoveryIx = new TransactionInstruction({
       keys: [
         {
@@ -91,12 +89,11 @@ const GuardianBox = ({
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    guardShardMap.delete(shardIdx);
-    setGuardians((prev) =>
-      prev.filter((g) => {
-        return g.toBase58() !== guardian.toBase58();
-      })
-    );
+    // setGuardians((prev) =>
+    //   prev.filter((g) => {
+    //     return g.toBase58() !== guardian.toBase58();
+    //   })
+    // );
     setLoading(false);
     setDeleteLoading((prev) => prev - 1);
   };
@@ -125,26 +122,6 @@ const GuardianBox = ({
             style={{ marginBottom: 0 }}
           >
             {displayAddress(guardian.toBase58())}
-          </Paragraph>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "0.5rem",
-          }}
-        >
-          <p style={{ margin: "0", color: "#bababa", fontSize: "12px" }}>
-            Shard:
-          </p>
-          <Paragraph
-            code
-            copyable={{ text: shard, tooltips: `Copy` }}
-            style={{ color: "#bababa", marginBottom: 0 }}
-          >
-            {displayAddress(shard)}
           </Paragraph>
         </div>
       </div>

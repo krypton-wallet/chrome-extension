@@ -6,25 +6,27 @@ import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
 import {
   Connection,
   PublicKey,
+  SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
 import GuardianBox from "../components/GuardianBox";
 import base58 from "bs58";
-import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
+import { containsPk, getProfilePDA, sendAndConfirmTransactionWithAccount } from "../utils";
 import BN from "bn.js";
-import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../utils/constants";
+import { RPC_URL, WALLET_PROGRAM_ID, } from "../utils/constants";
 import { split } from "shamirs-secret-sharing-ts";
 import { randomBytes } from "crypto";
 import * as aesjs from "aes-js";
-import { genShards } from "../utils/stealth";
+// import { genShards } from "../utils/stealth";
 import { KryptonAccount } from "../types/account";
 import { parseDataFromPDA } from "../types/pda";
+import * as krypton from "../js/src/generated";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, setAccount, network } =
     useGlobalState();
-  const [shards, setShards] = useState<string[]>([]);
+  // const [shards, setShards] = useState<string[]>([]);
   const [loading, setLoading] = useState<number>(0);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
@@ -42,38 +44,23 @@ const Guardian: NextPage = () => {
       }
       const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
-      console.log("account pk: ", publicKey.toBase58());
-      console.log("PDA: ", account.pda);
-      const pda_account = await connection.getAccountInfo(
-        new PublicKey(account.pda) ?? PublicKey.default
-      );
-      const pda_data = pda_account?.data ?? Buffer.from("");
-      const pdaDataObj = parseDataFromPDA(pda_data);
-      const threshold = pdaDataObj.recoveryThreshold;
-      const guardian_len = pdaDataObj.guardiansLen;
-      console.log("threshold: ", threshold);
-      console.log("guardian length: ", guardian_len);
-      console.log("All Guardians:");
+      const [profileAddress] = getProfilePDA(publicKey);
 
-      // generate shards from encryption key
-      const { shards } = account.stealth;
-      setShards(shards);
 
-      const guardians_tmp: PublicKey[] = [];
-      for (let i = 0; i < guardian_len; i++) {
-        const guardianObj = pdaDataObj.guardians[i];
-        const guard = guardianObj.pubkey;
-        const shard_idx = guardianObj.shardIdx;
-        console.log(`guard ${i + 1}: `, guard.toBase58());
-        console.log(`shard ${i + 1}: `, shard_idx);
-        guardians_tmp.push(guard);
-        guardShardMap.set(shard_idx, guard);
+      const profileAccount = await connection.getAccountInfo(profileAddress);
+
+      if (profileAccount) {
+        const [profile] = krypton.ProfileHeader.fromAccountInfo(profileAccount);
+
+        setThres(profile.recoveryThreshold);
+        setGuardians(
+          profile.guardians
+            .map(g => g.pubkey)
+            .filter(g => !g.equals(SystemProgram.programId)));
       }
-      setThres(threshold);
-      setGuardians(guardians_tmp);
     };
     getGuardians();
-  }, [account, network, setGuardians, setShards]);
+  }, [account, network]);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -89,47 +76,22 @@ const Guardian: NextPage = () => {
     setLoading((prev) => prev + 1);
     form.resetFields();
 
-    let shard_idx = 11;
-
-    for (let i = 0; i < shards.length; ++i) {
-      if (!guardShardMap.has(i)) {
-        shard_idx = i;
-        break;
-      }
-    }
-
     // Instr Add
     const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection(RPC_URL(network), "confirmed");
-    const idx1 = Buffer.from(new Uint8Array([1]));
-    const idx_shard = Buffer.from(new Uint8Array([shard_idx]));
-    const len = Buffer.from(new Uint8Array(new BN(1).toArray("le", 4)));
-    const new_acct_len = Buffer.from(
-      new Uint8Array(new BN(1).toArray("le", 1))
-    );
     const latestBlockhash = await connection.getLatestBlockhash();
 
-    const addToRecoveryListIx = new TransactionInstruction({
-      keys: [
-        {
-          pubkey: new PublicKey(account.pda) ?? defaultpk,
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: publicKey,
-          isSigner: true,
-          isWritable: true,
-        },
-        {
-          pubkey: new PublicKey(values.guardian),
-          isSigner: false,
-          isWritable: false,
-        },
-      ],
-      programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx1, new_acct_len, len, idx_shard]),
+    const [profileAddress] = getProfilePDA(publicKey);
+
+    const addGuardianIx = krypton.createAddRecoveryGuardiansInstruction({
+      profileInfo: profileAddress,
+      authorityInfo: publicKey,
+      guardian: new PublicKey(values.guardian),
+    }, {
+      addRecoveryGuardianArgs: {
+        numGuardians: 1 // make sure this isn't overwriting the first guardian
+      }
     });
 
     // TODO: Check if Yubikey is connected
@@ -137,8 +99,9 @@ const Guardian: NextPage = () => {
       feePayer: publicKey,
       ...latestBlockhash,
     });
-    tx.add(addToRecoveryListIx);
+    tx.add(addGuardianIx);
 
+    console.log("processing add guardian");
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
@@ -151,12 +114,6 @@ const Guardian: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    // set new shard idx
-    if (shard_idx != 11) {
-      guardShardMap.set(shard_idx, new PublicKey(values.guardian));
-    } else {
-      console.log("something went wrong, shard_idx = 11");
-    }
 
     setLoading((prev) => prev - 1);
     setIsModalOpen(false);
@@ -173,18 +130,6 @@ const Guardian: NextPage = () => {
     setEditmode(!editmode);
   };
 
-  const regenShards = async () => {
-    if (!account) {
-      return;
-    }
-    setLoading((prev) => prev + 1);
-    console.log("regenning boys");
-    const encryption_key = randomBytes(16);
-    const [acc, shards] = await genShards(encryption_key, account, network);
-    setAccount(acc);
-    setShards(shards);
-    setLoading((prev) => prev - 1);
-  };
 
   return (
     <>
@@ -202,13 +147,11 @@ const Guardian: NextPage = () => {
       </div>
 
       <div style={{ overflow: "auto", height: "250px" }}>
-        {[...guardShardMap].map(([idx, g]) => {
+        {guardians.map((g, idx) => {
           return (
             <GuardianBox
               key={g.toBase58()}
               guardian={g}
-              shard={shards[idx]}
-              shardIdx={idx}
               editMode={editmode}
               setDeleteLoading={setLoading}
             />
@@ -218,9 +161,8 @@ const Guardian: NextPage = () => {
 
       {guardians.length < thres && (
         <Alert
-          message={`Need ${
-            thres - guardians.length
-          } more guardian(s) to activate recovery feature`}
+          message={`Need ${thres - guardians.length
+            } more guardian(s) to activate recovery feature`}
           type="warning"
           style={{ width: "85%", position: "absolute", bottom: "95px" }}
           showIcon
@@ -231,7 +173,7 @@ const Guardian: NextPage = () => {
         <Button
           type="primary"
           icon={editmode ? <EditOutlined /> : <UserAddOutlined />}
-          onClick={editmode ? regenShards : showModal}
+          onClick={editmode ? () => { console.log("fudding your bags") } : showModal}
           size="middle"
           style={{ width: "168px", marginRight: "20px" }}
           loading={loading != 0}
