@@ -1,23 +1,17 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Button } from "antd";
 import Paragraph from "antd/lib/typography/Paragraph";
-import BN from "bn.js";
 import { Dispatch, SetStateAction, useState } from "react";
 import { useGlobalState } from "../../context";
+import * as krypton from "../../js/src/generated";
 import { Box } from "../../styles/StyledComponents.styles";
 import {
   displayAddress,
   getProfilePDA,
   sendAndConfirmTransactionWithAccount,
 } from "../../utils";
-import { RPC_URL, WALLET_PROGRAM_ID, guardShardMap } from "../../utils/constants";
-import * as krypton from "../../js/src/generated";
+import { RPC_URL } from "../../utils/constants";
 
 const GuardianBox = ({
   guardian,
@@ -28,7 +22,7 @@ const GuardianBox = ({
   editMode: boolean;
   setDeleteLoading: Dispatch<SetStateAction<number>>;
 }) => {
-  const { setGuardians, guardians, account, network } = useGlobalState();
+  const { setGuardians, account, network } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
 
   const onDelete = async () => {
@@ -43,44 +37,20 @@ const GuardianBox = ({
     const feePayerPK = new PublicKey(account.pk);
     const [profileAddress] = getProfilePDA(feePayerPK);
 
-    // const defaultpk = PublicKey.default;
-
-    // const idx3 = Buffer.from(new Uint8Array([3]));
-    // const new_acct_len = Buffer.from(
-    // new Uint8Array(new BN(1).toArray("le", 1))
-    // );
-
-    const deleteFromRecoveryIx = krypton.createRemoveRecoveryGuardiansInstruction({
-      profileInfo: profileAddress,
-      authorityInfo: feePayerPK,
-      guardian
-    }, {
-      removeRecoveryGuardianArgs: {
-        numGuardians: 1
-      }
-    });
-
-    // const deleteFromRecoveryIx = new TransactionInstruction({
-    //   keys: [
-    //     {
-    //       pubkey: new PublicKey(account.pda) ?? defaultpk,
-    //       isSigner: false,
-    //       isWritable: true,
-    //     },
-    //     {
-    //       pubkey: feePayerPK,
-    //       isSigner: true,
-    //       isWritable: true,
-    //     },
-    //     {
-    //       pubkey: guardian,
-    //       isSigner: false,
-    //       isWritable: false,
-    //     },
-    //   ],
-    //   programId: WALLET_PROGRAM_ID,
-    //   data: Buffer.concat([idx3, new_acct_len]),
-    // });
+    console.log(guardian.toBase58());
+    const deleteFromRecoveryIx =
+      krypton.createRemoveRecoveryGuardiansInstruction(
+        {
+          profileInfo: profileAddress,
+          authorityInfo: feePayerPK,
+          guardian,
+        },
+        {
+          removeRecoveryGuardianArgs: {
+            numGuardians: 1,
+          },
+        }
+      );
 
     const recentBlockhash = await connection.getLatestBlockhash();
     // TODO: Check if Yubikey is connected

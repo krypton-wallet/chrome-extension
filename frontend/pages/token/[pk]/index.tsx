@@ -91,7 +91,7 @@ const Token: NextPage = () => {
       setLoading(false);
     };
     getMintInfo();
-  }, [connection, mint_pk, account, router, tokenBalance]);
+  }, [connection, mint_pk, account, router, tokenBalance, network]);
 
   const handleClick = () => {
     router.push({

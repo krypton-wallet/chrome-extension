@@ -67,13 +67,7 @@ const YubikeySignup: NextPage = () => {
           manufacturer: info.manufacturer,
           ...feePayerAccount,
         } as YubikeyAccount;
-        const { stealth, ...rest } = account;
-        old[count] = {
-          priv_scan: stealth.priv_scan,
-          priv_spend: stealth.priv_spend,
-          shards: stealth.shards,
-          ...rest,
-        };
+        old[count] = account;
         const values = JSON.stringify(old);
         chrome.storage.local.set({
           y_accounts: values,

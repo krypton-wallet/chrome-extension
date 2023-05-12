@@ -26,7 +26,7 @@ const Home: NextPage = () => {
           y_id: 1,
           y_accounts: "{}",
           mode: 0,
-          network: "devnet"
+          network: "devnet",
         });
         setVisible(true);
         return;
@@ -42,7 +42,7 @@ const Home: NextPage = () => {
       setNetwork(result.network);
       router.push("/wallet");
     });
-  }, [modalContext, router, setAccount]);
+  }, [modalContext, router, setAccount, setNetwork]);
 
   return (
     <>

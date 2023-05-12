@@ -43,7 +43,7 @@ const Token: NextPage = () => {
     const getNFT = async () => {
       let name = "Unknown NFT";
       let imageUri = "/static/images/token.png";
-      if(network == "mainnet-beta") {
+      if (network == "mainnet-beta") {
         const pda = new PublicKey(account!.pda);
         let metaplex = Metaplex.make(connection);
         const nft = await metaplex
@@ -58,7 +58,7 @@ const Token: NextPage = () => {
     };
 
     getNFT();
-  }, [connection, mint_pk, account, router]);
+  }, [connection, mint_pk, account, router, network]);
 
   const handleClick = () => {
     router.push({

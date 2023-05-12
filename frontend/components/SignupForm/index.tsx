@@ -45,7 +45,7 @@ import { randomBytes } from "tweetnacl";
 import * as aesjs from "aes-js";
 import base58 from "bs58";
 import { split } from "shamirs-secret-sharing-ts";
-import * as krypton from '../../js/src/generated';
+import * as krypton from "../../js/src/generated";
 
 const SignupForm = ({
   feePayer,
@@ -83,28 +83,10 @@ const SignupForm = ({
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
 
-    // Generating Stealth
-    const utf8 = new TextEncoder();
-    const message = utf8.encode(
-      "Signing this message is equivalent to generating your private keys. Do not sign this once you have already generated your private keys."
-    );
-    const sig = await feePayer.signMessage(message);
-    const keys: StealthKeys = await genKeys(sig);
-    const encryption_key = randomBytes(16);
-    const shares = split(Buffer.from(encryption_key), {
-      shares: MAX_GUARDIANS,
-      threshold: thres,
-    });
-    const shards = shares.map((share) => base58.encode(share));
     const feePayerAccount: Omit<KryptonAccount, "name"> = {
       ...feePayer,
       pk: feePayerPK.toBase58(),
       pda: profileAddress.toBase58(),
-      stealth: {
-        priv_scan: keys.privScan,
-        priv_spend: keys.privSpend,
-        shards,
-      },
     };
     console.log("feePayer Account: ", feePayerAccount);
 
@@ -132,45 +114,18 @@ const SignupForm = ({
     }
 
     // instr 1: initialize social recovery wallet
-    const idx = Buffer.from(new Uint8Array([0]));
-    const acct_len = Buffer.from(new Uint8Array(new BN(0).toArray("le", 1)));
-    const recovery_threshold = Buffer.from(
-      new Uint8Array(new BN(thres).toArray("le", 1))
-    );
-
-    const aesCtr = new aesjs.ModeOfOperation.ctr(encryption_key);
-
-    //should fix not size 32 issue
-
-    let encrypted = new Uint8Array(32);
-    encrypted.set(aesCtr.encrypt(base58.decode(keys.privScan)));
-
-    let encrypted2 = new Uint8Array(32);
-    encrypted2.set(aesCtr.encrypt(base58.decode(keys.privSpend)));
-
-    const messageLen = Buffer.from(
-      new Uint8Array(new BN(encrypted.length).toArray("le", 4))
-    );
-    console.log("message len: ", messageLen);
-    console.log("message: ", encrypted);
-    const message3 = encrypted;
-    const messageLen2 = Buffer.from(
-      new Uint8Array(new BN(encrypted2.length).toArray("le", 4))
-    );
-    console.log("message len2: ", messageLen2);
-    console.log("message: ", encrypted2);
-    const message2 = encrypted2;
-
-    const initializeSocialWalletIx = krypton.createInitializeWalletInstruction({
-      profileInfo: profileAddress,
-      authorityInfo: feePayerPK
-    }, {
-      initializeWalletArgs: {
-        recoveryThreshold: thres,
+    const initializeSocialWalletIx = krypton.createInitializeWalletInstruction(
+      {
+        profileInfo: profileAddress,
+        authorityInfo: feePayerPK,
+      },
+      {
+        initializeWalletArgs: {
+          recoveryThreshold: thres,
+        },
       }
-    });
-
-    console.log('init ix');
+    );
+    console.log("init ix");
     console.log(initializeSocialWalletIx);
 
     let recentBlockhash1 = await connection.getLatestBlockhash();
@@ -190,7 +145,6 @@ const SignupForm = ({
     const tx = new VersionedTransaction(messageV0);
     tx.sign([feePayer]);
     */
-
 
     console.log("sending TX!");
 
@@ -363,8 +317,8 @@ const SignupForm = ({
 
       console.log(
         "NFT token account created: " +
-        senderNFTTokenAccount.address.toBase58() +
-        "\n"
+          senderNFTTokenAccount.address.toBase58() +
+          "\n"
       );
 
       // Mint to NFT token account (MINTING)

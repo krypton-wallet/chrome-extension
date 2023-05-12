@@ -8,11 +8,7 @@ import { Button, Image } from "antd";
 import CopyableBox from "../../../components/CopyableBox";
 import EditableBox from "../../../components/EditableBox";
 import { useGlobalState } from "../../../context";
-import {
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-} from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getAvatar } from "../../../utils/avatar";
 import InfoBox from "../../../components/InfoBox";
 import { RPC_URL } from "../../../utils/constants";
@@ -23,7 +19,6 @@ const Account: NextPage = () => {
   const [accountName, setAccountName] = useState<string>("");
   const [pk, setPk] = useState<string>("");
   const [pda, setPda] = useState<string>("");
-  const [privateScan, setPrivateScan] = useState<string>("");
   const [avatar, setAvatar] = useState<string>();
   const [keypairBalance, setKeypairBalance] = useState<number>(0);
   const [oneAccountLeft, setOneAccountLeft] = useState<boolean>(false);
@@ -124,13 +119,11 @@ const Account: NextPage = () => {
         const name = accountObj[selectedId]["name"];
         const pk = accountObj[selectedId]["pk"];
         const pda = accountObj[selectedId]["pda"];
-        const privScan = accountObj[selectedId]["priv_scan"];
         const connection = new Connection(RPC_URL(network), "confirmed");
         const keypairBalance = await connection.getBalance(new PublicKey(pk));
         setAccountName(name);
         setPk(pk);
         setPda(pda);
-        setPrivateScan(privScan);
         setKeypairBalance(keypairBalance / LAMPORTS_PER_SOL);
         if (accountObj[selectedId]["avatar"]) {
           const connection = new Connection(RPC_URL(network), "confirmed");
@@ -194,11 +187,6 @@ const Account: NextPage = () => {
           copyableValue={pk}
         />
         <InfoBox fieldName="Keypair Balance" value={`${keypairBalance} SOL`} />
-        <CopyableBox
-          fieldName="Private Scan Key"
-          value={displayAddress(privateScan)}
-          copyableValue={privateScan}
-        />
         <Image
           width={"23%"}
           style={{

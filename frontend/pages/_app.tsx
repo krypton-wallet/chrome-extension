@@ -15,8 +15,6 @@ function MyApp({ Component, pageProps }: AppProps) {
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [guardians, setGuardians] = useState<Array<PublicKey>>([]);
-  const [stealth, setStealth] = useState<string | null>(null);
-  const [stealthBalance, setStealthBalance] = useState<number>();
   const [recoverPk, setRecoverPk] = useState<PublicKey | null>(null);
   const [tokens, setTokens] = useState<Array<[PublicKey, bigint, number]>>([]);
   const [currId, setCurrId] = useState<number | null>(1);
@@ -43,10 +41,6 @@ function MyApp({ Component, pageProps }: AppProps) {
         setCurrId,
         yubikeyInfo,
         setYubikeyInfo,
-        stealth,
-        setStealth,
-        stealthBalance,
-        setStealthBalance,
       }}
     >
       <GlobalModal>

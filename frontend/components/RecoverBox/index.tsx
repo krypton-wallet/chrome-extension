@@ -1,38 +1,23 @@
-import React, { useState } from "react";
-import { Button, Result } from "antd";
-import { Box } from "../../styles/StyledComponents.styles";
 import { LoadingOutlined } from "@ant-design/icons";
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
 import {
   AccountLayout,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
   getAccount,
+  getAssociatedTokenAddress,
 } from "@solana/spl-token";
-import { useGlobalState } from "../../context";
-import Axios from "axios";
-import {
-  getProfilePDA,
-  sendAndConfirmTransactionWithAccount,
-} from "../../utils";
-import BN from "bn.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Button, Result } from "antd";
 import Paragraph from "antd/lib/typography/Paragraph";
 import Text from "antd/lib/typography/Text";
-import { RPC_URL, MAX_GUARDIANS, WALLET_PROGRAM_ID } from "../../utils/constants";
-import base58 from "bs58";
-import { combine, split } from "shamirs-secret-sharing-ts";
-import { randomBytes } from "tweetnacl";
-import * as aesjs from "aes-js";
-import { genShards } from "../../utils/stealth";
-import router from "next/router";
+import { useState } from "react";
+import { useGlobalState } from "../../context";
+import * as krypton from "../../js/src/generated/index";
+import { Box } from "../../styles/StyledComponents.styles";
+import { sendAndConfirmTransactionWithAccount } from "../../utils";
+import { RPC_URL } from "../../utils/constants";
 
-const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
+const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
   const { account, setAccount } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
@@ -40,141 +25,109 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
   const [msg, setMsg] = useState<any>("");
   const { network } = useGlobalState();
 
-  const connection = new Connection(RPC_URL(network), "confirmed");
-  const defaultpk = PublicKey.default;
-
   if (!account) {
     return <></>;
   }
 
-  const refreshSecret = async () => {
-    if (!account) {
-      return;
-    }
-    console.log("refreshing boys");
-
-    const shards_buffs = account.stealth.shards.map((str) => Buffer.from(base58.decode(str))); 
-    const encryption_key = combine(shards_buffs);
-    const [acc,_]  = await genShards(encryption_key,account,network);
-    setAccount(acc);
-  }
-  const onRecoverStealth = async () => {
-    router.push("/stealth/regenStealth");
-  }
   const onRecover = async () => {
     try {
       console.log("\n=====RECOVERING======");
+      const connection = new Connection(RPC_URL(network), "confirmed");
+
       const feePayerPK = new PublicKey(account.pk);
-      console.log("Signer: ", account.pk);
-      setLoading(true);
-      const res = await Axios.get(
-        "http://localhost:5000/api/getFromPk/" + old_pk
-      );
-      const res_data = res.data[0];
-      if (res_data == undefined) {
-        throw new Error("Invalid signing request!");
+      const newPK = new PublicKey(account.pda);
+      const oldProfileAccount = await connection.getAccountInfo(profileInfo);
+      if (!oldProfileAccount) {
+        console.log("no profile account found");
+        return;
       }
+      const [oldProfile] =
+        krypton.ProfileHeader.fromAccountInfo(oldProfileAccount);
+      const authorityInfo = oldProfile.authority;
+      const recovery = oldProfile.recovery;
 
-      const transactionBased64 = res_data.transaction;
-      const transaction = Transaction.from(
-        Buffer.from(transactionBased64, "base64")
-      );
-      console.log("SIGNATURES");
-      for (let i = 0; i < transaction.signatures.length; i++) {
-        console.log(
-          `pk ${i}: ${transaction.signatures[
-            i
-          ].publicKey.toBase58()} \nsignature ${i}: `,
-          transaction.signatures[i].signature?.toString("base64")
-        );
-      }
+      // TODO: Check if Yubikey is connected
 
-      if (!transaction.verifySignatures())
-        throw new Error(`Transaction signature invalid! `);
-      console.log("Transaction signature valid! ");
-
-      // Serialize the transaction to send it using connection.sendEncodedTransaction
-      // We have to do this because connection.sendTransaction uses sign (and rejects if we pass it no new signers)
-      const serialized = transaction.serialize({
-        requireAllSignatures: true,
-        verifySignatures: true,
+      // recover wallet
+      console.log("Transfering profile data...");
+      const recoverWalletIx = krypton.createRecoverWalletInstruction({
+        profileInfo,
+        authorityInfo,
+        newProfileInfo: newPK,
+        newAuthorityInfo: feePayerPK,
       });
-      console.log("Transaction serialized!");
-
-      /* TRANSACTION: Transfer and close all token accounts */
-      const profile_pda = getProfilePDA(new PublicKey(res_data.pk));
-      const new_profile_pda = getProfilePDA(new PublicKey(res_data.new_pk));
-      const allTA_res = await connection.getTokenAccountsByOwner(
-        profile_pda[0],
+      let recentBlockhash = await connection.getLatestBlockhash();
+      const recoverWalletTx = new Transaction({
+        feePayer: feePayerPK,
+        ...recentBlockhash,
+      });
+      recoverWalletTx.add(recoverWalletIx);
+      const recoverWalletTxid = await sendAndConfirmTransactionWithAccount(
+        connection,
+        recoverWalletTx,
+        [account],
         {
-          programId: TOKEN_PROGRAM_ID,
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
         }
       );
+      console.log(
+        `https://explorer.solana.com/tx/${recoverWalletTxid}?cluster=${network}`
+      );
 
-      const recentBlockhash0 = await connection.getLatestBlockhash();
-      // TODO: Check if Yubikey is connected
-      const transferCloseTx = new Transaction({
+      // recover tokens
+      console.log("Transfering tokens...");
+      recentBlockhash = await connection.getLatestBlockhash();
+      const recoverTokenTx = new Transaction({
         feePayer: feePayerPK,
-        ...recentBlockhash0,
+        ...recentBlockhash,
       });
-
-      allTA_res.value.forEach(async (e) => {
+      const allATA = await connection.getTokenAccountsByOwner(profileInfo, {
+        programId: TOKEN_PROGRAM_ID,
+      });
+      allATA.value.forEach(async (e) => {
         const oldTokenAccount = e.pubkey;
         const accountInfo = AccountLayout.decode(e.account.data);
-
         const mint = new PublicKey(accountInfo.mint);
         const amount = accountInfo.amount;
-        const recoveryMode = 1;
 
         console.log(`Old Token Account: ${oldTokenAccount.toBase58()}`);
         console.log(`mint: ${mint}`);
         console.log(`amount: ${amount}`);
-        console.log(`recovery mode: ${recoveryMode}\n`);
-
         console.log("Getting associated token address...");
         const associatedToken = await getAssociatedTokenAddress(
           mint,
-          new_profile_pda[0],
+          newPK,
           true,
           TOKEN_PROGRAM_ID
         );
 
         console.log("Creating token account for mint...");
-        const recentBlockhash = await connection.getLatestBlockhash();
-        // TODO: Check if Yubikey is connected
-        const createTA_tx = new Transaction({
+        recentBlockhash = await connection.getLatestBlockhash();
+        const createATATx = new Transaction({
           feePayer: feePayerPK,
           ...recentBlockhash,
         }).add(
           createAssociatedTokenAccountInstruction(
-            new PublicKey(account.pk),
+            feePayerPK,
             associatedToken,
-            new_profile_pda[0],
+            newPK,
             mint,
             TOKEN_PROGRAM_ID
           )
         );
-
-        console.log("about to send");
         await sendAndConfirmTransactionWithAccount(
           connection,
-          createTA_tx,
+          createATATx,
           [account],
           {
             skipPreflight: true,
             preflightCommitment: "confirmed",
             commitment: "confirmed",
           }
-          );
-          
-          console.log("sent");
-        // const newTokenAccount = await getOrCreateAssociatedTokenAccount(
-        //   connection,
-        //   account ?? new Keypair(),
-        //   mint,
-        //   new_profile_pda[0],
-        //   true
-        // );
+        );
+
         console.log("Getting sender token account...");
         const newTokenAccount = await getAccount(
           connection,
@@ -184,114 +137,49 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
         );
         console.log(`New Token Account: ${newTokenAccount.address.toBase58()}`);
 
-        const idx2 = Buffer.from(new Uint8Array([6]));
-        const amountBuf = Buffer.from(
-          new Uint8Array(new BN(Number(amount)).toArray("le", 8))
-        );
-        const recoveryModeBuf = Buffer.from(new Uint8Array([recoveryMode]));
-        const transferAndCloseIx = new TransactionInstruction({
-          keys: [
-            {
-              pubkey: profile_pda[0],
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: new PublicKey(res_data.pk),
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: feePayerPK,
-              isSigner: true,
-              isWritable: true,
-            },
-            {
-              pubkey: oldTokenAccount,
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: newTokenAccount.address,
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: TOKEN_PROGRAM_ID,
-              isSigner: false,
-              isWritable: false,
-            },
-          ],
-          programId: WALLET_PROGRAM_ID,
-          data: Buffer.concat([idx2, amountBuf, recoveryModeBuf]),
+        const recoverTokenIx = krypton.createRecoverTokenInstruction({
+          profileInfo,
+          authorityInfo,
+          newProfileInfo: newPK,
+          newAuthorityInfo: feePayerPK,
+          oldTokenAccountInfo: oldTokenAccount,
+          newTokenAccountInfo: newTokenAccount.address,
         });
-
-        transferCloseTx.add(transferAndCloseIx);
+        recoverTokenTx.add(recoverTokenIx);
       });
-
-      /* TRANSACTION: Recover Transaction */
-      // Send the transaction
-      const signature = await connection.sendEncodedTransaction(
-        serialized.toString("base64")
-      );
-      console.log("Recovering Wallet: ");
-      console.log(
-        `https://explorer.solana.com/tx/${signature}?cluster=${network}\n`
-      );
-
-      // Wait for it to finish
-      let recentBlockhash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction(
+      const recoverTokenTxid = await sendAndConfirmTransactionWithAccount(
+        connection,
+        recoverTokenTx,
+        [account],
         {
-          blockhash: recentBlockhash.blockhash,
-          lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
-          signature,
-        },
-        "confirmed"
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        }
+      );
+      console.log(
+        `https://explorer.solana.com/tx/${recoverTokenTxid}?cluster=${network}`
       );
 
       await new Promise((resolve) => setTimeout(resolve, 7000));
 
-      /* TRANSACTION: Transfer Native SOL */
-      const idx3 = Buffer.from(new Uint8Array([7]));
-      const amountBuf1 = Buffer.from(
-        new Uint8Array(new BN(Number(1)).toArray("le", 8))
-      );
-      const recoveryModeBuf1 = Buffer.from(new Uint8Array([1]));
-
+      // recover SOL
+      console.log("Transfering native SOL...");
+      const recoverSOLIx = krypton.createRecoverNativeSOLInstruction({
+        profileInfo,
+        authorityInfo,
+        newProfileInfo: newPK,
+        newAuthorityInfo: feePayerPK,
+      });
       recentBlockhash = await connection.getLatestBlockhash();
-      // TODO: Check if Yubikey is connected
-      const transferSOLTx = new Transaction({
+      const recoverSOLTx = new Transaction({
         feePayer: feePayerPK,
         ...recentBlockhash,
-      }).add(
-        new TransactionInstruction({
-          keys: [
-            {
-              pubkey: profile_pda[0],
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: new_profile_pda[0],
-              isSigner: false,
-              isWritable: true,
-            },
-            {
-              pubkey: feePayerPK,
-              isSigner: true,
-              isWritable: true,
-            },
-          ],
-          programId: WALLET_PROGRAM_ID,
-          data: Buffer.concat([idx3, amountBuf1, recoveryModeBuf1]),
-        })
-      );
-
-      console.log("Transfering native SOL...");
-      const transfer_sol_txid = await sendAndConfirmTransactionWithAccount(
+      });
+      recoverSOLTx.add(recoverSOLIx);
+      const recoverSOLTxid = await sendAndConfirmTransactionWithAccount(
         connection,
-        transferSOLTx,
+        recoverSOLTx,
         [account],
         {
           skipPreflight: true,
@@ -300,26 +188,8 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
         }
       );
       console.log(
-        `https://explorer.solana.com/tx/${transfer_sol_txid}?cluster=${network}\n`
+        `https://explorer.solana.com/tx/${recoverSOLTxid}?cluster=${network}`
       );
-
-      /* TRANSACTION: Transfer and close all token accounts */
-      console.log("Transfering and closing...");
-      const transfer_txid = await sendAndConfirmTransactionWithAccount(
-        connection,
-        transferCloseTx,
-        [account],
-        {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
-          commitment: "confirmed",
-        }
-      );
-      console.log(
-        `https://explorer.solana.com/tx/${transfer_txid}?cluster=${network}\n`
-      );
-
-      await Axios.delete("http://localhost:5000/api/delete/" + old_pk);
 
       console.log("RECOVERY COMPLETED! LET'S GOOOOO!");
 
@@ -343,7 +213,7 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
             Click <b>Recover</b> to complete recovering
           </Paragraph>
           <Paragraph style={{ textAlign: "center", fontSize: "12px" }}>
-            {old_pk.toBase58()}
+            {profileInfo.toBase58()}
           </Paragraph>
           {!loading && (
             <Button type="primary" onClick={onRecover}>
@@ -355,34 +225,16 @@ const RecoverBox = ({ old_pk }: { old_pk: PublicKey }) => {
           )}
         </>
       )}
-      {finished && (
-        <>
-          {succeeded && (
-            <Result
-              status="success"
-              title="Successfully Recovered!"
-              subTitle="Select an option below">
-                <Button type="primary" onClick={refreshSecret} style={{marginBottom: "5px"}}>
-              Continue
-            </Button>
-                <Button type="primary" onClick={onRecoverStealth}>
-              Recover Stealth
-            </Button>
-              </Result>
-            
-          )}
-          {!succeeded && (
-            <Result
-              status="error"
-              title="Recovery Failed"
-              subTitle="Please check the error logs below"
-            >
-              <div className="desc" style={{ textAlign: "center" }}>
-                <Text type="danger">{msg}</Text>
-              </div>
-            </Result>
-          )}
-        </>
+      {finished && !succeeded && (
+        <Result
+          status="error"
+          title="Recovery Failed"
+          subTitle="Please check the error logs below"
+        >
+          <div className="desc" style={{ textAlign: "center" }}>
+            <Text type="danger">{msg}</Text>
+          </div>
+        </Result>
       )}
     </Box>
   );

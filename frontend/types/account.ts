@@ -29,25 +29,6 @@ export class KeypairSigner implements Signer {
   }
 }
 
-export class StealthSigner implements Signer {
-  private scalarKey: string;
-
-  constructor(scalarKey: string) {
-    this.scalarKey = scalarKey;
-  }
-
-  async getPublicKey(): Promise<PublicKey> {
-    const sc = new BN(bs58.decode(this.scalarKey), 10, "le");
-    let s = BigInt(sc.toString());
-    return new PublicKey(Point.BASE.multiply(s).toRawBytes());
-  }
-
-  async signMessage(message: Uint8Array): Promise<Uint8Array> {
-    const sig = genFullSignature(Message.from(message), this.scalarKey);
-    return sig;
-  }
-}
-
 export class YubikeySigner implements Signer {
   private aid: string;
   private pin: string = "123456";
@@ -104,19 +85,12 @@ export class YubikeySigner implements Signer {
   }
 }
 
-export type StealthInfo = {
-  priv_scan: string;
-  priv_spend: string;
-  shards: string[];
-};
-
 export type StandardAccount = KeypairSigner & {
   name: string;
   pk: string;
   pda: string;
-  stealth: StealthInfo;
   avatar?: string;
-  stealth_accounts?: [string];
+  recover?: string;
 };
 
 export type YubikeyAccount = YubikeySigner & {
@@ -125,8 +99,7 @@ export type YubikeyAccount = YubikeySigner & {
   pda: string;
   avatar?: string;
   manufacturer: string;
-  stealth: StealthInfo;
-  stealth_accounts?: [string];
+  recover?: string;
 };
 
 export type KryptonAccount = StandardAccount | YubikeyAccount;

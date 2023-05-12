@@ -31,10 +31,10 @@ const PATHS_WITHOUT_HEADER_AND_FOOTER = [
 ];
 
 const NETWORK_LOWER_TO_UPPER_MAP = {
-  "devnet": "Devnet",
+  devnet: "Devnet",
   "mainnet-beta": "Mainnet",
-  "testnet": "Testnet"
-}
+  testnet: "Testnet",
+};
 
 const Layout = ({ children }: { children: JSX.Element }) => {
   const { network, setNetwork, account, setAccount } = useGlobalState();
@@ -86,11 +86,11 @@ const Layout = ({ children }: { children: JSX.Element }) => {
       icon: <AppstoreOutlined style={{ fontSize: "23px" }} />,
       target: "/nft",
     },
-    {
-      key: "swap",
-      icon: <SwapOutlined style={{ fontSize: "23px" }} />,
-      target: "/stealth",
-    },
+    // {
+    //   key: "swap",
+    //   icon: <SwapOutlined style={{ fontSize: "23px" }} />,
+    //   target: "/stealth",
+    // },
     {
       key: "guardian",
       icon: <TeamOutlined style={{ fontSize: "23px" }} />,

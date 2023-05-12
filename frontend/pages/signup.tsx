@@ -36,13 +36,9 @@ const Signup: NextPage = () => {
           ...feePayerAccount,
           keypair: feePayer,
         } as StandardAccount;
-        const { stealth, ...rest } = account;
         old[count] = {
           sk: base58.encode(feePayer.secretKey),
-          priv_scan: stealth.priv_scan,
-          priv_spend: stealth.priv_spend,
-          shards: stealth.shards,
-          ...rest,
+          ...account,
         };
         const values = JSON.stringify(old);
         chrome.storage.local.set({
