@@ -1,83 +1,172 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import useInterval from "@use-it/interval";
 import { Alert, Button, Form, Input } from "antd";
 import { NextPage } from "next";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import RecoverBox from "../components/RecoverBox";
 import UrlBox from "../components/UrlBox";
 import { useGlobalState } from "../context";
 import * as krypton from "../js/src/generated/index";
 import { StyledForm } from "../styles/StyledComponents.styles";
 import { RPC_URL } from "../utils/constants";
+import {
+  getCurrentAccount,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
+import { useGlobalModalContext } from "../components/GlobalModal";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [generated, setGenerated] = useState<boolean>(false);
   const [recoverPK, setRecoverPK] = useState<string>();
   const [signed, setSigned] = useState<number>(0);
-  const [recoveryThreshold, setRecoveryThreshold] = useState<number>(0);
-  const [canGenerate, setCanGenerate] = useState<boolean>(true);
+  const [recoveryThreshold, setRecoveryThreshold] = useState<number>();
   const [err, setErr] = useState<string>("");
   const [form] = Form.useForm();
+  const { account, setAccount, network } = useGlobalState();
 
-  const { account, network } = useGlobalState();
+  const updateSigns = useCallback(
+    async (recover: string) => {
+      if (!account) {
+        return;
+      }
+      const connection = new Connection(RPC_URL(network), "confirmed");
+      const profileAccount = await connection.getAccountInfo(
+        new PublicKey(recover)
+      );
+      if (!profileAccount) {
+        console.log("no profile account found");
+        return;
+      }
+      const [profileHeader] =
+        krypton.ProfileHeader.fromAccountInfo(profileAccount);
+
+      if (profileHeader.recovery.toBase58() != account.pda) {
+        console.log("invalid recovery");
+        return;
+      }
+
+      const signed = profileHeader.guardians.filter(
+        (g) => !g.pubkey.equals(SystemProgram.programId) && g.hasSigned
+      );
+
+      setSigned(signed.length);
+      setRecoveryThreshold(profileHeader.recoveryThreshold);
+    },
+    [account, network]
+  );
+
+  useEffect(() => {
+    if (!account || !account.recover) {
+      return;
+    }
+    setRecoverPK(account.recover);
+    updateSigns(account.recover);
+  }, [account, updateSigns]);
 
   useInterval(async () => {
     if (!account || !account.recover) {
       return;
     }
-    const connection = new Connection(RPC_URL(network), "confirmed");
-    const profileAccount = await connection.getAccountInfo(
-      new PublicKey(account.recover)
-    );
-    if (!profileAccount) {
-      console.log("no profile account found");
-      return;
-    }
-    const [profileHeader] =
-      krypton.ProfileHeader.fromAccountInfo(profileAccount);
-
-    if (profileHeader.recovery.toBase58() != account.pda) {
-      console.log("invalid recovery");
-      return;
-    }
-
-    const signed = profileHeader.guardians.filter(
-      (g) => !g.pubkey.equals(SystemProgram.programId) && g.hasSigned
-    );
-
-    setSigned(signed.length);
-    setRecoveryThreshold(profileHeader.recoveryThreshold);
+    await updateSigns(account.recover);
   }, 2000);
 
   const handleGenerate = async (values: any) => {
     if (!account) {
       return;
     }
-    setGenerated(false);
-    const pk = new PublicKey(values.pk);
+    setLoading(true);
+
+    const connection = new Connection(RPC_URL(network), "confirmed");
+
+    const newPK = new PublicKey(account.pda);
+    const feePayerPK = new PublicKey(account.pk);
+    const profileInfo = new PublicKey(values.pk);
+    const oldProfileAccount = await connection.getAccountInfo(profileInfo);
+    if (!oldProfileAccount) {
+      console.log("no profile account found");
+      return;
+    }
+    const [oldProfile] =
+      krypton.ProfileHeader.fromAccountInfo(oldProfileAccount);
+    const authorityInfo = oldProfile.authority;
+
+    // update chrome storage
+    await chrome.storage.local
+      .get(["currId", "accounts", "y_accounts", "mode", "y_id"])
+      .then((result) => {
+        const selectedMode = result["mode"];
+        const accountObj =
+          selectedMode === 0
+            ? JSON.parse(result["accounts"])
+            : JSON.parse(result["y_accounts"]);
+        const currId = selectedMode === 0 ? result["currId"] : result["y_id"];
+        accountObj[currId].recover = values.pk;
+        const newAccounts = JSON.stringify(accountObj);
+        if (selectedMode === 0) {
+          chrome.storage.local.set({ accounts: newAccounts });
+        } else if (selectedMode === 1) {
+          chrome.storage.local.set({ y_accounts: newAccounts });
+        } else {
+          return false;
+        }
+      });
+    setAccount((prev) => {
+      if (prev) {
+        prev.recover = values.pk;
+      }
+      return prev;
+    });
+
+    // initialize recovery
+    console.log("Initializing recovery...");
+    const initializeRecoveryIx = krypton.createInitializeRecoveryInstruction({
+      profileInfo,
+      authorityInfo,
+      newProfileInfo: newPK,
+      newAuthorityInfo: feePayerPK,
+    });
+    let recentBlockhash = await connection.getLatestBlockhash();
+    const initializeRecoveryTx = new Transaction({
+      feePayer: feePayerPK,
+      ...recentBlockhash,
+    });
+    initializeRecoveryTx.add(initializeRecoveryIx);
+    const initializeRecoveryTxid = await sendAndConfirmTransactionWithAccount(
+      connection,
+      initializeRecoveryTx,
+      [account],
+      {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      }
+    );
+    console.log(
+      `https://explorer.solana.com/tx/${initializeRecoveryTxid}?cluster=${network}`
+    );
+
+    // update guardian signs
+    await updateSigns(values.pk);
+
     setRecoverPK(values.pk);
-    // TODO: update account.recover = values.pk
-    setGenerated(true);
+    setLoading(false);
   };
 
+  console.log(recoverPK, recoveryThreshold, signed);
   return (
     <>
       <h1 className={"title"}>Recover Wallet with Guardians</h1>
-
-      {signed < recoveryThreshold && (
+      {!recoverPK || !recoveryThreshold || signed < recoveryThreshold ? (
         <>
           <p>Enter your old public key to get a unique recovery link</p>
           {err && <Alert message={err} type="error" />}
-          {generated && (
-            <p style={{ textAlign: "center" }}>
-              Copy the following link and send it to your guardians for them to
-              sign the recovery
-            </p>
-          )}
-
-          {!generated && (
+          {!recoverPK ? (
             <StyledForm
               form={form}
               layout="vertical"
@@ -95,7 +184,7 @@ const GenerateRecover: NextPage = () => {
                     },
                     {
                       validator(_, value) {
-                        if (PublicKey.isOnCurve(value)) {
+                        if (!PublicKey.isOnCurve(value)) {
                           return Promise.resolve();
                         }
                         return Promise.reject(new Error("Invalid public key"));
@@ -139,16 +228,23 @@ const GenerateRecover: NextPage = () => {
                 />
               )}
             </StyledForm>
-          )}
-
-          {generated && (
-            <UrlBox url={`http://localhost:3000/recover/${recoverPK}`}></UrlBox>
+          ) : (
+            <>
+              <p style={{ textAlign: "center" }}>
+                Copy the following link and send it to your guardians for them
+                to sign the recovery
+              </p>
+              <UrlBox url={`http://localhost:3000/recover/${recoverPK}`} />
+              <p>
+                {signed} out of {recoveryThreshold} guardians have signed!
+              </p>
+            </>
           )}
         </>
-      )}
-
-      {signed >= recoveryThreshold && recoverPK && (
-        <RecoverBox profileInfo={new PublicKey(recoverPK)} />
+      ) : (
+        signed >= recoveryThreshold && (
+          <RecoverBox profileInfo={new PublicKey(recoverPK)} />
+        )
       )}
     </>
   );

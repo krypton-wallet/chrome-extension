@@ -201,6 +201,7 @@ const getAccountFromPkString = async (
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          ...(res.recover && { recover: res.recover }),
         };
       }
 
@@ -261,6 +262,7 @@ const getAccountFromPkString = async (
           pda: pda[0].toBase58(),
           ...(res.avatar && { avatar: res.avatar }),
           manufacturer: res.manufacturer,
+          ...(res.recover && { recover: res.recover }),
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
@@ -295,6 +297,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          ...(res.recover && { recover: res.recover }),
         };
       }
 
@@ -349,6 +352,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           pda: pda[0].toBase58(),
           ...(res.avatar && { avatar: res.avatar }),
           manufacturer: res.manufacturer,
+          ...(res.recover && { recover: res.recover }),
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
