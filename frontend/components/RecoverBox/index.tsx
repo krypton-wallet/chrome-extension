@@ -86,9 +86,9 @@ const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
       const allATA = await connection.getTokenAccountsByOwner(profileInfo, {
         programId: TOKEN_PROGRAM_ID,
       });
-      allATA.value.forEach(async (e) => {
-        const oldTokenAccount = e.pubkey;
-        const accountInfo = AccountLayout.decode(e.account.data);
+      for (const ata of allATA.value) {
+        const oldTokenAccount = ata.pubkey;
+        const accountInfo = AccountLayout.decode(ata.account.data);
         const mint = new PublicKey(accountInfo.mint);
         const amount = accountInfo.amount;
 
@@ -146,7 +146,7 @@ const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
           newTokenAccountInfo: newTokenAccount.address,
         });
         recoverTokenTx.add(recoverTokenIx);
-      });
+      }
       const recoverTokenTxid = await sendAndConfirmTransactionWithAccount(
         connection,
         recoverTokenTx,
