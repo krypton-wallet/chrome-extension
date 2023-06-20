@@ -38,11 +38,12 @@ const Guardian: NextPage = () => {
       const [profileAddress] = getProfilePDA(publicKey);
       const profileAccount = await connection.getAccountInfo(profileAddress);
       if (profileAccount) {
-        const [profile] = krypton.ProfileHeader.fromAccountInfo(profileAccount);
+        const [profile] = krypton.UserProfile.fromAccountInfo(profileAccount);
+        console.log("profile?", profile);
         setThres(profile.recoveryThreshold);
         setGuardians(
-          profile.guardians
-            .map((g) => g.pubkey)
+          Array.from(profile.guardians
+            .entries()).map(([pubkey]) => pubkey)
             .filter((g) => !g.equals(SystemProgram.programId))
         );
       }
@@ -77,12 +78,8 @@ const Guardian: NextPage = () => {
         profileInfo: profileAddress,
         authorityInfo: publicKey,
         guardian: new PublicKey(values.guardian),
+        systemProgram: SystemProgram.programId,
       },
-      {
-        addRecoveryGuardianArgs: {
-          numGuardians: 1, // make sure this isn't overwriting the first guardian
-        },
-      }
     );
 
     // TODO: Check if Yubikey is connected
@@ -107,7 +104,7 @@ const Guardian: NextPage = () => {
 
     setLoading((prev) => prev - 1);
     setIsModalOpen(false);
-    setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
+    // setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
     form.resetFields();
   };
 

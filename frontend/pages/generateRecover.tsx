@@ -43,20 +43,20 @@ const GenerateRecover: NextPage = () => {
         console.log("no profile account found");
         return;
       }
-      const [profileHeader] =
-        krypton.ProfileHeader.fromAccountInfo(profileAccount);
+      const [profile] =
+        krypton.UserProfile.fromAccountInfo(profileAccount);
 
-      if (profileHeader.recovery.toBase58() != account.pda) {
-        console.log("invalid recovery");
-        return;
-      }
+      // if (profileHeader.recovery.toBase58() != account.pda) {
+        // console.log("invalid recovery");
+        // return;
+      // }
 
-      const signed = profileHeader.guardians.filter(
-        (g) => !g.pubkey.equals(SystemProgram.programId) && g.hasSigned
-      );
+      // const signed = profileHeader.guardians.filter(
+        // (g) => !g.pubkey.equals(SystemProgram.programId) && g.hasSigned
+      // );
 
-      setSigned(signed.length);
-      setRecoveryThreshold(profileHeader.recoveryThreshold);
+      // setSigned(signed.length);
+      // setRecoveryThreshold(profileHeader.recoveryThreshold);
     },
     [account, network]
   );

@@ -8,50 +8,48 @@
 import * as web3 from '@solana/web3.js'
 import * as beetSolana from '@metaplex-foundation/beet-solana'
 import * as beet from '@metaplex-foundation/beet'
+import { Guard, guardBeet } from '../types/Guard'
 
 /**
- * Arguments used to create {@link ProfileHeader}
+ * Arguments used to create {@link GuardAccount}
  * @category Accounts
  * @category generated
  */
-export type ProfileHeaderArgs = {
-  seed: web3.PublicKey
-  authority: web3.PublicKey
+export type GuardAccountArgs = {
+  target: web3.PublicKey
+  guard: Guard
 }
 /**
- * Holds the data for the {@link ProfileHeader} Account and provides de/serialization
+ * Holds the data for the {@link GuardAccount} Account and provides de/serialization
  * functionality for that data
  *
  * @category Accounts
  * @category generated
  */
-export class ProfileHeader implements ProfileHeaderArgs {
-  private constructor(
-    readonly seed: web3.PublicKey,
-    readonly authority: web3.PublicKey
-  ) {}
+export class GuardAccount implements GuardAccountArgs {
+  private constructor(readonly target: web3.PublicKey, readonly guard: Guard) {}
 
   /**
-   * Creates a {@link ProfileHeader} instance from the provided args.
+   * Creates a {@link GuardAccount} instance from the provided args.
    */
-  static fromArgs(args: ProfileHeaderArgs) {
-    return new ProfileHeader(args.seed, args.authority)
+  static fromArgs(args: GuardAccountArgs) {
+    return new GuardAccount(args.target, args.guard)
   }
 
   /**
-   * Deserializes the {@link ProfileHeader} from the data of the provided {@link web3.AccountInfo}.
+   * Deserializes the {@link GuardAccount} from the data of the provided {@link web3.AccountInfo}.
    * @returns a tuple of the account data and the offset up to which the buffer was read to obtain it.
    */
   static fromAccountInfo(
     accountInfo: web3.AccountInfo<Buffer>,
     offset = 0
-  ): [ProfileHeader, number] {
-    return ProfileHeader.deserialize(accountInfo.data, offset)
+  ): [GuardAccount, number] {
+    return GuardAccount.deserialize(accountInfo.data, offset)
   }
 
   /**
    * Retrieves the account info from the provided address and deserializes
-   * the {@link ProfileHeader} from its data.
+   * the {@link GuardAccount} from its data.
    *
    * @throws Error if no account info is found at the address or if deserialization fails
    */
@@ -59,15 +57,15 @@ export class ProfileHeader implements ProfileHeaderArgs {
     connection: web3.Connection,
     address: web3.PublicKey,
     commitmentOrConfig?: web3.Commitment | web3.GetAccountInfoConfig
-  ): Promise<ProfileHeader> {
+  ): Promise<GuardAccount> {
     const accountInfo = await connection.getAccountInfo(
       address,
       commitmentOrConfig
     )
     if (accountInfo == null) {
-      throw new Error(`Unable to find ProfileHeader account at ${address}`)
+      throw new Error(`Unable to find GuardAccount account at ${address}`)
     }
-    return ProfileHeader.fromAccountInfo(accountInfo, 0)[0]
+    return GuardAccount.fromAccountInfo(accountInfo, 0)[0]
   }
 
   /**
@@ -81,65 +79,64 @@ export class ProfileHeader implements ProfileHeaderArgs {
       '2aJqX3GKRPAsfByeMkL7y9SqAGmCQEnakbuHJBdxGaDL'
     )
   ) {
-    return beetSolana.GpaBuilder.fromStruct(programId, profileHeaderBeet)
+    return beetSolana.GpaBuilder.fromStruct(programId, guardAccountBeet)
   }
 
   /**
-   * Deserializes the {@link ProfileHeader} from the provided data Buffer.
+   * Deserializes the {@link GuardAccount} from the provided data Buffer.
    * @returns a tuple of the account data and the offset up to which the buffer was read to obtain it.
    */
-  static deserialize(buf: Buffer, offset = 0): [ProfileHeader, number] {
-    return profileHeaderBeet.deserialize(buf, offset)
+  static deserialize(buf: Buffer, offset = 0): [GuardAccount, number] {
+    return guardAccountBeet.deserialize(buf, offset)
   }
 
   /**
-   * Serializes the {@link ProfileHeader} into a Buffer.
+   * Serializes the {@link GuardAccount} into a Buffer.
    * @returns a tuple of the created Buffer and the offset up to which the buffer was written to store it.
    */
   serialize(): [Buffer, number] {
-    return profileHeaderBeet.serialize(this)
+    return guardAccountBeet.serialize(this)
   }
 
   /**
    * Returns the byteSize of a {@link Buffer} holding the serialized data of
-   * {@link ProfileHeader}
+   * {@link GuardAccount} for the provided args.
+   *
+   * @param args need to be provided since the byte size for this account
+   * depends on them
    */
-  static get byteSize() {
-    return profileHeaderBeet.byteSize
+  static byteSize(args: GuardAccountArgs) {
+    const instance = GuardAccount.fromArgs(args)
+    return guardAccountBeet.toFixedFromValue(instance).byteSize
   }
 
   /**
    * Fetches the minimum balance needed to exempt an account holding
-   * {@link ProfileHeader} data from rent
+   * {@link GuardAccount} data from rent
    *
+   * @param args need to be provided since the byte size for this account
+   * depends on them
    * @param connection used to retrieve the rent exemption information
    */
   static async getMinimumBalanceForRentExemption(
+    args: GuardAccountArgs,
     connection: web3.Connection,
     commitment?: web3.Commitment
   ): Promise<number> {
     return connection.getMinimumBalanceForRentExemption(
-      ProfileHeader.byteSize,
+      GuardAccount.byteSize(args),
       commitment
     )
   }
 
   /**
-   * Determines if the provided {@link Buffer} has the correct byte size to
-   * hold {@link ProfileHeader} data.
-   */
-  static hasCorrectByteSize(buf: Buffer, offset = 0) {
-    return buf.byteLength - offset === ProfileHeader.byteSize
-  }
-
-  /**
-   * Returns a readable version of {@link ProfileHeader} properties
+   * Returns a readable version of {@link GuardAccount} properties
    * and can be used to convert to JSON and/or logging
    */
   pretty() {
     return {
-      seed: this.seed.toBase58(),
-      authority: this.authority.toBase58(),
+      target: this.target.toBase58(),
+      guard: this.guard.__kind,
     }
   }
 }
@@ -148,14 +145,14 @@ export class ProfileHeader implements ProfileHeaderArgs {
  * @category Accounts
  * @category generated
  */
-export const profileHeaderBeet = new beet.BeetStruct<
-  ProfileHeader,
-  ProfileHeaderArgs
+export const guardAccountBeet = new beet.FixableBeetStruct<
+  GuardAccount,
+  GuardAccountArgs
 >(
   [
-    ['seed', beetSolana.publicKey],
-    ['authority', beetSolana.publicKey],
+    ['target', beetSolana.publicKey],
+    ['guard', guardBeet],
   ],
-  ProfileHeader.fromArgs,
-  'ProfileHeader'
+  GuardAccount.fromArgs,
+  'GuardAccount'
 )

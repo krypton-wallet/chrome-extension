@@ -45,11 +45,6 @@ const GuardianBox = ({
           authorityInfo: feePayerPK,
           guardian,
         },
-        {
-          removeRecoveryGuardianArgs: {
-            numGuardians: 1,
-          },
-        }
       );
 
     const recentBlockhash = await connection.getLatestBlockhash();

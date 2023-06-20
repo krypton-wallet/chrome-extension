@@ -50,7 +50,7 @@
           "name": "authorityInfo",
           "isMut": false,
           "isSigner": true,
-          "desc": "Pubkey of keypair of PDA"
+          "desc": "Pubkey of authority keypair of PDA"
         },
         {
           "name": "tokenAccountInfo",
@@ -97,7 +97,7 @@
           "name": "authorityInfo",
           "isMut": false,
           "isSigner": true,
-          "desc": "Pubkey of keypair of PDA"
+          "desc": "Pubkey of authority keypair of PDA"
         },
         {
           "name": "destination",
@@ -132,7 +132,7 @@
           "name": "authorityInfo",
           "isMut": false,
           "isSigner": true,
-          "desc": "Pubkey of keypair of PDA"
+          "desc": "Pubkey of authority keypair of PDA"
         },
         {
           "name": "customProgram",
@@ -176,20 +176,19 @@
           "desc": "Pubkey of keypair of PDA"
         },
         {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "desc": "system program to resize account"
+        },
+        {
           "name": "guardian",
           "isMut": false,
           "isSigner": false,
           "desc": "Pubkey that will act as guardian to recover profile_info"
         }
       ],
-      "args": [
-        {
-          "name": "addRecoveryGuardianArgs",
-          "type": {
-            "defined": "AddRecoveryGuardianArgs"
-          }
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
         "value": 4
@@ -217,14 +216,7 @@
           "desc": "Pubkey that will act as guardian to recover profile_info"
         }
       ],
-      "args": [
-        {
-          "name": "removeRecoveryGuardianArgs",
-          "type": {
-            "defined": "RemoveRecoveryGuardianArgs"
-          }
-        }
-      ],
+      "args": [],
       "discriminant": {
         "type": "u8",
         "value": 5
@@ -338,7 +330,7 @@
       "accounts": [
         {
           "name": "profileInfo",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "desc": "PDA of Krypton Program to be recovered"
         },
@@ -359,6 +351,13 @@
           "isMut": false,
           "isSigner": true,
           "desc": "Pubkey of the keypair to be recovered into"
+        },
+        {
+          "name": "recoveredInfo",
+          "isMut": true,
+          "isSigner": false,
+          "desc": "PDA previously recovered into profile_info",
+          "optional": true
         }
       ],
       "args": [],
@@ -368,98 +367,57 @@
       }
     },
     {
-      "name": "RecoverToken",
+      "name": "InitializeNativeSolTransferGuard",
       "accounts": [
         {
           "name": "profileInfo",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "desc": "PDA of Krypton Program to be recovered"
         },
         {
           "name": "authorityInfo",
           "isMut": false,
-          "isSigner": false,
+          "isSigner": true,
           "desc": "Pubkey of keypair of PDA to be recovered"
         },
         {
-          "name": "newProfileInfo",
-          "isMut": false,
-          "isSigner": false,
-          "desc": "PDA to be recovered into"
-        },
-        {
-          "name": "newAuthorityInfo",
-          "isMut": false,
-          "isSigner": true,
-          "desc": "Pubkey of the keypair to be recovered into"
-        },
-        {
-          "name": "oldTokenAccountInfo",
+          "name": "guardInfo",
           "isMut": true,
           "isSigner": false,
-          "desc": "ATA of the PDA to be recovered"
+          "desc": "PDA of the guard account that will be initialized"
         },
         {
-          "name": "newTokenAccountInfo",
-          "isMut": true,
-          "isSigner": false,
-          "desc": "ATA of the PDA to be recovered into"
-        },
-        {
-          "name": "tokenProgram",
+          "name": "systemProgram",
           "isMut": false,
           "isSigner": false,
-          "desc": "Used to transfer token"
+          "desc": "system program, used to create the new guard account"
         }
       ],
-      "args": [],
+      "args": [
+        {
+          "name": "initializeNativeSolTransferGuardArgs",
+          "type": {
+            "defined": "InitializeNativeSolTransferGuardArgs"
+          }
+        }
+      ],
       "discriminant": {
         "type": "u8",
         "value": 10
-      }
-    },
-    {
-      "name": "RecoverNativeSOL",
-      "accounts": [
-        {
-          "name": "profileInfo",
-          "isMut": true,
-          "isSigner": false,
-          "desc": "PDA of Krypton Program to be recovered"
-        },
-        {
-          "name": "authorityInfo",
-          "isMut": false,
-          "isSigner": false,
-          "desc": "Pubkey of keypair of PDA to be recovered"
-        },
-        {
-          "name": "newProfileInfo",
-          "isMut": true,
-          "isSigner": false,
-          "desc": "PDA to be recovered into"
-        },
-        {
-          "name": "newAuthorityInfo",
-          "isMut": false,
-          "isSigner": true,
-          "desc": "Pubkey of the keypair to be recovered into"
-        }
-      ],
-      "args": [],
-      "discriminant": {
-        "type": "u8",
-        "value": 11
       }
     }
   ],
   "accounts": [
     {
-      "name": "ProfileHeader",
+      "name": "UserProfile",
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "seed",
+            "type": "publicKey"
+          },
           {
             "name": "authority",
             "type": "publicKey"
@@ -471,17 +429,55 @@
           {
             "name": "guardians",
             "type": {
-              "array": [
-                {
-                  "defined": "Guardian"
-                },
-                10
+              "hashMap": [
+                "publicKey",
+                "bool"
               ]
             }
           },
           {
             "name": "recovery",
             "type": "publicKey"
+          },
+          {
+            "name": "recovered",
+            "type": {
+              "hashSet": "publicKey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProfileHeader",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seed",
+            "type": "publicKey"
+          },
+          {
+            "name": "authority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GuardAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "target",
+            "type": "publicKey"
+          },
+          {
+            "name": "guard",
+            "type": {
+              "defined": "Guard"
+            }
           }
         ]
       }
@@ -541,30 +537,6 @@
       }
     },
     {
-      "name": "AddRecoveryGuardianArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "numGuardians",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RemoveRecoveryGuardianArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "numGuardians",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
       "name": "ModifyRecoveryThresholdArgs",
       "type": {
         "kind": "struct",
@@ -577,17 +549,94 @@
       }
     },
     {
-      "name": "Guardian",
+      "name": "InitializeNativeSolTransferGuardArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "pubkey",
+            "name": "target",
             "type": "publicKey"
           },
           {
-            "name": "hasSigned",
-            "type": "bool"
+            "name": "transferAmount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Context",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "balanceBefore",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NativeSolTransferGuard",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "target",
+            "type": "publicKey"
+          },
+          {
+            "name": "transferAmountRemaining",
+            "type": "u64"
+          },
+          {
+            "name": "transferLimit",
+            "type": "u64"
+          },
+          {
+            "name": "transferInterval",
+            "type": {
+              "defined": "NativeSolTransferInterval"
+            }
+          },
+          {
+            "name": "lastTransferred",
+            "type": "i64"
+          },
+          {
+            "name": "context",
+            "type": {
+              "option": {
+                "defined": "Context"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Guard",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NativeSolTransfer",
+            "fields": [
+              {
+                "defined": "NativeSolTransferGuard"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "NativeSolTransferInterval",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Day"
           }
         ]
       }
@@ -651,18 +700,53 @@
     },
     {
       "code": 11,
+      "name": "InvalidAuthority",
+      "msg": "The pubkey is not authorized to act on behalf of the wallet"
+    },
+    {
+      "code": 12,
       "name": "NotAuthorizedToRecover",
       "msg": "The pubkey is not authorized to recover the wallet"
     },
     {
-      "code": 12,
+      "code": 13,
+      "name": "MissingRecoveredAccounts",
+      "msg": "Required recovered accounts are not passed in"
+    },
+    {
+      "code": 14,
       "name": "InsufficientFundsForTransaction",
       "msg": "There is insufficient SOL to transfer"
     },
     {
-      "code": 13,
+      "code": 15,
       "name": "Overflow",
       "msg": "Operation overflowed"
+    },
+    {
+      "code": 16,
+      "name": "InvalidAccountAddress",
+      "msg": "Invalid Account Address"
+    },
+    {
+      "code": 17,
+      "name": "InvalidDateTime",
+      "msg": "Invalid date time"
+    },
+    {
+      "code": 18,
+      "name": "TargetAccountNotFound",
+      "msg": "Target account not found"
+    },
+    {
+      "code": 19,
+      "name": "GuardContextNotFound",
+      "msg": "Guard Context not found"
+    },
+    {
+      "code": 20,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic Overflow"
     }
   ],
   "metadata": {

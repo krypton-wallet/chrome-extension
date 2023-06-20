@@ -42,9 +42,9 @@ const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
         return;
       }
       const [oldProfile] =
-        krypton.ProfileHeader.fromAccountInfo(oldProfileAccount);
+        krypton.UserProfile.fromAccountInfo(oldProfileAccount);
       const authorityInfo = oldProfile.authority;
-      const recovery = oldProfile.recovery;
+      // const recovery = oldProfile.recovery;
 
       // TODO: Check if Yubikey is connected
 
@@ -75,123 +75,6 @@ const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
       console.log(
         `https://explorer.solana.com/tx/${recoverWalletTxid}?cluster=${network}`
       );
-
-      // recover tokens
-      console.log("Transfering tokens...");
-      recentBlockhash = await connection.getLatestBlockhash();
-      const recoverTokenTx = new Transaction({
-        feePayer: feePayerPK,
-        ...recentBlockhash,
-      });
-      const allATA = await connection.getTokenAccountsByOwner(profileInfo, {
-        programId: TOKEN_PROGRAM_ID,
-      });
-      for (const ata of allATA.value) {
-        const oldTokenAccount = ata.pubkey;
-        const accountInfo = AccountLayout.decode(ata.account.data);
-        const mint = new PublicKey(accountInfo.mint);
-        const amount = accountInfo.amount;
-
-        console.log(`Old Token Account: ${oldTokenAccount.toBase58()}`);
-        console.log(`mint: ${mint}`);
-        console.log(`amount: ${amount}`);
-        console.log("Getting associated token address...");
-        const associatedToken = await getAssociatedTokenAddress(
-          mint,
-          newPK,
-          true,
-          TOKEN_PROGRAM_ID
-        );
-
-        console.log("Creating token account for mint...");
-        recentBlockhash = await connection.getLatestBlockhash();
-        const createATATx = new Transaction({
-          feePayer: feePayerPK,
-          ...recentBlockhash,
-        }).add(
-          createAssociatedTokenAccountInstruction(
-            feePayerPK,
-            associatedToken,
-            newPK,
-            mint,
-            TOKEN_PROGRAM_ID
-          )
-        );
-        await sendAndConfirmTransactionWithAccount(
-          connection,
-          createATATx,
-          [account],
-          {
-            skipPreflight: true,
-            preflightCommitment: "confirmed",
-            commitment: "confirmed",
-          }
-        );
-
-        console.log("Getting sender token account...");
-        const newTokenAccount = await getAccount(
-          connection,
-          associatedToken,
-          "confirmed",
-          TOKEN_PROGRAM_ID
-        );
-        console.log(`New Token Account: ${newTokenAccount.address.toBase58()}`);
-
-        const recoverTokenIx = krypton.createRecoverTokenInstruction({
-          profileInfo,
-          authorityInfo,
-          newProfileInfo: newPK,
-          newAuthorityInfo: feePayerPK,
-          oldTokenAccountInfo: oldTokenAccount,
-          newTokenAccountInfo: newTokenAccount.address,
-        });
-        recoverTokenTx.add(recoverTokenIx);
-      }
-      const recoverTokenTxid = await sendAndConfirmTransactionWithAccount(
-        connection,
-        recoverTokenTx,
-        [account],
-        {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
-          commitment: "confirmed",
-        }
-      );
-      console.log(
-        `https://explorer.solana.com/tx/${recoverTokenTxid}?cluster=${network}`
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 7000));
-
-      // recover SOL
-      console.log("Transfering native SOL...");
-      const recoverSOLIx = krypton.createRecoverNativeSOLInstruction({
-        profileInfo,
-        authorityInfo,
-        newProfileInfo: newPK,
-        newAuthorityInfo: feePayerPK,
-      });
-      recentBlockhash = await connection.getLatestBlockhash();
-      const recoverSOLTx = new Transaction({
-        feePayer: feePayerPK,
-        ...recentBlockhash,
-      });
-      recoverSOLTx.add(recoverSOLIx);
-      const recoverSOLTxid = await sendAndConfirmTransactionWithAccount(
-        connection,
-        recoverSOLTx,
-        [account],
-        {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
-          commitment: "confirmed",
-        }
-      );
-      console.log(
-        `https://explorer.solana.com/tx/${recoverSOLTxid}?cluster=${network}`
-      );
-
-      console.log("RECOVERY COMPLETED! LET'S GOOOOO!");
 
       setSucceeded(true);
     } catch (err: any) {
