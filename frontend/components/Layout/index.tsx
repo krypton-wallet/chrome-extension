@@ -8,6 +8,7 @@ import {
   SwapOutlined,
   MedicineBoxOutlined,
   SettingOutlined,
+  SecurityScanOutlined
 } from "@ant-design/icons";
 import styles from "./index.module.css";
 import { useGlobalState } from "../../context";
@@ -86,11 +87,11 @@ const Layout = ({ children }: { children: JSX.Element }) => {
       icon: <AppstoreOutlined style={{ fontSize: "23px" }} />,
       target: "/nft",
     },
-    // {
-    //   key: "swap",
-    //   icon: <SwapOutlined style={{ fontSize: "23px" }} />,
-    //   target: "/stealth",
-    // },
+    {
+      key: "guards",
+      icon: <SecurityScanOutlined style={{ fontSize: "23px" }} />,
+      target: "/guards",
+    },
     {
       key: "guardian",
       icon: <TeamOutlined style={{ fontSize: "23px" }} />,
