@@ -11,11 +11,13 @@ import { Connection } from "@solana/web3.js";
 import { RPC_URL } from "../../utils/constants";
 import { useGlobalState } from "../../context";
 
+const MIN_TRANSFER_LIMIT = 400_000;
 
 const Guards: NextPage = () => {
     // TODO: lookup all guards here
     const [currentAccount, setCurrentAccount] = useState<KryptonAccount | undefined>();
     const [guardAddress, setGuardAddress] = useState<PublicKey | undefined>();
+    const [transferLimit, setTransferLimit] = useState<number>(MIN_TRANSFER_LIMIT);
     const ctx = useGlobalModalContext();
     const { network } = useGlobalState();
     const connection = new Connection(RPC_URL(network), "confirmed");
@@ -39,24 +41,40 @@ const Guards: NextPage = () => {
         });
     }, []);
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTransferLimit(parseInt(e.target.value));
+    }
+
     return (
         <div>
             <h1 className={"title"}>Guards</h1>
             <p>Native SOL transfer guard</p>
             {guardAddress && (<p>Guard account: {guardAddress.toBase58()}</p>)}
+            {!guardAddress && (<>
+                <p>Enter the maximum amount of lamports to transfer per day.</p>
+                <Input placeholder="lamports" onChange={handleInputChange} type="number"/>
+                <Button type="primary" onClick={() => {
+                    if (!currentAccount) {
+                        console.error("no current account");
+                        return;
+                    }
+                    createNativeSolTransferGuard(currentAccount, transferLimit, connection, (guardAddress) => setGuardAddress(guardAddress))
+                }}>Create Guard</Button>
+            </>)}
 
-            <Button type="primary" onClick={() => {
-                if (!currentAccount) {
-                    console.error("no current account");
-                    return;
-                }
-                createNativeSolTransferGuard(currentAccount, connection, (guardAddress) => setGuardAddress(guardAddress))
-            }}>Create Guard</Button>
         </div>
     );
 };
 
-const createNativeSolTransferGuard = async (currentAccount: KryptonAccount | YubikeyAccount, connection: Connection, callback: (guardAddress: PublicKey) => void) => {
+const createNativeSolTransferGuard = async (currentAccount: KryptonAccount | YubikeyAccount, transferLimit: number, connection: Connection, callback: (guardAddress: PublicKey) => void) => {
+    // TODO: The transfer limit should never be less than the compute cost to remove the transfer limit guard.
+    // create an instruction to remove the guard and calculate the compute costs.
+    // the minimum transfer limit should be the compute cost + 1;
+    if (transferLimit < MIN_TRANSFER_LIMIT) {
+        console.error("transfer limit too low");
+        return;
+    }
+
     const [guardAddress] = getGuardPDA(new PublicKey(currentAccount.pda));
     const createNativeSolTransferGuardInstruction = krypton.createInitializeNativeSolTransferGuardInstruction({
         profileInfo: new PublicKey(currentAccount.pda),
@@ -65,7 +83,7 @@ const createNativeSolTransferGuard = async (currentAccount: KryptonAccount | Yub
     }, {
         initializeNativeSolTransferGuardArgs: {
             target: new PublicKey(currentAccount.pda),
-            transferAmount: 1000
+            transferAmount: transferLimit
         }
     });
 
