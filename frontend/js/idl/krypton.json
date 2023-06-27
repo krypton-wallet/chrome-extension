@@ -406,6 +406,40 @@
         "type": "u8",
         "value": 10
       }
+    },
+    {
+      "name": "RemoveGuard",
+      "accounts": [
+        {
+          "name": "profileInfo",
+          "isMut": true,
+          "isSigner": false,
+          "desc": "PDA of Krypton Program to be recovered"
+        },
+        {
+          "name": "authorityInfo",
+          "isMut": false,
+          "isSigner": true,
+          "desc": "Pubkey of keypair of PDA to be recovered"
+        },
+        {
+          "name": "guardInfo",
+          "isMut": true,
+          "isSigner": false,
+          "desc": "PDA of the guard account that will be initialized"
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "desc": "system program, used to create the new guard account"
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 11
+      }
     }
   ],
   "accounts": [

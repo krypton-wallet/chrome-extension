@@ -49,7 +49,6 @@ const Guards: NextPage = () => {
         <div>
             <h1 className={"title"}>Guards</h1>
             <p>Native SOL transfer guard</p>
-            {guardAddress && (<p>Guard account: {guardAddress.toBase58()}</p>)}
             {!guardAddress && (<>
                 <p>Enter the maximum amount of lamports to transfer per day.</p>
                 <Input placeholder="lamports" onChange={handleInputChange} type="number"/>
@@ -61,7 +60,16 @@ const Guards: NextPage = () => {
                     createNativeSolTransferGuard(currentAccount, transferLimit, connection, (guardAddress) => setGuardAddress(guardAddress))
                 }}>Create Guard</Button>
             </>)}
-
+            {guardAddress && (<>
+                <p>Guard account: {guardAddress.toBase58()}</p>
+                <Button type="primary" onClick={() => {
+                    if (!currentAccount) {
+                        console.error("no current account");
+                        return;
+                    }
+                    removeGuard(currentAccount, guardAddress, connection, (guardAddress) => setGuardAddress(undefined))
+                }}>Remove Guard</Button>
+            </>)}
         </div>
     );
 };
@@ -98,5 +106,23 @@ const createNativeSolTransferGuard = async (currentAccount: KryptonAccount | Yub
 
     callback(guardAddress);
 };
+
+const removeGuard = async (currentAccount: KryptonAccount | YubikeyAccount, guardAddress: PublicKey, connection: Connection, callback: (guardAddress: PublicKey) => void) => {
+    const removeGuardInstruction = krypton.createRemoveGuardInstruction({
+        profileInfo: new PublicKey(currentAccount.pda),
+        authorityInfo: await currentAccount.getPublicKey(),
+        guardInfo: guardAddress
+    });
+
+    let {blockhash} = await connection.getLatestBlockhash();
+
+    let transaction = new Transaction();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = await currentAccount.getPublicKey();
+    transaction.add(removeGuardInstruction);
+
+    let sig = await sendAndConfirmTransactionWithAccount(connection, transaction, [currentAccount]);
+    callback(guardAddress);
+}
 
 export default Guards;
