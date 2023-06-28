@@ -174,10 +174,10 @@ export const userProfileBeet = new beet.FixableBeetStruct<
     ['seed', beetSolana.publicKey],
     ['authority', beetSolana.publicKey],
     ['recoveryThreshold', beet.u8],
-    //@ts-ignore
+    // @ts-ignore
     ['guardians', beet.map(beetSolana.publicKey, beet.bool)],
     ['recovery', beetSolana.publicKey],
-    //@ts-ignore
+    // @ts-ignore
     ['recovered', beet.set(beetSolana.publicKey)],
   ],
   UserProfile.fromArgs,

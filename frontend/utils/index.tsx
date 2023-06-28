@@ -166,6 +166,13 @@ const getProfilePDA = (feePayerPK: PublicKey) => {
   );
 };
 
+const getGuardPDA = (profileAddress: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('guard', 'utf-8'), profileAddress.toBuffer()],
+    WALLET_PROGRAM_ID
+  );
+};
+
 const getAccountFromPkString = async (
   pk: string,
   context: GlobalModalContext
@@ -389,6 +396,7 @@ export {
   sendAndConfirmTransactionWithAccount,
   partialSign,
   getProfilePDA,
+  getGuardPDA,
   getAccountFromPkString,
   getCurrentAccount,
   generateAvatar,
