@@ -11,7 +11,7 @@ Introducing Krypton, a Solana smart contract wallet with multisig social recover
 - Seamless integration with Yubikey as a physical wallet
 - Setting transaction limit to prevent wallets being emptied
 - Ability to interact with arbitrary smart contracts
-- Customized avatar based on public key, generated fully on-chain
+- Customized avatar based on public key generated fully on-chain
 
 ## 🧑‍💻 Getting started
 
@@ -71,14 +71,20 @@ You can load unpacked the /frontend/out folder in chrome extension developer mod
 
 ### Recovery
 
-- If you lose your account, the recovery process is really simple.
-- On a new device, create a new account.
+- If you lose your account, the recovery process is really simple
+- On a new device, create a new account
 - Navigate to the recovery tab and start the recovery for the account `PublicKey` lost
 - This generates a link that you can copy and send to your guardians
 - The guardians then navigate to this link and sign a message attesting to the fact that the recovery is valid
 - While the guardians sign, you can use the new account without any constraints and monitor the recovery progress by checking how many signatures are left in the recovery tab
 - Once the required number of signatures (`>= recovery threshold`) are obtained, you can complete the recovery
 - This transfers ownership of your previous account into your new account (and `Keypair`). This ensures that the old `PublicKey` is not "lost" but instead only accessible using the new account as the authority
+
+### Signing Transactions
+
+- All Krypton smart contract instructions like sending native SOL, sending tokens, adding/removing guardians, etc., work as expected are signed by the `Keypair`
+- To support the wallet standard, the `PublicKey` that is exposed is expected to be a signer. However, in Krypton's case, the exposed `PublicKey` is a PDA and not a keypair. Thus, we solve this problem by performing a transaction rewrite by wrapping the instruction with a CPI. This gives the instruction the impression that the instruction is being signed by the PDA when it is actually being signed by `Keypair`.
+- As all transactions are being signed by the `Keypair`, we require it to be able to pay the transaction costs. To improve UX, we automatically refill your `Keypair` to 0.2 SOL (from the `PublicKey`) when its balance is below 0.1 SOL giving the impression that the `PublicKey` is funding the transaction
 
 ### Yubikey Integration
 
