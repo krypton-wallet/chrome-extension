@@ -79,3 +79,23 @@ You can load unpacked the /frontend/out folder in chrome extension developer mod
 - While the guardians sign, you can use the new account without any constraints and monitor the recovery progress by checking how many signatures are left in the recovery tab
 - Once the required number of signatures (`>= recovery threshold`) are obtained, you can complete the recovery
 - This transfers ownership of your previous account into your new account (and `Keypair`). This ensures that the old `PublicKey` is not "lost" but instead only accessible using the new account as the authority
+
+### Yubikey Integration
+
+- Chrome extension interacts with Yubikey using `bloss-js` (`bloss-native` should be installed on client device). Details given below
+
+#### Bloss
+
+- Bloss is a web library for OpenPGP smart card signing that is used to allow the extension to communicate with the connected Yubikey on your device using CCID
+- It has functions to list all the connected Yubikey and their `pubkeyBytes` (among others) and to sign a message using the Yubikey's PGP signing key and signing algorithm
+
+#### Yubikey Setup Instructions
+
+- **Set up a Solana keypair in the Yubikey**: This link has instructions on how to set up a ed25519 keypair on the Yubikey: https://zach.codes/ultimate-yubikey-setup-guide/
+- **`bloss-native`**: Clone the bloss library and run `./install.sh <demo wallet Chrome extension ID>` to set up `bloss-native` that the extension uses to communicate with the local Yubikeys
+
+#### Signing Transactions with Yubikey
+
+- To sign a transaction, ensure `bloss-native` is setup and the Yubikey corresponding to the account is plugged in.
+- If PIN prompt is enabled, a PIN entry modal pops up where you can enter your PIN. (**NOTE**: For better UX, this PIN is cached in a local React state so that it does not require you to enter your PIN multiple times. Storing in a local React state also ensures that the user's privacy is not breached)
+- If Touch is enabled, touch the Yubikey to sign the transaction
