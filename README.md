@@ -55,3 +55,27 @@ You can load unpacked the /frontend/out folder in chrome extension developer mod
 - If creating a Yubikey account, ensure that a keypair is setup, `bloss-native` is installed, and the Yubikey is plugged in
 - Guardian threshold is an important parameter that determines the number of guardian signatures required before you can recover your account (**NOTE**: Currently, it is implemented so that it cannot be updated anywhere else. However, the Krypton smart contract allows for it to be updated after startup as well)
 - To initialize the account with a customized avatar that is generated fully on-chain, just check the corresponding box (**NOTE**: This is currently only available on `devnet`)
+
+### Guardians
+
+- Guardians refer to people/secondary wallets you can trust that would be responsible for recovering your account.
+- To add a guardian,
+  - Navigate to the guardians tab
+  - Click on the Add button
+  - Enter the `PublicKey` of the guardian account
+- To remove a guardian,
+  - Navigate to the guardians tab
+  - Click on the Remove button next to the guardians
+- Adding or removing a guardian does not notify the guardians themselves so it is important that you correctly verify that the `PublicKey`'s are valid.
+- **[Recommended]**: Add a secondary wallet as a guardian to prevent any collusion or scammers trying to take over your account by falsifying a recovery
+
+### Recovery
+
+- If you lose your account, the recovery process is really simple.
+- On a new device, create a new account.
+- Navigate to the recovery tab and start the recovery for the account `PublicKey` lost
+- This generates a link that you can copy and send to your guardians
+- The guardians then navigate to this link and sign a message attesting to the fact that the recovery is valid
+- While the guardians sign, you can use the new account without any constraints and monitor the recovery progress by checking how many signatures are left in the recovery tab
+- Once the required number of signatures (`>= recovery threshold`) are obtained, you can complete the recovery
+- This transfers ownership of your previous account into your new account (and `Keypair`). This ensures that the old `PublicKey` is not "lost" but instead only accessible using the new account as the authority
