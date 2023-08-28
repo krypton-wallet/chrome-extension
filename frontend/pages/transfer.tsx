@@ -1,10 +1,4 @@
-import React, { useState } from "react";
-import { NextPage } from "next";
-import { Button, Form, Input, Result, Switch } from "antd";
-import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../styles/StyledComponents.styles";
-import styles from "../components/Layout/index.module.css";
 import {
   Connection,
   Keypair,
@@ -13,14 +7,18 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { useGlobalState } from "../context";
-
+import { Button, Form, Input, Result } from "antd";
 import BN from "bn.js";
+import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
+import { useState } from "react";
+import styles from "../components/Layout/index.module.css";
+import { useGlobalState } from "../context";
+import { StyledForm } from "../styles/StyledComponents.styles";
 import { KeypairSigner, Signer } from "../types/account";
+import { isNumber, sendAndConfirmTransactionWithAccount } from "../utils";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
-import { stealthTransferIx } from "solana-stealth";
 
 const Transfer: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -56,11 +54,9 @@ const Transfer: NextPage = () => {
     const amountBuf = Buffer.from(
       new Uint8Array(new BN(amount).toArray("le", 8))
     );
-    //console.log("amt bn: ", new BN(amount))
     const recoveryModeBuf = Buffer.from(new Uint8Array([0]));
 
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO:  Check if Yubikey is connected
     const transferSOLTx = new Transaction({
       feePayer: await account.getPublicKey(),
       ...recentBlockhash,

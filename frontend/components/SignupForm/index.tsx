@@ -1,51 +1,36 @@
-import { Button, Checkbox, Form, Select, Tooltip } from "antd";
-import { useRouter } from "next/router";
-import { ReactNode, useState } from "react";
 import { ArrowLeftOutlined, InfoCircleOutlined } from "@ant-design/icons";
-import styles from "../Layout/index.module.css";
-import { genKeys, StealthKeys } from "solana-stealth";
-
-import Link from "next/link";
 import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  TransactionInstruction,
-} from "@solana/web3.js";
-import BN from "bn.js";
-import { KeypairSigner, KryptonAccount, Signer } from "../../types/account";
-import { generateAvatar, getAvatar } from "../../utils/avatar";
-import { useGlobalState } from "../../context";
-import { StyledForm } from "../../styles/StyledComponents.styles";
-import {
-  sendAndConfirmTransactionWithAccount,
-  refreshBalance,
-  getProfilePDA,
-} from "../../utils";
-import OnboardingSteps from "../OnboardingSteps";
-import {
-  MAX_GUARDIANS,
-  REFILL_TO_BALANCE,
-  RPC_URL,
-  TEST_INITIAL_BALANCE_FAILURE,
-  WALLET_PROGRAM_ID,
-} from "../../utils/constants";
-import {
-  createMint,
-  getAssociatedTokenAddress,
+  AuthorityType,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
+  createMint,
   getAccount,
+  getAssociatedTokenAddress,
   mintTo,
   setAuthority,
-  AuthorityType,
 } from "@solana/spl-token";
-import { randomBytes } from "tweetnacl";
-import * as aesjs from "aes-js";
-import base58 from "bs58";
-import { split } from "shamirs-secret-sharing-ts";
+import { Connection, Transaction } from "@solana/web3.js";
+import { Button, Checkbox, Form, Select, Tooltip } from "antd";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { ReactNode, useState } from "react";
+import { useGlobalState } from "../../context";
 import * as krypton from "../../js/src/generated";
+import { StyledForm } from "../../styles/StyledComponents.styles";
+import { KeypairSigner, KryptonAccount, Signer } from "../../types/account";
+import {
+  getProfilePDA,
+  refreshBalance,
+  sendAndConfirmTransactionWithAccount,
+} from "../../utils";
+import { generateAvatar } from "../../utils/avatar";
+import {
+  REFILL_TO_BALANCE,
+  RPC_URL,
+  WALLET_PROGRAM_ID,
+} from "../../utils/constants";
+import styles from "../Layout/index.module.css";
+import OnboardingSteps from "../OnboardingSteps";
 
 const SignupForm = ({
   feePayer,
@@ -79,7 +64,7 @@ const SignupForm = ({
     setLoading(true);
     console.log("=====STARTING SIGNING UP======");
     const feePayerPK = await feePayer.getPublicKey();
-    const [profileAddress, profileBump] = getProfilePDA(feePayerPK);
+    const [profileAddress] = getProfilePDA(feePayerPK);
     const thres = Number(values.thres);
     console.log("input thres: ", thres);
 
@@ -135,17 +120,6 @@ const SignupForm = ({
     });
 
     tx.add(initializeSocialWalletIx);
-    /* Versioned TX
-    const recentBlockhash = await connection.getLatestBlockhash();
-    const messageV0 = new TransactionMessage({
-      payerKey: feePayer.publicKey,
-      recentBlockhash: recentBlockhash.blockhash,
-      instructions: [initializeSocialWalletIx],
-    }).compileToV0Message();
-    const tx = new VersionedTransaction(messageV0);
-    tx.sign([feePayer]);
-    */
-
     console.log("sending TX!");
 
     const txid = await sendAndConfirmTransactionWithAccount(
@@ -159,11 +133,9 @@ const SignupForm = ({
       }
     );
     setCurrStep((prev) => prev + 1);
-    console.log("txid", txid);
-    // console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
+    console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
 
     // CREATE TOKEN ACCOUNT & AIRDROP for TESTING!
-
     if (testing) {
       const keypairFeePayer = (feePayer as KeypairSigner).keypair;
       console.log("Creating mint account...");

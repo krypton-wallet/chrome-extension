@@ -1,10 +1,9 @@
 import React, {
-  useState,
   createContext,
-  useContext,
   useCallback,
-  useEffect,
+  useContext,
   useMemo,
+  useState,
 } from "react";
 import DefaultModal from "./DefaultModal";
 

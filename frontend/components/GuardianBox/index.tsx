@@ -39,16 +39,13 @@ const GuardianBox = ({
 
     console.log(guardian.toBase58());
     const deleteFromRecoveryIx =
-      krypton.createRemoveRecoveryGuardiansInstruction(
-        {
-          profileInfo: profileAddress,
-          authorityInfo: feePayerPK,
-          guardian,
-        },
-      );
+      krypton.createRemoveRecoveryGuardiansInstruction({
+        profileInfo: profileAddress,
+        authorityInfo: feePayerPK,
+        guardian,
+      });
 
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO: Check if Yubikey is connected
     const tx = new Transaction({
       feePayer: feePayerPK,
       ...recentBlockhash,

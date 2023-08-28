@@ -1,10 +1,5 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import useInterval from "@use-it/interval";
 import { Alert, Button, Form, Input } from "antd";
 import { NextPage } from "next";
@@ -14,12 +9,8 @@ import UrlBox from "../components/UrlBox";
 import { useGlobalState } from "../context";
 import * as krypton from "../js/src/generated/index";
 import { StyledForm } from "../styles/StyledComponents.styles";
+import { sendAndConfirmTransactionWithAccount } from "../utils";
 import { RPC_URL } from "../utils/constants";
-import {
-  getCurrentAccount,
-  sendAndConfirmTransactionWithAccount,
-} from "../utils";
-import { useGlobalModalContext } from "../components/GlobalModal";
 
 const GenerateRecover: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,20 +34,25 @@ const GenerateRecover: NextPage = () => {
         console.log("no profile account found");
         return;
       }
-      const [profile] =
-        krypton.UserProfile.fromAccountInfo(profileAccount);
+      const [profile] = krypton.UserProfile.fromAccountInfo(profileAccount);
 
-      // if (profileHeader.recovery.toBase58() != account.pda) {
-        // console.log("invalid recovery");
-        // return;
-      // }
+      if (profile.recovery.toBase58() != account.pda) {
+        console.log("invalid recovery");
+        return;
+      }
 
-      // const signed = profileHeader.guardians.filter(
-        // (g) => !g.pubkey.equals(SystemProgram.programId) && g.hasSigned
-      // );
+      const signed = Array.from(profile.guardians.values()).reduce(
+        (count, value) => {
+          if (value === true) {
+            return count + 1;
+          }
+          return count;
+        },
+        0
+      );
 
-      // setSigned(signed.length);
-      // setRecoveryThreshold(profileHeader.recoveryThreshold);
+      setSigned(signed);
+      setRecoveryThreshold(profile.recoveryThreshold);
     },
     [account, network]
   );

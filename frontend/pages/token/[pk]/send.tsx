@@ -5,7 +5,7 @@ import {
   createCloseAccountInstruction,
   getAccount,
   getAssociatedTokenAddress,
-  getMint
+  getMint,
 } from "@solana/spl-token";
 import {
   Connection,
@@ -135,7 +135,6 @@ const Send: NextPage = () => {
         console.log("Creating token account for notify...");
 
         const recentBlockhash = await connection.getLatestBlockhash();
-        // TODO: Check if Yubikey is connected
         const createTA_tx = new Transaction({
           feePayer: feePayerPk,
           ...recentBlockhash,
@@ -172,16 +171,6 @@ const Send: NextPage = () => {
         values.spendkey,
         0
       );
-      for (let i = 0; i < notifyTx.instructions.length; i++) {
-        for (let j = 0; j < notifyTx.instructions[i].keys.length; j++) {
-          console.log("i ", i);
-          console.log("j ", j);
-          console.log(
-            "key at i,j ",
-            notifyTx.instructions[i].keys[j].pubkey.toBase58()
-          );
-        }
-      }
       dest_pda = notifyTx.instructions[1].keys[1].pubkey;
       console.log("dest pda: ", dest_pda.toBase58());
 
@@ -233,7 +222,6 @@ const Send: NextPage = () => {
       console.log("Creating token account for mint...");
 
       const recentBlockhash = await connection.getLatestBlockhash();
-      // TODO: Check if Yubikey is connected
       const createTA_tx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
@@ -271,7 +259,6 @@ const Send: NextPage = () => {
 
     /* TRANSACTION: Transfer Token */
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO: Check if Yubikey is connected
     const transferTokenTx = new Transaction({
       feePayer: feePayerPk,
       ...recentBlockhash,
@@ -320,14 +307,12 @@ const Send: NextPage = () => {
 
     transferTokenTx.add(transferAndCloseIx);
     if (stealthMode) {
-      //transferTokenTx.add(notifyIx!); //broken :(
       let smth = await getAccount(connection, closingAccount!);
       console.log("closing account: ", smth);
       console.log("closing account: ", smth.address);
       console.log("closing account: ", smth.address.toBase58());
       console.log("********with amount: ", smth.amount);
       smth;
-      //transferTokenTx.add(closeIx!);
     }
 
     console.log("Transfering token...");

@@ -1,6 +1,6 @@
 import { Divider } from "antd";
-import { Box } from "../../styles/StyledComponents.styles";
 import Paragraph from "antd/lib/typography/Paragraph";
+import { Box } from "../../styles/StyledComponents.styles";
 
 const InfoBox = ({
   fieldName,

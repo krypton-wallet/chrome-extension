@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { useRouter } from "next/router";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { displayAddress } from "../../../utils";
-import Link from "next/link";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { Button, Image } from "antd";
+import { NextPage } from "next";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import CopyableBox from "../../../components/CopyableBox";
 import EditableBox from "../../../components/EditableBox";
-import { useGlobalState } from "../../../context";
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { getAvatar } from "../../../utils/avatar";
 import InfoBox from "../../../components/InfoBox";
+import { useGlobalState } from "../../../context";
+import { displayAddress } from "../../../utils";
+import { getAvatar } from "../../../utils/avatar";
 import { RPC_URL } from "../../../utils/constants";
 
 const Account: NextPage = () => {

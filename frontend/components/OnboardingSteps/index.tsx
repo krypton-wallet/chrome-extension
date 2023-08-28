@@ -1,4 +1,4 @@
-import { LoadingOutlined, CheckCircleFilled } from "@ant-design/icons";
+import { CheckCircleFilled, LoadingOutlined } from "@ant-design/icons";
 import Steps from "antd/lib/steps";
 import { useEffect, useState } from "react";
 
@@ -25,7 +25,7 @@ const OnboardingSteps = ({
         ]
       : ["Confirming your signup...", "Initializing social wallet..."]
   );
-  const genSteps = [
+  const GEN_STEPS = [
     "Initializing avatar...",
     "Finding the environment...",
     "Picking the oufit...",
@@ -99,7 +99,7 @@ const OnboardingSteps = ({
           progressDot
           style={{ marginLeft: "20%" }}
         >
-          {genSteps.map((item, idx) => {
+          {GEN_STEPS.map((item, idx) => {
             return (
               <Steps.Step
                 key={item}

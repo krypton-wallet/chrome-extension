@@ -11,16 +11,16 @@ import {
 } from "@solana/web3.js";
 import { message } from "antd";
 import bs58 from "bs58";
-import { generateAvatar } from "./avatar";
+import { GlobalModalContext } from "../components/GlobalModal";
+import PinentryModal from "../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
 import {
   KeypairSigner,
   KryptonAccount,
   Signer,
   YubikeySigner,
 } from "../types/account";
-import { GlobalModalContext } from "../components/GlobalModal";
-import PinentryModal from "../components/GlobalModal/PinentryModal";
-import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
+import { generateAvatar } from "./avatar";
 import { PDA_RENT_EXEMPT_FEE, RPC_URL, WALLET_PROGRAM_ID } from "./constants";
 const BN = require("bn.js");
 
@@ -119,7 +119,6 @@ const sendAndConfirmTransactionWithAccount = async (
   }
   const finalSignature = bs58.encode(new Uint8Array(transaction.signature!));
 
-  // TODO: Add assert or other error checking for this
   const isVerifiedSignature = transaction.verifySignatures();
   console.log(`The signatures were verified: ${isVerifiedSignature}`);
 
@@ -168,7 +167,7 @@ const getProfilePDA = (feePayerPK: PublicKey) => {
 
 const getGuardPDA = (profileAddress: PublicKey) => {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('guard', 'utf-8'), profileAddress.toBuffer()],
+    [Buffer.from("guard", "utf-8"), profileAddress.toBuffer()],
     WALLET_PROGRAM_ID
   );
 };
@@ -213,7 +212,6 @@ const getAccountFromPkString = async (
       }
 
       // yubikey
-      // TODO: Detoxify this
       else if (result.mode === 1) {
         const accountObj = JSON.parse(result["y_accounts"]);
         console.log("desired: ", pk);
@@ -309,7 +307,6 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
       }
 
       // yubikey
-      // TODO: Detoxify this
       else if (result.mode === 1) {
         const accountObj = JSON.parse(result["y_accounts"]);
         const y_id = result["y_id"];
@@ -388,18 +385,18 @@ const JSONtoUInt8Array = (obj: any) => {
 };
 
 export {
-  refreshBalance,
-  handleAirdrop,
-  isNumber,
-  displayAddress,
   containsPk,
-  sendAndConfirmTransactionWithAccount,
-  partialSign,
-  getProfilePDA,
-  getGuardPDA,
+  displayAddress,
+  generateAvatar,
   getAccountFromPkString,
   getCurrentAccount,
-  generateAvatar,
-  parsePubkey,
+  getGuardPDA,
+  getProfilePDA,
+  handleAirdrop,
+  isNumber,
   JSONtoUInt8Array,
+  parsePubkey,
+  partialSign,
+  refreshBalance,
+  sendAndConfirmTransactionWithAccount,
 };

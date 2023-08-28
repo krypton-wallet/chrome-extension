@@ -1,31 +1,26 @@
-/*global chrome*/
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { Button, message } from "antd";
-import bs58 from "bs58";
-
 import {
   AccountMeta,
   Cluster,
   Connection,
   PublicKey,
-  Transaction,
   TransactionInstruction,
   TransactionMessage,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { Button } from "antd";
+import BN from "bn.js";
+import bs58 from "bs58";
+import { NextPage } from "next";
+import { useEffect, useState } from "react";
 import { useGlobalModalContext } from "../../components/GlobalModal";
+import { Signer } from "../../types/account";
 import {
-  getAccountFromPkString,
   JSONtoUInt8Array,
+  getAccountFromPkString,
   parsePubkey,
 } from "../../utils";
-import { Signer } from "../../types/account";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
-import { useGlobalState } from "../../context";
-import BN from "bn.js";
-// import { displayPkList } from "../../utils/logging";
 
 const SignTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -82,7 +77,6 @@ const SignTransaction: NextPage = () => {
   };
 
   const postMessage = (message: any) => {
-    // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
       channel: "krypton_extension_background_channel",
       data: message,
@@ -231,34 +225,12 @@ const SignTransaction: NextPage = () => {
     }
     console.log("========================");
 
-    // console.log("all aCCTS before compile: ");
-    // displayPkList(allAccounts);
-    // let signerPubkeys = allAccounts.slice(0, numRequiredSignatures);
-    // for (let i = 0; i < signerPubkeys.length; i++) {
-    //   console.log("i: ", signerPubkeys[i].toBase58());
-    //   console.log("pda: ", pda[0].toBase58());
-    //   if (signerPubkeys[i].toBase58() === pda[0].toBase58()) {
-    //     console.log("found");
-    //     signerPubkeys[i] = pk;
-    //     break;
-    //   }
-    // }
-    // console.log("keys in correct order: ");
-    // displayPkList(signerPubkeys);
     const recentBlockhash = await connection.getLatestBlockhash();
     const messageLegacy = new TransactionMessage({
       payerKey: pk,
       recentBlockhash: recentBlockhash.blockhash,
       instructions: allInstructions,
     }).compileToLegacyMessage();
-    // console.log("num required signautres: ", numRequiredSignatures);
-    // messageLegacy.accountKeys.splice(
-    //   0,
-    //   numRequiredSignatures,
-    //   ...signerPubkeys
-    // );
-    // console.log("all aCCTS after compile: ");
-    // displayPkList(messageLegacy.accountKeys);
     const wrapSignTx = new VersionedTransaction(messageLegacy);
     wrapSignTx.signatures = txSignatures;
 
@@ -286,9 +258,6 @@ const SignTransaction: NextPage = () => {
 
     const simulationRes = await connection.simulateTransaction(wrapSignTx);
     console.log("TX simulation RES: ", simulationRes);
-
-    // const txid = await connection.sendTransaction(wrapSignTx);
-    // console.log("TX id: ", txid);
 
     postMessage({
       method: "signTransaction",

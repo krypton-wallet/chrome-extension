@@ -1,10 +1,6 @@
-import { Keypair, Message, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { getPubkey, signMessage } from "bloss-js";
 import nacl from "tweetnacl";
-import { genFullSignature } from "solana-stealth";
-import { Point } from "@noble/ed25519";
-import BN from "bn.js";
-import bs58 from "bs58";
 
 interface Signer {
   getPublicKey(): Promise<PublicKey>;
@@ -31,7 +27,7 @@ export class KeypairSigner implements Signer {
 
 export class YubikeySigner implements Signer {
   private aid: string;
-  private pin: string = "123456";
+  private pin: string = "123456"; // default PIN
   private getPin: (isRetry: boolean) => Promise<string>;
   private touchPrompt: () => void;
   private afterTouchCallback: () => void;

@@ -1,11 +1,4 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import {
-  AccountLayout,
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAccount,
-  getAssociatedTokenAddress,
-} from "@solana/spl-token";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { Button, Result } from "antd";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -18,7 +11,7 @@ import { sendAndConfirmTransactionWithAccount } from "../../utils";
 import { RPC_URL } from "../../utils/constants";
 
 const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
-  const { account, setAccount } = useGlobalState();
+  const { account } = useGlobalState();
   const [loading, setLoading] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
   const [succeeded, setSucceeded] = useState<boolean>(false);
@@ -44,9 +37,6 @@ const RecoverBox = ({ profileInfo }: { profileInfo: PublicKey }) => {
       const [oldProfile] =
         krypton.UserProfile.fromAccountInfo(oldProfileAccount);
       const authorityInfo = oldProfile.authority;
-      // const recovery = oldProfile.recovery;
-
-      // TODO: Check if Yubikey is connected
 
       // recover wallet
       console.log("Transfering profile data...");

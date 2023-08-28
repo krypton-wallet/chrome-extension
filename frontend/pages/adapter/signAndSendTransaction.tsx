@@ -1,18 +1,17 @@
-/*global chrome*/
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { Button } from "antd";
-import bs58 from "bs58";
 import {
   Connection,
   PublicKey,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { Button } from "antd";
+import bs58 from "bs58";
+import { NextPage } from "next";
+import { useEffect, useState } from "react";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { getAccountFromPkString, partialSign } from "../../utils";
 import { useGlobalState } from "../../context";
 import { Signer } from "../../types/account";
+import { getAccountFromPkString, partialSign } from "../../utils";
 import { RPC_URL } from "../../utils/constants";
 
 const SignAndSendTransaction: NextPage = () => {
@@ -52,7 +51,6 @@ const SignAndSendTransaction: NextPage = () => {
   };
 
   const postMessage = (message: any) => {
-    // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
       channel: "krypton_extension_background_channel",
       data: message,

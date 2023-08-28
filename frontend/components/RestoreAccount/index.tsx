@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "antd";
 import { LoadingOutlined, UnlockOutlined } from "@ant-design/icons";
+import { Button } from "antd";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card } from "../../styles/StyledComponents.styles";
 
 const RestoreAccount = () => {

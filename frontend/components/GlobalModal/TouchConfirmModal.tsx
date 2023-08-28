@@ -1,7 +1,7 @@
-import { Modal } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
+import { Modal } from "antd";
 
-const TouchConfirmModal = (props: { onCancel: () => void }) => {
+const TouchConfirmModal = (_props: { onCancel: () => void }) => {
   return (
     <Modal
       open={true}

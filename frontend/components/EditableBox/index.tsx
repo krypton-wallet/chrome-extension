@@ -1,7 +1,6 @@
-import React from "react";
+import { EnterOutlined } from "@ant-design/icons";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { Box } from "../../styles/StyledComponents.styles";
-import { EnterOutlined } from "@ant-design/icons";
 
 const EditableBox = ({
   fieldName,

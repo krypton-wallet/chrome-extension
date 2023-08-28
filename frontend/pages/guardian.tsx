@@ -10,13 +10,13 @@ import { NextPage } from "next";
 import { useEffect, useState } from "react";
 import GuardianBox from "../components/GuardianBox";
 import { useGlobalState } from "../context";
+import * as krypton from "../js/src/generated";
 import {
   containsPk,
   getProfilePDA,
   sendAndConfirmTransactionWithAccount,
 } from "../utils";
 import { RPC_URL } from "../utils/constants";
-import * as krypton from "../js/src/generated";
 
 const Guardian: NextPage = () => {
   const { setGuardians, guardians, account, network } = useGlobalState();
@@ -42,8 +42,8 @@ const Guardian: NextPage = () => {
         console.log("profile?", profile);
         setThres(profile.recoveryThreshold);
         setGuardians(
-          Array.from(profile.guardians
-            .entries()).map(([pubkey]) => pubkey)
+          Array.from(profile.guardians.entries())
+            .map(([pubkey]) => pubkey)
             .filter((g) => !g.equals(SystemProgram.programId))
         );
       }
@@ -73,22 +73,17 @@ const Guardian: NextPage = () => {
 
     const [profileAddress] = getProfilePDA(publicKey);
 
-    const addGuardianIx = krypton.createAddRecoveryGuardiansInstruction(
-      {
-        profileInfo: profileAddress,
-        authorityInfo: publicKey,
-        guardian: new PublicKey(values.guardian),
-        systemProgram: SystemProgram.programId,
-      },
-    );
-
-    // TODO: Check if Yubikey is connected
+    const addGuardianIx = krypton.createAddRecoveryGuardiansInstruction({
+      profileInfo: profileAddress,
+      authorityInfo: publicKey,
+      guardian: new PublicKey(values.guardian),
+      systemProgram: SystemProgram.programId,
+    });
     const tx = new Transaction({
       feePayer: publicKey,
       ...latestBlockhash,
     });
     tx.add(addGuardianIx);
-
     console.log("processing add guardian");
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
@@ -104,7 +99,7 @@ const Guardian: NextPage = () => {
 
     setLoading((prev) => prev - 1);
     setIsModalOpen(false);
-    // setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
+    setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
     form.resetFields();
   };
 

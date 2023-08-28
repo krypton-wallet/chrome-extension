@@ -1,13 +1,13 @@
+import { KeyOutlined } from "@ant-design/icons";
 import { NextPage } from "next";
 import { withRouter } from "next/router";
-import { useGlobalState } from "../../../context";
-import { YubikeyAccount, YubikeySigner } from "../../../types/account";
 import { useGlobalModalContext } from "../../../components/GlobalModal";
 import PinentryModal from "../../../components/GlobalModal/PinentryModal";
 import TouchConfirmModal from "../../../components/GlobalModal/TouchConfirmModal";
-import YubikeyTable from "../../../components/SignupForm/YubikeyTable";
 import SignupForm from "../../../components/SignupForm";
-import { KeyOutlined } from "@ant-design/icons";
+import YubikeyTable from "../../../components/SignupForm/YubikeyTable";
+import { useGlobalState } from "../../../context";
+import { YubikeyAccount, YubikeySigner } from "../../../types/account";
 
 const YubikeySignup: NextPage = () => {
   const { yubikeyInfo: info } = useGlobalState();

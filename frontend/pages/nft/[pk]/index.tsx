@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { NextPage } from "next";
-import { useRouter } from "next/router";
-import { Button, Skeleton } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { displayAddress } from "../../../utils";
-import styles from "../../../components/Layout/index.module.css";
-import Link from "next/link";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { RPC_URL } from "../../../utils/constants";
-import { useGlobalState } from "../../../context";
 import { Metaplex } from "@metaplex-foundation/js";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { Button, Skeleton } from "antd";
+import { NextPage } from "next";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
 import CopyableBoxSimple from "../../../components/CopyableBox/simple";
+import styles from "../../../components/Layout/index.module.css";
+import { useGlobalState } from "../../../context";
+import { displayAddress } from "../../../utils";
+import { RPC_URL } from "../../../utils/constants";
 
 const Token: NextPage = () => {
   const router = useRouter();
@@ -76,6 +76,7 @@ const Token: NextPage = () => {
         <>
           <h1 className={"title"}>{tokenName ?? "Unknown Token"}</h1>
           <CopyableBoxSimple value={displayAddress(pk)} copyableValue={pk} />
+          {/* eslint-disable-next-line @next/next/no-img-element*/}
           <img
             style={{
               alignItems: "center",
@@ -85,10 +86,9 @@ const Token: NextPage = () => {
             }}
             src={tokenIconStr ?? "/static/images/token.png"}
             alt="nft image"
-          ></img>
+          />
           <Button
             type="primary"
-            //   loading={loading}
             style={{
               width: "140px",
               height: "40px",
