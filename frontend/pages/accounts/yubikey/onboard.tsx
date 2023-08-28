@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
+import { ArrowLeftOutlined, KeyOutlined } from "@ant-design/icons";
 import { List, Tooltip } from "antd";
-import { KeyOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { useRouter } from "next/router";
-import styles from "../../../components/Layout/index.module.css";
-import Link from "next/link";
-import { listCards, PgpCardInfo } from "bloss-js";
+import { PgpCardInfo, listCards } from "bloss-js";
 import bs58 from "bs58";
-import { displayAddress } from "../../../utils";
+import { NextPage } from "next";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import styles from "../../../components/Layout/index.module.css";
 import { useGlobalState } from "../../../context";
+import { displayAddress } from "../../../utils";
 
 const YubikeyOnboard: NextPage = () => {
   const router = useRouter();

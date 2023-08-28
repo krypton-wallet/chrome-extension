@@ -1,30 +1,26 @@
-/*global chrome*/
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { Button, message } from "antd";
-import bs58 from "bs58";
-
 import {
   AccountMeta,
   Cluster,
   Connection,
   PublicKey,
-  Transaction,
   TransactionInstruction,
   TransactionMessage,
   VersionedMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
+import { Button } from "antd";
+import BN from "bn.js";
+import bs58 from "bs58";
+import { NextPage } from "next";
+import { useEffect, useState } from "react";
 import { useGlobalModalContext } from "../../components/GlobalModal";
+import { Signer } from "../../types/account";
 import {
-  getAccountFromPkString,
   JSONtoUInt8Array,
+  getAccountFromPkString,
   parsePubkey,
 } from "../../utils";
-import { Signer } from "../../types/account";
 import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
-import { useGlobalState } from "../../context";
-import BN from "bn.js";
 
 const SignTransaction: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -81,7 +77,6 @@ const SignTransaction: NextPage = () => {
   };
 
   const postMessage = (message: any) => {
-    // eslint-disable-next-line no-undef
     chrome.runtime.sendMessage({
       channel: "krypton_extension_background_channel",
       data: message,
@@ -263,9 +258,6 @@ const SignTransaction: NextPage = () => {
 
     const simulationRes = await connection.simulateTransaction(wrapSignTx);
     console.log("TX simulation RES: ", simulationRes);
-
-    // const txid = await connection.sendTransaction(wrapSignTx);
-    // console.log("TX id: ", txid);
 
     postMessage({
       method: "signTransaction",

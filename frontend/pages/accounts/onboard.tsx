@@ -1,15 +1,14 @@
-import React from "react";
-import { NextPage } from "next";
-import { List } from "antd";
 import {
-  WalletOutlined,
-  NodeCollapseOutlined,
-  KeyOutlined,
   ArrowLeftOutlined,
+  KeyOutlined,
+  NodeCollapseOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
+import { List } from "antd";
+import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import styles from "../../components/Layout/index.module.css";
-import Link from "next/link";
 
 const Onboard: NextPage = () => {
   const router = useRouter();

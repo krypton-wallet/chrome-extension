@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { List, Avatar, Skeleton, Empty } from "antd";
-import { useGlobalState } from "../../context";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { displayAddress } from "../../utils";
-import { useRouter } from "next/router";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
 import { Metaplex } from "@metaplex-foundation/js";
+import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { Avatar, Empty, List, Skeleton } from "antd";
+import { NextPage } from "next";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { useGlobalState } from "../../context";
+import { displayAddress } from "../../utils";
+import { RPC_URL } from "../../utils/constants";
 
 const NFT: NextPage = () => {
   const { network, setTokens, account } = useGlobalState();

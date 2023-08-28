@@ -15,7 +15,7 @@ const CopyableBoxSimple = ({
       >
         {value}
       </Paragraph>
-</>
+    </>
   );
 };
 

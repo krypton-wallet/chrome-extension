@@ -1,11 +1,6 @@
-import EventEmitter from "eventemitter3";
+import { Message, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
-import {
-  PublicKey,
-  VersionedTransaction,
-  VersionedMessage,
-  Message,
-} from "@solana/web3.js";
+import EventEmitter from "eventemitter3";
 
 export class SolanaProvider extends EventEmitter {
   #publicKey = null;
@@ -141,30 +136,7 @@ export class SolanaProvider extends EventEmitter {
       signaturesArray
     );
     console.log("final TX parsed: ", final_parsed);
-    // console.log("PDA bytes: ", pda.toBytes())
-    // const oldtx_cloned = structuredClone(transaction);
-    // console.log("TX before: ", oldtx_cloned)
 
-    // const signerPubkeys = transaction.message.staticAccountKeys.slice(
-    //   0,
-    //   transaction.message.header.numRequiredSignatures,
-    // );
-    // const signerIndex = signerPubkeys.findIndex(pubkey =>
-    //   pubkey.equals(pda)
-    // );
-    // console.log("ACCT before: ", transaction.message.staticAccountKeys[signerIndex])
-    // console.log("ACCT before bs58: ", transaction.message.staticAccountKeys[signerIndex].toBase58())
-    // console.log("SIG before: ", bs58.encode(transaction.signatures[signerIndex]))
-
-    // transaction.message.staticAccountKeys[signerIndex] = publicKey;
-    // transaction.signatures[signerIndex] = signature;
-    // console.log("ACCT after: ", transaction.message.staticAccountKeys[signerIndex])
-    // console.log("ACCT after bs58: ", transaction.message.staticAccountKeys[signerIndex].toBase58())
-    // console.log("SIG after: ", transaction.signatures[signerIndex])
-    // console.log("SIG after encoded: ", bs58.encode(transaction.signatures[signerIndex]))
-    // console.log("TX after: ", transaction)
-
-    // transaction.addSignature(publicKey, signature);
     return final_parsed;
   };
 
@@ -181,16 +153,7 @@ export class SolanaProvider extends EventEmitter {
       console.log("OLD FP: ", tx.feePayer);
       tx.feePayer = pda;
       console.log("NEW FP: ", tx.feePayer);
-      // const signerPubkeys = tx._message.staticAccountKeys.slice(
-      //   0,
-      //   tx._message.header.numRequiredSignatures,
-      // );
-      // const signerIndex = signerPubkeys.findIndex(pubkey =>
-      //   pubkey.equals(pda)
-      // );
-      // tx._message.staticAccountKeys[signerIndex] = publicKey;
       tx.signatures[signerIndex] = signatures[idx];
-      //tx.addSignature(publicKey, signatures[idx]);
       console.log("TX after: ", tx);
       return tx;
     });

@@ -1,32 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
 import {
-  List,
-  Avatar,
-  Button,
-  Skeleton,
-  Dropdown,
-  Space,
-  MenuProps,
-} from "antd";
-import { useGlobalState } from "../../context";
-import {
-  UserAddOutlined,
-  MoreOutlined,
   CloseOutlined,
   DownOutlined,
+  MoreOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
-import { displayAddress, getAccountFromPkString } from "../../utils";
-import { useRouter } from "next/router";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import {
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-} from "@solana/web3.js";
+  Avatar,
+  Button,
+  Dropdown,
+  List,
+  MenuProps,
+  Skeleton,
+  Space,
+} from "antd";
+import { NextPage } from "next";
 import Link from "next/link";
-import { getAvatar } from "../../utils/avatar";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { useGlobalModalContext } from "../../components/GlobalModal";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../../utils/constants";
+import { useGlobalState } from "../../context";
+import { displayAddress, getAccountFromPkString } from "../../utils";
+import { getAvatar } from "../../utils/avatar";
+import { RPC_URL } from "../../utils/constants";
 
 const AccountList: NextPage = () => {
   const { network, setBalance, setAccount, setCurrId } = useGlobalState();
@@ -213,7 +209,6 @@ const AccountList: NextPage = () => {
                     }
                     chrome.storage.local.set({ pk: publicKey });
 
-                    // TODO: Detoxify this
                     const curr = await getAccountFromPkString(
                       publicKey,
                       modalContext

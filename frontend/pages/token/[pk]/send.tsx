@@ -1,27 +1,28 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { NextPage } from "next";
-import { Button, Form, Input, Result } from "antd";
-import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../../../styles/StyledComponents.styles";
-import styles from "../../../components/Layout/index.module.css";
+import {
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createCloseAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
+  getMint,
+} from "@solana/spl-token";
 import {
   Connection,
-  LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import {
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
-  getAccount,
-  getMint,
-} from "@solana/spl-token";
-import { useGlobalState } from "../../../context";
+import { Button, Form, Input, Result, Switch } from "antd";
 import BN from "bn.js";
+import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+import { stealthTokenTransferTransaction } from "solana-stealth";
+import styles from "../../../components/Layout/index.module.css";
+import { useGlobalState } from "../../../context";
+import { StyledForm } from "../../../styles/StyledComponents.styles";
 import {
   displayAddress,
   isNumber,
@@ -35,6 +36,7 @@ const Send: NextPage = () => {
   const [decimals, setDecimals] = useState<number>(1);
   const { account, network } = useGlobalState();
   const [finished, setFinished] = useState<boolean>(false);
+  const [stealthMode, setStealthMode] = useState<boolean>(false);
 
   const [form] = Form.useForm();
 
@@ -101,8 +103,102 @@ const Send: NextPage = () => {
     setLoading(true);
     console.log(values);
     console.log(account);
-    const dest_pda = new PublicKey(values.pk);
+
+    let dest_pda: PublicKey;
+    let associatedToken: PublicKey;
+    let notifyTx: Transaction;
+    let closeIx: TransactionInstruction;
+    let closingAccount: PublicKey;
     const feePayerPk = new PublicKey(account.pk);
+    if (stealthMode) {
+      console.log("getting associated");
+      closingAccount = await getAssociatedTokenAddress(mint_pk, feePayerPk);
+      let temp = await getAssociatedTokenAddress(
+        mint_pk,
+        new PublicKey(account.pda),
+        true
+      );
+      console.log("closing: ", closingAccount.toBase58());
+      console.log("not closing: ", temp.toBase58());
+
+      const notifyinfo = await connection.getAccountInfo(closingAccount);
+      console.log(notifyinfo);
+      closeIx = createCloseAccountInstruction(
+        closingAccount,
+        feePayerPk,
+        feePayerPk
+      );
+
+      if (!notifyinfo) {
+        console.log("got associated: ", closingAccount.toBase58());
+
+        console.log("Creating token account for notify...");
+
+        const recentBlockhash = await connection.getLatestBlockhash();
+        const createTA_tx = new Transaction({
+          feePayer: feePayerPk,
+          ...recentBlockhash,
+        });
+
+        createTA_tx.add(
+          createAssociatedTokenAccountInstruction(
+            feePayerPk,
+            closingAccount,
+            feePayerPk,
+            mint_pk,
+            TOKEN_PROGRAM_ID
+          )
+        );
+
+        await sendAndConfirmTransactionWithAccount(
+          connection,
+          createTA_tx,
+          [account],
+          {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+            commitment: "confirmed",
+          }
+        );
+
+        console.log("created?");
+      }
+
+      notifyTx = await stealthTokenTransferTransaction(
+        feePayerPk,
+        mint_pk,
+        values.scankey,
+        values.spendkey,
+        0
+      );
+      dest_pda = notifyTx.instructions[1].keys[1].pubkey;
+      console.log("dest pda: ", dest_pda.toBase58());
+
+      const block = await connection.getLatestBlockhash();
+      notifyTx.recentBlockhash = block.blockhash;
+      notifyTx.lastValidBlockHeight = block.lastValidBlockHeight;
+      notifyTx.feePayer = feePayerPk;
+      console.log("sending notify");
+      let res = await sendAndConfirmTransactionWithAccount(
+        connection,
+        notifyTx,
+        [account]
+      );
+      console.log(res);
+      console.log("done notify");
+    } else {
+      dest_pda = new PublicKey(values.pk);
+      console.log("Getting dest associated token address...");
+    }
+    console.log("getting associated");
+    associatedToken = await getAssociatedTokenAddress(
+      mint_pk,
+      dest_pda,
+      true,
+      TOKEN_PROGRAM_ID
+    );
+    console.log("got associated: ", associatedToken.toBase58());
+
     const amount = Number(values.amount) * Math.pow(10, decimals);
 
     console.log("Getting src token account...");
@@ -120,21 +216,12 @@ const Send: NextPage = () => {
     );
     console.log(`Src Token Account: ${srcTokenAccount.address.toBase58()}`);
 
-    console.log("Getting dest associated token address...");
-    const associatedToken = await getAssociatedTokenAddress(
-      mint_pk,
-      dest_pda,
-      true,
-      TOKEN_PROGRAM_ID
-    );
-
     const destTAInfo = await connection.getAccountInfo(associatedToken);
     console.log(destTAInfo);
     if (!destTAInfo) {
       console.log("Creating token account for mint...");
 
       const recentBlockhash = await connection.getLatestBlockhash();
-      // TODO: Check if Yubikey is connected
       const createTA_tx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
@@ -172,7 +259,6 @@ const Send: NextPage = () => {
 
     /* TRANSACTION: Transfer Token */
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO: Check if Yubikey is connected
     const transferTokenTx = new Transaction({
       feePayer: feePayerPk,
       ...recentBlockhash,
@@ -220,6 +306,14 @@ const Send: NextPage = () => {
     });
 
     transferTokenTx.add(transferAndCloseIx);
+    if (stealthMode) {
+      let smth = await getAccount(connection, closingAccount!);
+      console.log("closing account: ", smth);
+      console.log("closing account: ", smth.address);
+      console.log("closing account: ", smth.address.toBase58());
+      console.log("********with amount: ", smth.amount);
+      smth;
+    }
 
     console.log("Transfering token...");
     const txid = await sendAndConfirmTransactionWithAccount(
@@ -233,6 +327,29 @@ const Send: NextPage = () => {
       }
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}\n`);
+
+    if (stealthMode) {
+      const closeTx = new Transaction({
+        feePayer: feePayerPk,
+        ...recentBlockhash,
+      });
+      closeTx.add(closeIx!);
+
+      console.log("Transfering token...");
+      const txid = await sendAndConfirmTransactionWithAccount(
+        connection,
+        closeTx,
+        [account],
+        {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        }
+      );
+      console.log(
+        `https://explorer.solana.com/tx/${txid}?cluster=${network}\n`
+      );
+    }
 
     setLoading(false);
     setFinished(true);
@@ -250,36 +367,107 @@ const Send: NextPage = () => {
           requiredMark={false}
           onFinish={handleOk}
         >
-          <Form.Item
-            name="pk"
-            rules={[
-              {
-                required: true,
-                message: "Please enter the recipient's address",
-              },
-              {
-                async validator(_, value) {
-                  const pdaInfo = await connection.getAccountInfo(
-                    new PublicKey(value)
-                  );
-                  if (pdaInfo) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("Invalid public key"));
-                },
-              },
-            ]}
-          >
-            <Input
-              placeholder="Recipient's Address"
-              style={{
-                minWidth: "300px",
-                backgroundColor: "rgb(34, 34, 34)",
-                color: "#d3d3d3",
-                border: "1px solid #d3d3d3",
-              }}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <p style={{ marginRight: "10px" }}>Stealth Mode: </p>
+            <Switch
+              checkedChildren="on"
+              unCheckedChildren="off"
+              checked={stealthMode}
+              onChange={() => setStealthMode((prev) => !prev)}
             />
-          </Form.Item>
+          </div>
+          {!stealthMode && (
+            <Form.Item
+              name="pk"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's address",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = await connection.getAccountInfo(
+                      new PublicKey(value)
+                    );
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Address"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="scankey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's scan key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Scan Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
+          {stealthMode && (
+            <Form.Item
+              name="spendkey"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter the recipient's spend key",
+                },
+                {
+                  async validator(_, value) {
+                    const pdaInfo = new PublicKey(value);
+                    if (pdaInfo) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Invalid public key"));
+                  },
+                },
+              ]}
+            >
+              <Input
+                placeholder="Recipient's Spend Key"
+                style={{
+                  minWidth: "300px",
+                  backgroundColor: "rgb(34, 34, 34)",
+                  color: "#d3d3d3",
+                  border: "1px solid #d3d3d3",
+                }}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item
             name="amount"

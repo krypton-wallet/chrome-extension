@@ -1,6 +1,6 @@
-import { useGlobalState } from "../../context";
 import { Table } from "antd";
 import bs58 from "bs58";
+import { useGlobalState } from "../../context";
 import { displayAddress } from "../../utils";
 
 const YubikeyTable = () => {

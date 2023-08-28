@@ -1,11 +1,9 @@
-import { FC, ReactNode, useCallback, useMemo } from "react";
+import { WalletModalProvider as AntDesignWalletModalProvider } from "@solana/wallet-adapter-ant-design";
 import { WalletAdapterNetwork, WalletError } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider as AntDesignWalletModalProvider } from '@solana/wallet-adapter-ant-design';
-
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
@@ -13,6 +11,7 @@ import {
   SolletWalletAdapter,
   TorusWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import { FC, ReactNode, useCallback, useMemo } from "react";
 import { RPC_URL } from "../utils/constants";
 
 const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -36,9 +35,7 @@ const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} onError={onError} autoConnect>
-        <AntDesignWalletModalProvider>
-          {children}
-        </AntDesignWalletModalProvider>
+        <AntDesignWalletModalProvider>{children}</AntDesignWalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

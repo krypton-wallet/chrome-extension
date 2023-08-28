@@ -1,24 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
-import { NextPage } from "next";
-import {
-  Button,
-  Tooltip,
-  List,
-  Avatar,
-  Skeleton,
-  Empty,
-  Alert,
-  Space,
-} from "antd";
-import { useGlobalState } from "../context";
-import { useRouter } from "next/router";
-import {
-  refreshBalance,
-  handleAirdrop,
-  displayAddress,
-  sendAndConfirmTransactionWithAccount,
-} from "../utils";
-import { Dashboard } from "../styles/StyledComponents.styles";
+import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import {
   Connection,
   Keypair,
@@ -27,16 +7,36 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { AccountLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  Alert,
+  Avatar,
+  Button,
+  Empty,
+  List,
+  Skeleton,
+  Space,
+  Tooltip,
+} from "antd";
+import Paragraph from "antd/lib/typography/Paragraph";
+import BN from "bn.js";
+import { NextPage } from "next";
+import { useRouter } from "next/router";
+import { ReactNode, useEffect, useState } from "react";
+import { useGlobalState } from "../context";
+import { Dashboard } from "../styles/StyledComponents.styles";
+import { KeypairSigner, Signer } from "../types/account";
+import {
+  displayAddress,
+  handleAirdrop,
+  refreshBalance,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
 import {
   MIN_KEYPAIR_BALANCE,
   REFILL_TO_BALANCE,
   RPC_URL,
   WALLET_PROGRAM_ID,
 } from "../utils/constants";
-import BN from "bn.js";
-import { KeypairSigner, Signer } from "../types/account";
-import Paragraph from "antd/lib/typography/Paragraph";
 import {
   getTokenIconString,
   getTokenMap,
@@ -102,7 +102,13 @@ const Wallet: NextPage = () => {
           console.log(`mint: ${mint}`);
           const iconStr = await getTokenIconString(mint.toBase58(), tokenMap);
           const name = await getTokenName(mint.toBase58(), tokenMap);
-          fungible_tokens_tmp.push([mint, amount, decimals, name ?? "Unknown Token", iconStr ?? "/static/images/token.png"]);
+          fungible_tokens_tmp.push([
+            mint,
+            amount,
+            decimals,
+            name ?? "Unknown Token",
+            iconStr ?? "/static/images/token.png",
+          ]);
         }
       }
 
@@ -161,7 +167,6 @@ const Wallet: NextPage = () => {
 
         const recentBlockhash = await connection.getLatestBlockhash();
         const transferSOLTx = new Transaction({
-          // TODO:  Check if Yubikey is connected
           feePayer: await account.getPublicKey(),
           ...recentBlockhash,
         });

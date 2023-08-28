@@ -1,25 +1,25 @@
-import React, { useState } from "react";
-import { NextPage } from "next";
-import { Button, Form, Input, Result } from "antd";
-import Link from "next/link";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { StyledForm } from "../../../styles/StyledComponents.styles";
-import styles from "../../../components/Layout/index.module.css";
+import {
+  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
 import {
   Connection,
   PublicKey,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import {
-  TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
-  getAccount,
-} from "@solana/spl-token";
-import { useGlobalState } from "../../../context";
+import { Button, Form, Input, Result } from "antd";
 import BN from "bn.js";
+import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
+import { useState } from "react";
+import styles from "../../../components/Layout/index.module.css";
+import { useGlobalState } from "../../../context";
+import { StyledForm } from "../../../styles/StyledComponents.styles";
 import {
   displayAddress,
   sendAndConfirmTransactionWithAccount,
@@ -86,7 +86,6 @@ const Send: NextPage = () => {
     if (!destTAInfo) {
       console.log("Creating token account for mint...");
       const recentBlockhash = await connection.getLatestBlockhash();
-      // TODO: Check if Yubikey is connected
       const createTA_tx = new Transaction({
         feePayer: feePayerPk,
         ...recentBlockhash,
@@ -124,7 +123,6 @@ const Send: NextPage = () => {
 
     /* TRANSACTION: Transfer Token */
     const recentBlockhash = await connection.getLatestBlockhash();
-    // TODO: Check if Yubikey is connected
     const transferTokenTx = new Transaction({
       feePayer: feePayerPk,
       ...recentBlockhash,

@@ -1,15 +1,15 @@
-import { TokenInfo, TokenListProvider } from '@solana/spl-token-registry';
-import { Cluster } from '@solana/web3.js';
+import { TokenInfo, TokenListProvider } from "@solana/spl-token-registry";
+import { Cluster } from "@solana/web3.js";
 
 export const network2chainId = (network: Cluster) => {
-  if(network == "mainnet-beta") {
-      return 101;
+  if (network == "mainnet-beta") {
+    return 101;
   } else if (network == "devnet") {
-      return 103;
+    return 103;
   } else {
-      return 102;
+    return 102;
   }
-}
+};
 
 export const getTokenMap = async (network: Cluster | undefined) => {
   let tokenMap = new Map<string, TokenInfo>();
@@ -23,16 +23,22 @@ export const getTokenMap = async (network: Cluster | undefined) => {
     }, new Map());
   });
   return tokenMap;
-}
+};
 
-export const getTokenIconString = async (mint: string, tokenMap: Map<string, TokenInfo>) => {
+export const getTokenIconString = async (
+  mint: string,
+  tokenMap: Map<string, TokenInfo>
+) => {
   const token = tokenMap.get(mint);
   if (!token || !token.logoURI) return null;
   return token.logoURI;
-}
+};
 
-export const getTokenName = async (mint: string, tokenMap: Map<string, TokenInfo>) => {
+export const getTokenName = async (
+  mint: string,
+  tokenMap: Map<string, TokenInfo>
+) => {
   const token = tokenMap.get(mint);
   if (!token || !token.name) return null;
   return token.name;
-}
+};

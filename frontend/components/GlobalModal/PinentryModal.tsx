@@ -1,9 +1,9 @@
-import { Button, Form, Input, Modal } from "antd";
 import {
-  KeyOutlined,
-  EyeOutlined,
   EyeInvisibleOutlined,
+  EyeOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
+import { Button, Form, Input, Modal } from "antd";
 
 const PinentryModal = (props: {
   title: string;

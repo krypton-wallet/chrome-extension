@@ -1,5 +1,5 @@
-import styled from "styled-components";
 import { Button, Form, Input } from "antd";
+import styled from "styled-components";
 
 export const Card = styled.div`
   margin: 1rem 1rem;

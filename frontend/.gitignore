@@ -35,3 +35,6 @@ yarn.lock
 
 # vercel
 .vercel
+
+.yarn
+package-lock.json

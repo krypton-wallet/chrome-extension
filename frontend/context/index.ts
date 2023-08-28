@@ -1,6 +1,6 @@
-import React, { createContext, useContext } from "react";
 import { Cluster, PublicKey } from "@solana/web3.js";
 import { PgpCardInfo } from "bloss-js";
+import React, { createContext, useContext } from "react";
 import { KryptonAccount } from "../types/account";
 
 export type GlobalContextType = {
@@ -17,7 +17,9 @@ export type GlobalContextType = {
   recoverPk: PublicKey | null;
   setRecoverPk: React.Dispatch<React.SetStateAction<PublicKey | null>>;
   tokens: Array<[PublicKey, bigint, number]>;
-  setTokens: React.Dispatch<React.SetStateAction<Array<[PublicKey, bigint, number]>>>;
+  setTokens: React.Dispatch<
+    React.SetStateAction<Array<[PublicKey, bigint, number]>>
+  >;
   currId: number | null;
   setCurrId: React.Dispatch<React.SetStateAction<number | null>>;
   yubikeyInfo: PgpCardInfo | null;

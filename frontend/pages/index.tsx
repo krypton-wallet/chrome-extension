@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import CreateAccount from "../components/CreateAccount";
-import styled from "styled-components";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import styled from "styled-components";
+import CreateAccount from "../components/CreateAccount";
+import { useGlobalModalContext } from "../components/GlobalModal";
 import { useGlobalState } from "../context";
 import { getAccountFromPkString } from "../utils";
-import { useGlobalModalContext } from "../components/GlobalModal";
 
 const Home: NextPage = () => {
   const router = useRouter();
@@ -26,13 +26,12 @@ const Home: NextPage = () => {
           y_id: 1,
           y_accounts: "{}",
           mode: 0,
-          network: "devnet"
+          network: "devnet",
         });
         setVisible(true);
         return;
       }
 
-      // TODO: Detoxify this
       const currKeypair = await getAccountFromPkString(result.pk, modalContext);
       if (!currKeypair) {
         return;
@@ -42,7 +41,7 @@ const Home: NextPage = () => {
       setNetwork(result.network);
       router.push("/wallet");
     });
-  }, [modalContext, router, setAccount]);
+  }, [modalContext, router, setAccount, setNetwork]);
 
   return (
     <>

@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { Cluster, Keypair, PublicKey } from "@solana/web3.js";
+import { Cluster, PublicKey } from "@solana/web3.js";
 import "antd/dist/antd.css";
-import "../styles/globals.css";
-import type { AppProps } from "next/app";
-import { GlobalContext } from "../context";
-import Layout from "../components/Layout";
 import { PgpCardInfo } from "bloss-js";
+import type { AppProps } from "next/app";
+import { useState } from "react";
 import { GlobalModal } from "../components/GlobalModal";
+import Layout from "../components/Layout";
+import { GlobalContext } from "../context";
+import "../styles/globals.css";
 import { KryptonAccount } from "../types/account";
 
 function MyApp({ Component, pageProps }: AppProps) {

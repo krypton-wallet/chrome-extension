@@ -11,16 +11,16 @@ import {
 } from "@solana/web3.js";
 import { message } from "antd";
 import bs58 from "bs58";
-import { generateAvatar } from "./avatar";
+import { GlobalModalContext } from "../components/GlobalModal";
+import PinentryModal from "../components/GlobalModal/PinentryModal";
+import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
 import {
   KeypairSigner,
   KryptonAccount,
   Signer,
   YubikeySigner,
 } from "../types/account";
-import { GlobalModalContext } from "../components/GlobalModal";
-import PinentryModal from "../components/GlobalModal/PinentryModal";
-import TouchConfirmModal from "../components/GlobalModal/TouchConfirmModal";
+import { generateAvatar } from "./avatar";
 import { PDA_RENT_EXEMPT_FEE, RPC_URL, WALLET_PROGRAM_ID } from "./constants";
 const BN = require("bn.js");
 
@@ -119,7 +119,6 @@ const sendAndConfirmTransactionWithAccount = async (
   }
   const finalSignature = bs58.encode(new Uint8Array(transaction.signature!));
 
-  // TODO: Add assert or other error checking for this
   const isVerifiedSignature = transaction.verifySignatures();
   console.log(`The signatures were verified: ${isVerifiedSignature}`);
 
@@ -166,6 +165,13 @@ const getProfilePDA = (feePayerPK: PublicKey) => {
   );
 };
 
+const getGuardPDA = (profileAddress: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("guard", "utf-8"), profileAddress.toBuffer()],
+    WALLET_PROGRAM_ID
+  );
+};
+
 const getAccountFromPkString = async (
   pk: string,
   context: GlobalModalContext
@@ -201,11 +207,11 @@ const getAccountFromPkString = async (
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          ...(res.recover && { recover: res.recover }),
         };
       }
 
       // yubikey
-      // TODO: Detoxify this
       else if (result.mode === 1) {
         const accountObj = JSON.parse(result["y_accounts"]);
         console.log("desired: ", pk);
@@ -261,6 +267,7 @@ const getAccountFromPkString = async (
           pda: pda[0].toBase58(),
           ...(res.avatar && { avatar: res.avatar }),
           manufacturer: res.manufacturer,
+          ...(res.recover && { recover: res.recover }),
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
@@ -295,11 +302,11 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           getPublicKey: signer.getPublicKey,
           signMessage: signer.signMessage,
           ...(res.avatar && { avatar: res.avatar }),
+          ...(res.recover && { recover: res.recover }),
         };
       }
 
       // yubikey
-      // TODO: Detoxify this
       else if (result.mode === 1) {
         const accountObj = JSON.parse(result["y_accounts"]);
         const y_id = result["y_id"];
@@ -349,6 +356,7 @@ const getCurrentAccount = async (context: GlobalModalContext) => {
           pda: pda[0].toBase58(),
           ...(res.avatar && { avatar: res.avatar }),
           manufacturer: res.manufacturer,
+          ...(res.recover && { recover: res.recover }),
           ...tmpKeypair,
           getPublicKey: tmpKeypair.getPublicKey,
           signMessage: tmpKeypair.signMessage,
@@ -377,17 +385,18 @@ const JSONtoUInt8Array = (obj: any) => {
 };
 
 export {
-  refreshBalance,
-  handleAirdrop,
-  isNumber,
-  displayAddress,
   containsPk,
-  sendAndConfirmTransactionWithAccount,
-  partialSign,
-  getProfilePDA,
+  displayAddress,
+  generateAvatar,
   getAccountFromPkString,
   getCurrentAccount,
-  generateAvatar,
-  parsePubkey,
+  getGuardPDA,
+  getProfilePDA,
+  handleAirdrop,
+  isNumber,
   JSONtoUInt8Array,
+  parsePubkey,
+  partialSign,
+  refreshBalance,
+  sendAndConfirmTransactionWithAccount,
 };

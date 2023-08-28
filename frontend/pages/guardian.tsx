@@ -1,30 +1,31 @@
-import React, { useEffect, useState } from "react";
-import { NextPage } from "next";
-import { Button, Alert, Modal, Form, Input, Radio, Switch } from "antd";
-import { useGlobalState } from "../context";
-import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
+import { EditOutlined, UserAddOutlined } from "@ant-design/icons";
 import {
   Connection,
   PublicKey,
+  SystemProgram,
   Transaction,
-  TransactionInstruction,
 } from "@solana/web3.js";
+import { Alert, Button, Form, Input, Modal, Radio, Switch } from "antd";
+import { NextPage } from "next";
+import { useEffect, useState } from "react";
 import GuardianBox from "../components/GuardianBox";
-import base58 from "bs58";
-import { containsPk, sendAndConfirmTransactionWithAccount } from "../utils";
-import BN from "bn.js";
-import { RPC_URL, WALLET_PROGRAM_ID } from "../utils/constants";
+import { useGlobalState } from "../context";
+import * as krypton from "../js/src/generated";
+import {
+  containsPk,
+  getProfilePDA,
+  sendAndConfirmTransactionWithAccount,
+} from "../utils";
+import { RPC_URL } from "../utils/constants";
 
 const Guardian: NextPage = () => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const { setGuardians, guardians, account, network } = useGlobalState();
+  const [loading, setLoading] = useState<number>(0);
   const [isPkValid, setIsPkValid] = useState<boolean>(false);
   const [editmode, setEditmode] = useState<boolean>(false);
   const [thres, setThres] = useState<number>(0);
-  const { setGuardians, guardians, account, network } = useGlobalState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
-
-  const defaultpk = PublicKey.default;
 
   useEffect(() => {
     // Fetching all guardians from PDA
@@ -34,27 +35,18 @@ const Guardian: NextPage = () => {
       }
       const connection = new Connection(RPC_URL(network), "confirmed");
       const publicKey = new PublicKey(account.pk);
-      console.log("account pk: ", publicKey.toBase58());
-      console.log("PDA: ", account.pda);
-      const pda_account = await connection.getAccountInfo(
-        new PublicKey(account.pda) ?? PublicKey.default
-      );
-      const pda_data = pda_account?.data ?? Buffer.from("");
-      const threshold = new BN(pda_data.subarray(0, 1), "le").toNumber();
-      const guardian_len = new BN(pda_data.subarray(1, 5), "le").toNumber();
-      console.log("threshold: ", threshold);
-      console.log("guardian length: ", guardian_len);
-      console.log("All Guardians:");
-      const guardians_tmp: PublicKey[] = [];
-      for (let i = 0; i < guardian_len; i++) {
-        const guard = new PublicKey(
-          base58.encode(pda_data.subarray(5 + 32 * i, 5 + 32 * (i + 1)))
+      const [profileAddress] = getProfilePDA(publicKey);
+      const profileAccount = await connection.getAccountInfo(profileAddress);
+      if (profileAccount) {
+        const [profile] = krypton.UserProfile.fromAccountInfo(profileAccount);
+        console.log("profile?", profile);
+        setThres(profile.recoveryThreshold);
+        setGuardians(
+          Array.from(profile.guardians.entries())
+            .map(([pubkey]) => pubkey)
+            .filter((g) => !g.equals(SystemProgram.programId))
         );
-        console.log(`guard ${i + 1}: `, guard.toBase58());
-        guardians_tmp.push(guard);
       }
-      setThres(threshold);
-      setGuardians(guardians_tmp);
     };
     getGuardians();
   }, [account, network, setGuardians]);
@@ -70,48 +62,29 @@ const Guardian: NextPage = () => {
 
     console.log("=====ADDING GUARDIAN======");
     console.log("Values received:", values);
-    setLoading(true);
+    setLoading((prev) => prev + 1);
     form.resetFields();
 
     // Instr Add
     const publicKey = new PublicKey(account.pk);
     console.log("Adding guardian for account " + publicKey + "...");
     const connection = new Connection(RPC_URL(network), "confirmed");
-    const idx1 = Buffer.from(new Uint8Array([1]));
-    const new_acct_len = Buffer.from(
-      new Uint8Array(new BN(1).toArray("le", 1))
-    );
     const latestBlockhash = await connection.getLatestBlockhash();
 
-    const addToRecoveryListIx = new TransactionInstruction({
-      keys: [
-        {
-          pubkey: new PublicKey(account.pda) ?? defaultpk,
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: publicKey,
-          isSigner: true,
-          isWritable: true,
-        },
-        {
-          pubkey: new PublicKey(values.guardian),
-          isSigner: false,
-          isWritable: false,
-        },
-      ],
-      programId: WALLET_PROGRAM_ID,
-      data: Buffer.concat([idx1, new_acct_len]),
-    });
+    const [profileAddress] = getProfilePDA(publicKey);
 
-    // TODO: Check if Yubikey is connected
+    const addGuardianIx = krypton.createAddRecoveryGuardiansInstruction({
+      profileInfo: profileAddress,
+      authorityInfo: publicKey,
+      guardian: new PublicKey(values.guardian),
+      systemProgram: SystemProgram.programId,
+    });
     const tx = new Transaction({
       feePayer: publicKey,
       ...latestBlockhash,
     });
-    tx.add(addToRecoveryListIx);
-
+    tx.add(addGuardianIx);
+    console.log("processing add guardian");
     const txid = await sendAndConfirmTransactionWithAccount(
       connection,
       tx,
@@ -124,7 +97,7 @@ const Guardian: NextPage = () => {
     );
     console.log(`https://explorer.solana.com/tx/${txid}?cluster=${network}`);
 
-    setLoading(false);
+    setLoading((prev) => prev - 1);
     setIsModalOpen(false);
     setGuardians((prev) => [...prev, new PublicKey(values.guardian)]);
     form.resetFields();
@@ -155,13 +128,14 @@ const Guardian: NextPage = () => {
       </div>
 
       <div style={{ overflow: "auto", height: "250px" }}>
-        {guardians?.map((g) => {
+        {guardians.map((g) => {
           return (
             <GuardianBox
               key={g.toBase58()}
               guardian={g}
               editMode={editmode}
-            ></GuardianBox>
+              setDeleteLoading={setLoading}
+            />
           );
         })}
       </div>
@@ -184,36 +158,24 @@ const Guardian: NextPage = () => {
           onClick={showModal}
           size="middle"
           style={{ width: "168px", marginRight: "20px" }}
+          loading={loading != 0}
+          disabled={editmode}
         >
           Add
         </Button>
-
-        {!editmode && (
-          <Button
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            className="edit-btn"
-            danger
-          >
-            Edit
-          </Button>
-        )}
-
-        {editmode && (
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={toggleEditmode}
-            size="middle"
-            style={{ width: "168px" }}
-            danger
-            className="edit-btn"
-          >
-            Finish
-          </Button>
-        )}
+        <Button
+          type={editmode ? "primary" : undefined}
+          icon={<EditOutlined />}
+          onClick={toggleEditmode}
+          size="middle"
+          style={{ width: "168px" }}
+          danger
+          className="edit-btn"
+          loading={loading != 0}
+          disabled={!editmode && guardians.length === 0}
+        >
+          {editmode ? "Finish" : "Edit"}
+        </Button>
       </div>
 
       <Modal
@@ -221,7 +183,7 @@ const Guardian: NextPage = () => {
         open={isModalOpen}
         onOk={form.submit}
         onCancel={handleModalCancel}
-        confirmLoading={loading}
+        confirmLoading={loading != 0}
         okButtonProps={{ disabled: !isPkValid }}
       >
         {!loading && (
