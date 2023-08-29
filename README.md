@@ -41,7 +41,7 @@ You can load unpacked the /frontend/out folder in chrome extension developer mod
 
 ![flow-diagram](./frontend/public/static/images/flow.png)
 
-## High-level Overview
+## 👀 High-level Overview
 
 - Chrome extension interacts with Krypton wallet smart contract for all core functionality
 - Uses Chrome local storage to cache current account results for better UX
