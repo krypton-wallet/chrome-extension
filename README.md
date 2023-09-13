@@ -1,4 +1,4 @@
-# Krypton
+# Krypton Wallet Chrome Extension
 
 Introducing Krypton, a Solana smart contract wallet with multisig social recovery, eliminating fear of losing your private key and improving usability and security with advanced features
 
